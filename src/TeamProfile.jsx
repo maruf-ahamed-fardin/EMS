@@ -60,6 +60,7 @@ const SocialIcon = ({ type, url }) => {
 export default function TeamProfile() {
   const { username: urlParam } = useParams();
   const navigate = useNavigate();
+  const [imgError, setImgError] = useState(false);
   const [user, setUser] = useState(null);
   const [profilePic, setProfilePic] = useState(null);
   const [profileData, setProfileData] = useState(null);
@@ -74,6 +75,7 @@ export default function TeamProfile() {
         // CDN cached for 60s, so repeat/shared visits are instant
         const res = await fetch(`/api/team-profile?id=${encodeURIComponent(urlParam)}`);
         if (!active) return;
+        if (!res.ok) { setNotFound(true); setLoading(false); return; }
         const data = await res.json();
 
         if (!data.found) {
@@ -161,11 +163,11 @@ export default function TeamProfile() {
           {/* Profile Picture */}
           <div className="flex flex-col items-center pt-8 pb-4">
             <div className="h-28 w-28 rounded-full overflow-hidden border-4 border-indigo-200 shadow-lg ring-4 ring-white">
-              {profilePic ? (
-                <img src={profilePic} alt={user.name} className="h-full w-full object-cover" />
+              {profilePic && !imgError ? (
+                <img src={profilePic} alt={user.name} className="h-full w-full object-cover" onError={() => setImgError(true)} />
               ) : (
                 <div className="h-full w-full bg-gradient-to-br from-indigo-600 to-orange-500 flex items-center justify-center text-white text-4xl font-bold">
-                  {user.name?.charAt(0).toUpperCase()}
+                  {(user.name || '?').charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
