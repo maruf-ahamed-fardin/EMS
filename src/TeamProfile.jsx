@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchUsers, fetchProfilePics, fetchProfiles } from './api.js';
 import seloraxLogo from './assets/SeloraX logo.png';
 
 const CopyableNumber = ({ number, label }) => {
@@ -70,53 +69,34 @@ export default function TeamProfile() {
   useEffect(() => {
     let active = true;
     (async () => {
-      let allUsers = [];
       try {
-        allUsers = await fetchUsers();
-      } catch {
-        /* API unavailable */
-      }
+        // Single API call — returns user + profilePic + profileData for one person
+        // CDN cached for 60s, so repeat/shared visits are instant
+        const res = await fetch(`/api/team-profile?id=${encodeURIComponent(urlParam)}`);
+        if (!active) return;
+        const data = await res.json();
 
-      if (!active) return;
-
-      if (!allUsers.length) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      // First try matching by username
-      let found = allUsers.find((u) => u.username?.toLowerCase() === urlParam?.toLowerCase());
-
-      // If not found by username, check if it's an employee ID and redirect
-      if (!found) {
-        const byId = allUsers.find((u) => u.employeeId?.toLowerCase() === urlParam?.toLowerCase());
-        if (byId?.username) {
-          navigate(`/${byId.username}`, { replace: true });
+        if (!data.found) {
+          setNotFound(true);
+          setLoading(false);
           return;
         }
-      }
 
-      if (!active) return;
+        // If accessed by employeeId, redirect to username URL
+        if (data.redirectTo) {
+          navigate(`/${data.redirectTo}`, { replace: true });
+          return;
+        }
 
-      if (!found) {
+        setUser(data.user);
+        setProfilePic(data.profilePic);
+        setProfileData(data.profileData);
+        setLoading(false);
+      } catch {
+        if (!active) return;
         setNotFound(true);
         setLoading(false);
-        return;
       }
-
-      setUser(found);
-
-      // Fetch profile pic & profile data
-      const [pics, profiles] = await Promise.all([
-        fetchProfilePics().catch(() => ({})),
-        fetchProfiles().catch(() => ({}))
-      ]);
-      if (!active) return;
-
-      setProfilePic(pics[found.username] || null);
-      setProfileData(profiles[found.username] || null);
-      setLoading(false);
     })();
     return () => { active = false; };
   }, [urlParam, navigate]);
