@@ -4,8 +4,8 @@ import mysql from 'mysql2/promise';
 const PUBLIC_USER_FIELDS = ['username', 'name', 'role', 'designation', 'employeeId'];
 
 // ── In-memory cache (survives warm function invocations) ────────
-// Warm hits skip DB entirely → sub-5ms response
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Short TTL ensures data stays fresh while avoiding DB hits on rapid page loads
+const CACHE_TTL = 30 * 1000; // 30 seconds
 let cache = { data: null, ts: 0 };
 
 let pool = null;
@@ -91,8 +91,8 @@ export default async function handler(req, res) {
     const picsObj = pics && typeof pics === 'object' ? pics : {};
     const profilesObj = profiles && typeof profiles === 'object' ? profiles : {};
 
-    // CDN: 5 min cache, 10 min stale-while-revalidate
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // CDN: 30s cache, 60s stale-while-revalidate (keeps data fresh after updates)
+    res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
     return res.status(200).json({
       found: true,
       redirectTo,
