@@ -10,6 +10,8 @@ export default function Search() {
     e.preventDefault();
     const trimmed = query.trim();
     if (trimmed) {
+      // Prefetch API data so it's already in flight when TeamProfile mounts
+      fetch(`/api/team-profile?id=${encodeURIComponent(trimmed)}`);
       navigate(`/${encodeURIComponent(trimmed)}`);
     }
   };

@@ -1,13 +1,12 @@
 import mysql from 'mysql2/promise';
 
-const ENDPOINTS = {
-  users:          { key: 'sharedUsers',    type: 'array',  field: 'users' },
-  'profile-pics': { key: 'profilePics',    type: 'object', field: 'profilePics' },
-  profiles:       { key: 'sharedProfiles', type: 'object', field: 'profiles' },
-};
-
 // Fields safe to expose publicly (no passwords, salaries, etc.)
 const PUBLIC_USER_FIELDS = ['username', 'name', 'role', 'designation', 'employeeId'];
+
+// ── In-memory cache (survives warm function invocations) ────────
+// Warm hits skip DB entirely → sub-5ms response
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let cache = { data: null, ts: 0 };
 
 let pool = null;
 
@@ -27,15 +26,24 @@ function getPool() {
   return pool;
 }
 
-async function getFromDb(key) {
+// Single query for all 3 keys instead of 3 separate queries
+async function getTeamData() {
+  if (cache.data && Date.now() - cache.ts < CACHE_TTL) return cache.data;
+
   const db = getPool();
-  const [rows] = await db.execute('SELECT v FROM kv_store WHERE k = ?', [key]);
-  if (rows.length === 0) return null;
-  try {
-    return JSON.parse(rows[0].v);
-  } catch {
-    return rows[0].v;
+  const [rows] = await db.execute(
+    'SELECT k, v FROM kv_store WHERE k IN (?, ?, ?)',
+    ['sharedUsers', 'profilePics', 'sharedProfiles']
+  );
+
+  const parsed = {};
+  for (const row of rows) {
+    try { parsed[row.k] = JSON.parse(row.v); }
+    catch { parsed[row.k] = row.v; }
   }
+
+  cache = { data: parsed, ts: Date.now() };
+  return parsed;
 }
 
 export default async function handler(req, res) {
@@ -46,72 +54,52 @@ export default async function handler(req, res) {
   try {
     const { endpoint } = req.query;
 
-    // ── Single-call team profile endpoint ─────────────────────────
-    // Returns one user's public data + profile pic + profile in 1 request
-    // CDN cached for 60s so repeat visits are instant
-    if (endpoint === 'team-profile') {
-      const id = (req.query.id || '').toLowerCase();
-      if (!id) return res.status(400).json({ error: 'id parameter required' });
-
-      // Fetch all 3 data sources in parallel (server-side, single cold start)
-      const [users, pics, profiles] = await Promise.all([
-        getFromDb('sharedUsers'),
-        getFromDb('profilePics'),
-        getFromDb('sharedProfiles'),
-      ]);
-
-      const allUsers = Array.isArray(users) ? users : [];
-      // Match by username first, then by employeeId
-      let user = allUsers.find(u => u.username?.toLowerCase() === id);
-      let redirectTo = null;
-      if (!user) {
-        const byEmpId = allUsers.find(u => u.employeeId?.toLowerCase() === id);
-        if (byEmpId) {
-          user = byEmpId;
-          redirectTo = byEmpId.username;
-        }
-      }
-
-      if (!user) {
-        res.setHeader('Cache-Control', 'public, s-maxage=30');
-        return res.status(404).json({ found: false });
-      }
-
-      // Strip sensitive fields
-      const publicUser = {};
-      for (const f of PUBLIC_USER_FIELDS) {
-        if (user[f] !== undefined) publicUser[f] = user[f];
-      }
-
-      const picsObj = pics && typeof pics === 'object' ? pics : {};
-      const profilesObj = profiles && typeof profiles === 'object' ? profiles : {};
-
-      // Cache for 60s at CDN edge, revalidate in background
-      res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-      return res.status(200).json({
-        found: true,
-        redirectTo,
-        user: publicUser,
-        profilePic: picsObj[user.username] || null,
-        profileData: profilesObj[user.username] || null,
-      });
-    }
-
-    // ── Generic KV endpoints (legacy) ─────────────────────────────
-    res.setHeader('Cache-Control', 'no-store');
-    const config = ENDPOINTS[endpoint];
-
-    if (!config) {
+    if (endpoint !== 'team-profile') {
       return res.status(404).json({ error: `Unknown endpoint: ${endpoint}` });
     }
 
-    const data = await getFromDb(config.key);
+    const id = (req.query.id || '').toLowerCase();
+    if (!id) return res.status(400).json({ error: 'id parameter required' });
 
-    if (config.type === 'array') {
-      return res.status(200).json({ [config.field]: Array.isArray(data) ? data : [] });
-    } else {
-      return res.status(200).json({ [config.field]: data && typeof data === 'object' ? data : {} });
+    // Single DB query (or memory cache hit) for all data
+    const data = await getTeamData();
+    const users = data.sharedUsers;
+    const pics = data.profilePics;
+    const profiles = data.sharedProfiles;
+
+    const allUsers = Array.isArray(users) ? users : [];
+    let user = allUsers.find(u => u.username?.toLowerCase() === id);
+    let redirectTo = null;
+    if (!user) {
+      const byEmpId = allUsers.find(u => u.employeeId?.toLowerCase() === id);
+      if (byEmpId) {
+        user = byEmpId;
+        redirectTo = byEmpId.username;
+      }
     }
+
+    if (!user) {
+      res.setHeader('Cache-Control', 'public, s-maxage=60');
+      return res.status(404).json({ found: false });
+    }
+
+    const publicUser = {};
+    for (const f of PUBLIC_USER_FIELDS) {
+      if (user[f] !== undefined) publicUser[f] = user[f];
+    }
+
+    const picsObj = pics && typeof pics === 'object' ? pics : {};
+    const profilesObj = profiles && typeof profiles === 'object' ? profiles : {};
+
+    // CDN: 5 min cache, 10 min stale-while-revalidate
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return res.status(200).json({
+      found: true,
+      redirectTo,
+      user: publicUser,
+      profilePic: picsObj[user.username] || null,
+      profileData: profilesObj[user.username] || null,
+    });
   } catch (error) {
     console.error('API error:', error);
     return res.status(500).json({ error: 'Server error' });

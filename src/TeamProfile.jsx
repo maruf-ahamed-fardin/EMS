@@ -103,8 +103,34 @@ export default function TeamProfile() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-400/30 border-t-orange-400" />
+      <div className="flex min-h-screen flex-col items-center bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
+        <div className="w-full bg-gradient-to-r from-indigo-950 via-indigo-800 to-orange-500 pt-10 pb-24 px-4 flex flex-col items-center">
+          <img src={seloraxLogo} alt="SeloraX" className="h-10 brightness-0 invert" />
+        </div>
+        <div className="w-full max-w-sm px-4 -mt-16 pb-10">
+          <div className="rounded-3xl bg-white shadow-2xl overflow-hidden">
+            <div className="flex flex-col items-center pt-8 pb-4">
+              <div className="h-28 w-28 rounded-full bg-slate-200 animate-pulse" />
+            </div>
+            <div className="flex flex-col items-center px-6 pb-5 gap-2">
+              <div className="h-6 w-36 rounded-lg bg-slate-200 animate-pulse" />
+              <div className="h-5 w-20 rounded-full bg-slate-100 animate-pulse" />
+            </div>
+            <div className="mx-5 rounded-2xl bg-slate-50 border border-slate-100 p-4 mb-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-slate-200 animate-pulse shrink-0" />
+                <div className="h-4 w-40 rounded bg-slate-200 animate-pulse" />
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-slate-200 animate-pulse shrink-0" />
+                <div className="h-4 w-32 rounded bg-slate-200 animate-pulse" />
+              </div>
+            </div>
+            <div className="border-t border-slate-100 mx-5 pt-4 pb-6">
+              <div className="h-3 w-48 mx-auto rounded bg-slate-100 animate-pulse" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
