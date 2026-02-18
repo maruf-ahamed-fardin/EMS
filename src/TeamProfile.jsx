@@ -8,7 +8,7 @@ const CopyableNumber = ({ number, label }) => {
     navigator.clipboard.writeText(number).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    });
+    }).catch(() => {});
   }, [number]);
   return (
     <div className="flex flex-col min-w-0 flex-1">
@@ -22,7 +22,13 @@ const CopyableNumber = ({ number, label }) => {
 
 const SocialIcon = ({ type, url }) => {
   if (!url) return null;
-  const href = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+  let href;
+  try {
+    const parsed = new URL(url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`);
+    href = ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '#';
+  } catch {
+    href = '#';
+  }
   const icons = {
     facebook: (
       <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
