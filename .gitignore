@@ -27,6 +27,3 @@ next-env.d.ts
 .vercel
 .env
 .env*.local
-config.bat
-temp_auto_push.bat
-temp_interactive_push.bat
