@@ -24,7 +24,7 @@ export default function SearchForm() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="e.g. ashekrabbani or SX-001"
+          placeholder="ashekrabbani or SX-001"
           aria-label="Username or employee ID"
           autoFocus
           autoCapitalize="none"
