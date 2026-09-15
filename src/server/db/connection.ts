@@ -29,11 +29,13 @@ export function poolOptions(config: DbConfig): PoolOptions {
 /** The same connection split into fields, for drizzle-kit. */
 export function connectionFields(config: DbConfig) {
   const url = new URL(config.url);
+  const password = decodeURIComponent(url.password);
   return {
     host: url.hostname,
     port: Number(url.port || 3306),
     user: decodeURIComponent(url.username),
-    password: decodeURIComponent(url.password),
+    // drizzle-kit rejects an empty password, so leave it out for passwordless local servers
+    ...(password && { password }),
     database: url.pathname.slice(1),
     ssl: sslOptions(config),
   };
