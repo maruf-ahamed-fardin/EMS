@@ -1,6 +1,3 @@
 {
-  "rewrites": [
-    { "source": "/api/:endpoint", "destination": "/api/[endpoint]" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "framework": "nextjs"
 }
