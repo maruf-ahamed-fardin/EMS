@@ -1,13 +1,15 @@
+import type { Metadata, Viewport } from 'next';
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import seloraxLogo from '@/assets/SeloraX logo.png';
 import './globals.css';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: { default: 'Team-SeloraX', template: '%s | Team-SeloraX' },
   description: 'Find and connect with members of the SeloraX team.',
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   // Lets the header gradient run under the notch; safe-area padding keeps content clear of it
@@ -17,7 +19,7 @@ export const viewport = {
 
 // Shared shell: branded gradient header with the page card pulled up over it.
 // Living in the layout means the header stays put while navigating between pages.
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="antialiased">

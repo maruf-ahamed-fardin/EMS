@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { SearchIcon } from './icons';
 
 export default function SearchForm() {
   const [query, setQuery] = useState('');
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const trimmed = query.trim();
-    if (trimmed) router.push(`/${encodeURIComponent(trimmed)}`);
+    if (trimmed) startTransition(() => router.push(`/${encodeURIComponent(trimmed)}`));
   };
 
   return (
@@ -35,9 +36,10 @@ export default function SearchForm() {
       </div>
       <button
         type="submit"
-        className="w-full cursor-pointer touch-manipulation rounded-xl bg-gradient-to-r from-indigo-600 to-orange-500 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-indigo-500 hover:to-orange-400"
+        disabled={isPending}
+        className="w-full cursor-pointer touch-manipulation rounded-xl bg-gradient-to-r from-indigo-600 to-orange-500 px-4 py-3 text-sm font-semibold text-white transition-all hover:from-indigo-500 hover:to-orange-400 disabled:cursor-wait disabled:opacity-70"
       >
-        View Profile
+        {isPending ? 'Loading…' : 'View Profile'}
       </button>
     </form>
   );

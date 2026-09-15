@@ -1,16 +1,40 @@
-# React + Vite
+# Team-SeloraX
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Public profile cards for SeloraX team members: look someone up by username or employee ID and get their photo, role, contact details and social links on a mobile-friendly card.
 
-Currently, two official plugins are available:
+Built with Next.js (App Router), React, TypeScript and Tailwind CSS. Team data is read from the SeloraX MySQL database (`kv_store` table: `sharedUsers`, `profilePics`, `sharedProfiles`); only public fields are ever sent to the browser.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Routes
 
-## React Compiler
+| Path | What it shows |
+| --- | --- |
+| `/` | Search by username or employee ID |
+| `/<username>` | Profile card. An employee ID (e.g. `/SX-001`) redirects to the username URL |
+| `/api/team-profile?id=<username or employeeId>` | Same data as JSON |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Profiles are server-rendered and cached with ISR: the first visit renders the page, later visits get the cached copy, and it refreshes in the background at most every 30 seconds.
 
-## Expanding the ESLint configuration
+## Getting started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Create `.env.local` with the database connection:
+
+```bash
+MYSQL_HOST=...
+MYSQL_PORT=3306
+MYSQL_USER=...
+MYSQL_PASSWORD=...
+MYSQL_DATABASE=selorax
+```
+
+Then:
+
+```bash
+npm install
+npm run dev     # http://localhost:3000
+npm run build   # production build (includes type checking)
+npm run lint
+```
+
+## Deployment
+
+Deployed on Vercel. `vercel.json` pins the framework preset to Next.js; set the `MYSQL_*` variables in the Vercel project settings.

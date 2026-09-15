@@ -1,9 +1,12 @@
+import type { Metadata } from 'next';
+import type { ComponentType, ReactNode } from 'react';
 import { notFound, redirect } from 'next/navigation';
-import { findTeamMember } from '@/lib/team';
+import { findTeamMember, type ProfileData, type Socials } from '@/lib/team';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import CopyableValue from '@/components/CopyableValue';
 import {
   EmailIcon, PhoneIcon, WhatsAppIcon, FacebookIcon, InstagramIcon, GitHubIcon, GlobeIcon,
+  type IconProps,
 } from '@/components/icons';
 
 // ISR: each profile renders on its first visit, is served from cache after that,
@@ -14,17 +17,21 @@ export function generateStaticParams() {
   return [];
 }
 
-function decodeParam(value) {
+interface PageParams {
+  params: Promise<{ username: string }>;
+}
+
+function decodeParam(value: string) {
   try { return decodeURIComponent(value); }
   catch { return value; }
 }
 
-async function getMember(params) {
+async function getMember(params: PageParams['params']) {
   const { username } = await params;
   return findTeamMember(decodeParam(username));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const member = await getMember(params);
   if (!member) return { title: 'Team Member Not Found' };
 
@@ -36,14 +43,27 @@ export async function generateMetadata({ params }) {
   };
 }
 
-const digits = (value) => String(value ?? '').replace(/\D/g, '');
+const digits = (value: unknown) => String(value ?? '').replace(/\D/g, '');
 
 const iconBox = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors';
 const indigoBox = `${iconBox} bg-indigo-100 text-indigo-600 hover:bg-indigo-200`;
 const greenBox = `${iconBox} bg-green-100 text-green-600 hover:bg-green-200`;
 const externalLink = { target: '_blank', rel: 'noopener noreferrer' };
 
-function ContactRow({ href, action, icon, value, label, external, green, whatsapp }) {
+interface ContactRowProps {
+  href: string;
+  /** Accessible name for the icon link, e.g. "Send email" */
+  action: string;
+  icon: ReactNode;
+  value: string;
+  label: string;
+  external?: boolean;
+  green?: boolean;
+  /** Number to show a WhatsApp button for, when it matches this row's phone */
+  whatsapp?: string | null;
+}
+
+function ContactRow({ href, action, icon, value, label, external, green, whatsapp }: ContactRowProps) {
   return (
     <div className="flex items-center gap-3">
       <a href={href} aria-label={action} className={green ? greenBox : indigoBox} {...(external && externalLink)}>
@@ -59,7 +79,7 @@ function ContactRow({ href, action, icon, value, label, external, green, whatsap
   );
 }
 
-function ContactDetails({ profileData }) {
+function ContactDetails({ profileData }: { profileData: ProfileData | null }) {
   const email = profileData?.email;
   const personal = profileData?.personalPhone || profileData?.phone;
   const business = profileData?.businessPhone;
@@ -71,8 +91,8 @@ function ContactDetails({ profileData }) {
 
   // WhatsApp gets a button beside a phone number it matches, otherwise its own row
   const waDigits = digits(whatsapp);
-  const waOnPersonal = whatsapp && waDigits === digits(personal);
-  const waOnBusiness = whatsapp && waDigits === digits(business);
+  const waOnPersonal = Boolean(whatsapp) && waDigits === digits(personal);
+  const waOnBusiness = Boolean(whatsapp) && waDigits === digits(business);
 
   return (
     <div className="space-y-3">
@@ -101,7 +121,7 @@ function ContactDetails({ profileData }) {
   );
 }
 
-const SOCIALS = [
+const SOCIALS: { key: keyof Socials; label: string; Icon: ComponentType<IconProps> }[] = [
   { key: 'facebook', label: 'Facebook', Icon: FacebookIcon },
   { key: 'instagram', label: 'Instagram', Icon: InstagramIcon },
   { key: 'github', label: 'GitHub', Icon: GitHubIcon },
@@ -109,7 +129,7 @@ const SOCIALS = [
 ];
 
 // Only allow http(s) links; bare domains like "github.com/me" get https:// added
-function safeUrl(url) {
+function safeUrl(url: unknown): string | null {
   if (!url) return null;
   const str = String(url);
   try {
@@ -120,7 +140,7 @@ function safeUrl(url) {
   }
 }
 
-function SocialLinks({ socials }) {
+function SocialLinks({ socials }: { socials?: Socials }) {
   const links = SOCIALS
     .map(s => ({ ...s, href: safeUrl(socials?.[s.key]) }))
     .filter(s => s.href);
@@ -131,7 +151,7 @@ function SocialLinks({ socials }) {
       {links.map(({ key, label, Icon, href }) => (
         <a
           key={key}
-          href={href}
+          href={href!}
           aria-label={label}
           className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-50 text-indigo-400 transition-colors hover:bg-indigo-100 hover:text-indigo-600"
           {...externalLink}
@@ -166,7 +186,7 @@ function CompanyFooter() {
   );
 }
 
-export default async function TeamProfilePage({ params }) {
+export default async function TeamProfilePage({ params }: PageParams) {
   const member = await getMember(params);
   if (!member) notFound();
 

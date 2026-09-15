@@ -1,8 +1,9 @@
+import type { NextRequest } from 'next/server';
 import { findTeamMember } from '@/lib/team';
 
 // JSON endpoint, same contract as the pre-Next.js /api/team-profile?id=<username|employeeId>.
 // The pages read the database directly; this stays for any external consumers.
-export async function GET(request) {
+export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get('id');
   if (!id) return Response.json({ error: 'id parameter required' }, { status: 400 });
 
