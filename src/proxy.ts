@@ -42,7 +42,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Upload routes skip the proxy: it buffers request bodies and silently truncates them past 10MB.
-  // Those handlers do their own origin check.
-  matcher: ['/((?!api/v1/me/avatar).*)'],
+  // API routes only: the strict CSP above would break the pages.
+  // Upload routes skip the proxy too: it buffers request bodies and silently truncates them past 10MB,
+  // so those handlers do their own origin check.
+  matcher: ['/api/((?!v1/me/avatar).*)'],
 };

@@ -22,8 +22,8 @@ describe('parseEnv', () => {
     expect(env.DATABASE_CA_FILE).toBeUndefined();
   });
 
-  it('requires DATABASE_URL', () => {
-    expect(() => parseEnv({})).toThrow(/DATABASE_URL/);
+  it('allows DATABASE_URL to be unset until the new database exists', () => {
+    expect(parseEnv({}).DATABASE_URL).toBeUndefined();
   });
 
   it('rejects a non-MySQL URL without echoing its password', () => {

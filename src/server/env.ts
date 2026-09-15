@@ -7,8 +7,11 @@ const commaList = z.string().transform(value => value.split(',').map(item => ite
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  /** Database owned by this backend, e.g. mysql://team_app:...@db:3306/selorax_team */
-  DATABASE_URL: mysqlUrl,
+  /**
+   * The app's own database, e.g. mysql://team_app:...@db:3306/selorax_team. Optional so the site
+   * (which still reads kv_store through MYSQL_*) keeps running until this database exists.
+   */
+  DATABASE_URL: mysqlUrl.optional(),
   /** `verify` checks the server certificate (against DATABASE_CA_FILE when set). `off` is for local MySQL only. */
   DATABASE_TLS: z.enum(['verify', 'off']).default('verify'),
   DATABASE_CA_FILE: z.string().optional(),

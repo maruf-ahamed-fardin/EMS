@@ -9,7 +9,10 @@ export interface DbConfig {
   caFile?: string;
 }
 
-function sslOptions({ tls, caFile }: DbConfig): ConnectionOptions['ssl'] {
+// Kept to fields that fit both mysql2's SslOptions and drizzle-kit's narrower copy of it
+type Ssl = { rejectUnauthorized: boolean; ca?: string } | undefined;
+
+function sslOptions({ tls, caFile }: DbConfig): Ssl {
   if (tls === 'off') return undefined;
   return { rejectUnauthorized: true, ...(caFile && { ca: readFileSync(caFile, 'utf8') }) };
 }

@@ -12,6 +12,7 @@ const globalForDb = globalThis as unknown as { teamDb?: Db };
 export function getDb(): Db {
   if (!globalForDb.teamDb) {
     const env = getEnv();
+    if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
     const pool = mysql.createPool(poolOptions({ url: env.DATABASE_URL, tls: env.DATABASE_TLS, caFile: env.DATABASE_CA_FILE }));
     globalForDb.teamDb = drizzle({ client: pool, schema, mode: 'default' });
   }

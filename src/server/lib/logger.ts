@@ -5,7 +5,7 @@ export type { Logger } from 'pino';
 // Reads process.env directly rather than getEnv() so a bad configuration can still be logged
 export const logger = pino({
   level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
-  base: { service: 'team-backend' },
+  base: { service: 'teamprofile' },
   timestamp: pino.stdTimeFunctions.isoTime,
   redact: {
     paths: [
