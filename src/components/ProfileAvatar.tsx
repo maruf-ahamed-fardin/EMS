@@ -24,7 +24,9 @@ export default function ProfileAvatar({ src, name }: ProfileAvatarProps) {
         <img
           ref={checkLoaded}
           src={src}
-          alt={name}
+          // Empty rather than undefined when the name is missing: an img with no alt is read out
+          // as its URL. The name is in the heading beside it either way, so this is decorative.
+          alt={name ?? ''}
           className="h-full w-full object-cover"
           onError={() => setFailed(true)}
         />
