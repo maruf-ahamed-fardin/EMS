@@ -28,7 +28,8 @@ const schema = z.object({
   MYSQL_USER: z.string().min(1).optional(),
   MYSQL_PASSWORD: z.string().optional(),
   MYSQL_DATABASE: z.string().min(1).optional(),
-  MYSQL_TLS: tlsMode,
+  /** Unset means: verify in production, and off only when the host is this machine. See lib/team.ts. */
+  MYSQL_TLS: z.enum(['verify', 'off']).optional(),
   MYSQL_CA_FILE: z.string().optional(),
   /** Browser origins allowed to send state-changing requests (the public frontend), comma separated */
   ALLOWED_ORIGINS: commaList.default([]),

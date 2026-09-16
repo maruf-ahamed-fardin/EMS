@@ -127,15 +127,55 @@ describe('findTeamMember', () => {
     await findTeamMember('nadia');
     expect(createPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: { rejectUnauthorized: true } }));
   });
+});
 
-  it('refuses to guess a host when the HR database is not configured', async () => {
-    vi.resetModules();
-    vi.unstubAllEnvs();
-    vi.stubEnv('MYSQL_HOST', '');
-    vi.stubEnv('MYSQL_USER', '');
-    vi.stubEnv('MYSQL_DATABASE', '');
-    const { findTeamMember } = await import('@/lib/team');
-    await expect(findTeamMember('nadia')).rejects.toThrow(/HR database is not configured/);
+/** Reloads team.ts with exactly the variables given, and nothing inherited. */
+async function loadWith(env: Record<string, string>) {
+  vi.resetModules();
+  vi.unstubAllEnvs();
+  for (const key of ['MYSQL_HOST', 'MYSQL_USER', 'MYSQL_DATABASE', 'MYSQL_TLS', 'NODE_ENV']) vi.stubEnv(key, '');
+  for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
+  return import('@/lib/team');
+}
+
+describe('HR connection settings', () => {
+  it('falls back to a local server in development, as this file always did', async () => {
+    const { findTeamMember } = await loadWith({});
+    await findTeamMember('nadia');
+    expect(createPool).toHaveBeenCalledWith(expect.objectContaining({
+      host: '127.0.0.1',
+      user: 'root',
+      database: 'selorax',
+      // A local MySQL serves a certificate that can never verify, and nothing crosses a network
+      ssl: undefined,
+    }));
+  });
+
+  it('still verifies in development when pointed at a remote host', async () => {
+    const { findTeamMember } = await loadWith({ MYSQL_HOST: 'hr-db.internal', MYSQL_USER: 'reader', MYSQL_DATABASE: 'selorax' });
+    await findTeamMember('nadia');
+    expect(createPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: { rejectUnauthorized: true } }));
+  });
+
+  it('lets an explicit MYSQL_TLS win over the host', async () => {
+    const { findTeamMember } = await loadWith({ MYSQL_HOST: 'hr-db.internal', MYSQL_USER: 'r', MYSQL_DATABASE: 'd', MYSQL_TLS: 'off' });
+    await findTeamMember('nadia');
+    expect(createPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: undefined }));
+  });
+
+  it('refuses to guess anything in production', async () => {
+    const { findTeamMember } = await loadWith({ NODE_ENV: 'production' });
+    // The env schema rejects it first, which is why a production server fails at startup
+    // (instrumentation) rather than on the first visitor to reach a profile page.
+    await expect(findTeamMember('nadia')).rejects.toThrow(/Required in production/);
     expect(createPool).not.toHaveBeenCalled();
+  });
+
+  it('verifies in production even against a local host', async () => {
+    const { findTeamMember } = await loadWith({
+      NODE_ENV: 'production', MYSQL_HOST: '127.0.0.1', MYSQL_USER: 'reader', MYSQL_DATABASE: 'selorax',
+    });
+    await findTeamMember('nadia');
+    expect(createPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: { rejectUnauthorized: true } }));
   });
 });

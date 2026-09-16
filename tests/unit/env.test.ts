@@ -49,7 +49,8 @@ describe('parseEnv in production', () => {
   it('accepts a complete configuration', () => {
     const env = parseEnv(prod);
     expect(env.MYSQL_PORT).toBe(3306);
-    expect(env.MYSQL_TLS).toBe('verify');
+    // Left unset on purpose: lib/team.ts resolves it from NODE_ENV and the host
+    expect(env.MYSQL_TLS).toBeUndefined();
   });
 
   it('names every missing HR variable instead of guessing a host', () => {

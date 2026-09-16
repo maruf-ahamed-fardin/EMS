@@ -1,7 +1,7 @@
 import 'server-only';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { sslOptions } from '@/server/db/connection';
-import { getEnv } from '@/server/env';
+import { getEnv, type Env } from '@/server/env';
 
 export interface PublicUser {
   username?: string;
@@ -60,23 +60,45 @@ let cache: { promise: Promise<TeamData> | null; ts: number } = { promise: null, 
 
 let pool: Pool | null = null;
 
+const LOOPBACK = new Set(['localhost', '127.0.0.1', '::1']);
+
+/**
+ * Whether to verify the HR server's certificate when MYSQL_TLS says nothing.
+ *
+ * Production always verifies, and the env schema refuses an explicit `off` there. Elsewhere a
+ * connection to this machine skips TLS, because a local MySQL serves a self-signed certificate
+ * that can never verify and nothing crosses a network. A development server pointed at a remote
+ * host still verifies: that is the case where credentials would travel in the clear.
+ */
+function hrTlsMode(env: Env, host: string): 'verify' | 'off' {
+  if (env.MYSQL_TLS) return env.MYSQL_TLS;
+  if (env.NODE_ENV === 'production') return 'verify';
+  return LOOPBACK.has(host) ? 'off' : 'verify';
+}
+
 function getPool(): Pool {
   if (!pool) {
     const env = getEnv();
-    // No fallbacks: a half-configured deploy should fail loudly, not quietly read someone else's database
-    if (!env.MYSQL_HOST || !env.MYSQL_USER || !env.MYSQL_DATABASE) {
+    // Production requires these, enforced in env.ts when the server starts, so a half-configured
+    // deploy never quietly reads someone else's database. Outside production the old defaults
+    // stand: the worst a wrong guess reaches is a MySQL on this machine.
+    const local = env.NODE_ENV !== 'production';
+    const host = env.MYSQL_HOST ?? (local ? '127.0.0.1' : undefined);
+    const user = env.MYSQL_USER ?? (local ? 'root' : undefined);
+    const database = env.MYSQL_DATABASE ?? (local ? 'selorax' : undefined);
+    if (!host || !user || !database) {
       throw new Error('HR database is not configured: set MYSQL_HOST, MYSQL_USER and MYSQL_DATABASE');
     }
+
     pool = mysql.createPool({
-      host: env.MYSQL_HOST,
+      host,
       port: env.MYSQL_PORT,
-      user: env.MYSQL_USER,
+      user,
       password: env.MYSQL_PASSWORD ?? '',
-      database: env.MYSQL_DATABASE,
+      database,
       waitForConnections: true,
       connectionLimit: 5,
-      // Verifies the server certificate. MYSQL_TLS=off is rejected in production by the env schema.
-      ssl: sslOptions({ tls: env.MYSQL_TLS, caFile: env.MYSQL_CA_FILE }),
+      ssl: sslOptions({ tls: hrTlsMode(env, host), caFile: env.MYSQL_CA_FILE }),
       timezone: 'Z',
     });
   }

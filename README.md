@@ -34,7 +34,7 @@ Profiles are server-rendered and cached with ISR. The first visit renders the pa
 
 Copy `.env.example` to `.env.local` and fill it in. The `MYSQL_*` variables are the HR database the site reads today. `DATABASE_URL` is the app's own database, which is optional until the new backend features are switched on.
 
-`MYSQL_HOST`, `MYSQL_USER` and `MYSQL_DATABASE` are required in production and have no fallbacks, so a half-configured deploy stops at startup instead of quietly reading the wrong server.
+`MYSQL_HOST`, `MYSQL_USER` and `MYSQL_DATABASE` are required in production and have no fallbacks, so a half-configured deploy stops at startup instead of quietly reading the wrong server. In development they fall back to `127.0.0.1` / `root` / `selorax`, and TLS is skipped for a server on this machine, whose certificate could never verify. A development server pointed at a *remote* host still verifies, because that is when credentials would cross a network.
 
 > **Upgrading an existing deployment:** the HR connection now verifies the server's TLS certificate, and `MYSQL_TLS=off` is refused in production. If that server uses a self-signed or private certificate, point `MYSQL_CA_FILE` at its CA before deploying, or the connection will fail.
 
