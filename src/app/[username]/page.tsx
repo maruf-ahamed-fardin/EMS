@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import type { ComponentType, ReactNode } from 'react';
 import { notFound, redirect } from 'next/navigation';
+import QRCode from 'qrcode';
 import { findTeamMember, type ProfileData, type Socials } from '@/lib/team';
+import { siteUrl } from '@/lib/site';
+import { safeUrl } from '@/server/lib/links';
+import CardActions from '@/components/CardActions';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import CopyableValue from '@/components/CopyableValue';
 import {
@@ -138,18 +142,6 @@ const SOCIALS: { key: keyof Socials; label: string; Icon: ComponentType<IconProp
   { key: 'portfolio', label: 'Portfolio', Icon: GlobeIcon },
 ];
 
-// Only allow http(s) links; bare domains like "github.com/me" get https:// added
-function safeUrl(url: unknown): string | null {
-  if (!url) return null;
-  const str = String(url);
-  try {
-    const parsed = new URL(/^https?:\/\//.test(str) ? str : `https://${str}`);
-    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : null;
-  } catch {
-    return null;
-  }
-}
-
 function SocialLinks({ socials }: { socials?: Socials }) {
   const links = SOCIALS
     .map(s => ({ ...s, href: safeUrl(socials?.[s.key]) }))
@@ -205,6 +197,17 @@ export default async function TeamProfilePage({ params }: PageParams) {
 
   const { user, profilePic, profileData } = member;
   const role = user.designation || user.role;
+  const canonical = user.username ?? '';
+
+  // Generated here rather than in the browser: no QR library ships to the visitor, and the image
+  // is part of the server-rendered HTML, so it is there the moment the button is pressed.
+  const profileUrl = new URL(`/${encodeURIComponent(canonical)}`, siteUrl()).toString();
+  const qrDataUrl = await QRCode.toDataURL(profileUrl, {
+    margin: 1,
+    width: 320,
+    errorCorrectionLevel: 'M',
+    color: { dark: '#312e81', light: '#ffffff' },
+  });
 
   return (
     <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
@@ -226,6 +229,12 @@ export default async function TeamProfilePage({ params }: PageParams) {
       </div>
 
       <SocialLinks socials={profileData?.socials} />
+
+      <CardActions
+        vcardHref={`/${encodeURIComponent(canonical)}/vcard`}
+        qrDataUrl={qrDataUrl}
+        name={user.name ?? canonical}
+      />
 
       <CompanyFooter />
     </div>
