@@ -221,3 +221,56 @@ describe('HR_DATA_FILE (development stand-in for kv_store)', () => {
     await expect(broken.findTeamMember('ashekrabbani')).rejects.toThrow(/is not valid JSON/);
   });
 });
+
+describe('listTeamMembers', () => {
+  it('lists everyone with a username, and nobody without one', async () => {
+    const { listTeamMembers } = await loadTeam();
+    execute.mockResolvedValue(kvRows({
+      sharedUsers: [...SHARED_USERS, { name: 'No Username' }, { username: '   ' }],
+    }));
+
+    expect((await listTeamMembers()).map(m => m.username)).toEqual(['AshekRabbani', 'nadia']);
+  });
+
+  it('never sends contact details with the list', async () => {
+    const { listTeamMembers } = await loadTeam();
+    const [member] = await listTeamMembers();
+
+    expect(member).toEqual({
+      username: 'AshekRabbani',
+      name: 'Ashek Rabbani',
+      role: 'Engineering',
+      designation: 'Backend Engineer',
+      employeeId: 'SX-001',
+      photo: 'https://cdn.selorax.io/a.webp',
+    });
+    // A visitor looking for one person has no reason to receive everyone's email and phone
+    expect(JSON.stringify(await listTeamMembers())).not.toContain('@');
+  });
+
+  it('leaves out private fields, exactly as the profile lookup does', async () => {
+    const { listTeamMembers } = await loadTeam();
+    const serialised = JSON.stringify(await listTeamMembers());
+    for (const secret of ['hunter2', '$2b$10$', '120000', 'Green Road']) {
+      expect(serialised).not.toContain(secret);
+    }
+  });
+
+  it('keeps embedded photos out of the list, so one page cannot carry megabytes of them', async () => {
+    const { listTeamMembers } = await loadTeam();
+    execute.mockResolvedValue(kvRows({
+      sharedUsers: SHARED_USERS,
+      profilePics: { AshekRabbani: `data:image/png;base64,${'A'.repeat(5000)}`, nadia: 'https://cdn/x.webp' },
+    }));
+
+    const members = await listTeamMembers();
+    expect(members.find(m => m.username === 'AshekRabbani')?.photo).toBeUndefined();
+    expect(members.find(m => m.username === 'nadia')?.photo).toBe('https://cdn/x.webp');
+  });
+
+  it('returns an empty list rather than throwing when kv_store has nothing usable', async () => {
+    const { listTeamMembers } = await loadTeam();
+    execute.mockResolvedValue([[{ k: 'sharedUsers', v: 'not json' }]]);
+    expect(await listTeamMembers()).toEqual([]);
+  });
+});

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { sslOptions } from '@/server/db/connection';
 import { getEnv, type Env } from '@/server/env';
+import type { TeamMemberSummary } from './search';
 
 export interface PublicUser {
   username?: string;
@@ -159,6 +160,36 @@ const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 
 const lower = (value: unknown) => String(value ?? '').toLowerCase();
+
+/**
+ * Every member, for the directory and the search box.
+ *
+ * Contact details are left out on purpose: the list is sent with the page, and a visitor looking
+ * for one person has no reason to receive everyone's phone numbers. Photos are included only when
+ * they are links - an embedded image can be 2MB, and a page carrying one per member would be huge.
+ */
+export async function listTeamMembers(): Promise<TeamMemberSummary[]> {
+  const data = await getTeamData();
+  const allUsers = (Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[];
+  const pictures = asRecord(data.profilePics);
+
+  const members: TeamMemberSummary[] = [];
+  for (const user of allUsers) {
+    const username = typeof user.username === 'string' ? user.username.trim() : '';
+    if (!username) continue;
+
+    const photo = pictures[username];
+    members.push({
+      username,
+      name: user.name,
+      designation: user.designation,
+      role: user.role,
+      employeeId: user.employeeId,
+      ...(typeof photo === 'string' && !photo.startsWith('data:') && { photo }),
+    });
+  }
+  return members;
+}
 
 /**
  * Looks up a team member by username (case-insensitive), falling back to employee ID.
