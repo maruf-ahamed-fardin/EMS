@@ -18,23 +18,26 @@ export default function ProfileAvatar({ src, name }: ProfileAvatarProps) {
   };
 
   return (
-    <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-indigo-200 shadow-lg ring-4 ring-white sm:h-28 sm:w-28">
-      {src && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element -- src may be a data URL or any external host
-        <img
-          ref={checkLoaded}
-          src={src}
-          // Empty rather than undefined when the name is missing: an img with no alt is read out
-          // as its URL. The name is in the heading beside it either way, so this is decorative.
-          alt={name ?? ''}
-          className="h-full w-full object-cover"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 to-orange-500 text-4xl font-bold text-white">
-          {(name || '?').charAt(0).toUpperCase()}
-        </div>
-      )}
+    // The gradient ring is the outer element's background; the white border inside it is the gap
+    <div className="rounded-full bg-gradient-to-br from-indigo-600 via-violet-500 to-orange-500 p-[3px] shadow-lg shadow-indigo-500/25">
+      <div className="h-24 w-24 overflow-hidden rounded-full border-[3px] border-white bg-white sm:h-28 sm:w-28">
+        {src && !failed ? (
+          // eslint-disable-next-line @next/next/no-img-element -- src may be a data URL or any external host
+          <img
+            ref={checkLoaded}
+            src={src}
+            // Empty rather than undefined when the name is missing: an img with no alt is read out
+            // as its URL. The name is in the heading beside it either way, so this is decorative.
+            alt={name ?? ''}
+            className="h-full w-full object-cover"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-600 to-orange-500 text-4xl font-bold text-white">
+            {(name || '?').charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

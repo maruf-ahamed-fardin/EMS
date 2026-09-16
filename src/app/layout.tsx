@@ -28,8 +28,8 @@ export const viewport: Viewport = {
   themeColor: '#1e1b4b',
 };
 
-// Shared shell: branded gradient header with the page card pulled up over it.
-// Living in the layout means the header stays put while navigating between pages.
+// Shared shell: the logo over an ambient glow, with the page card centred beneath it.
+// Living in the layout means the background stays put while navigating between pages.
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -40,9 +40,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         attributes only - children are still checked, and nothing here is dynamic.
       */}
       <body className="antialiased" suppressHydrationWarning>
-        <div className="flex min-h-dvh flex-col items-center bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
-          <header className="flex w-full justify-center bg-gradient-to-r from-indigo-950 via-indigo-800 to-orange-500 px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-24 sm:pt-14 sm:pb-28">
-            <a href="https://selorax.io" target="_blank" rel="noopener noreferrer">
+        <div className="relative flex min-h-dvh flex-col items-center overflow-hidden bg-slate-950">
+          {/*
+            Two blurred colour fields rather than a gradient band. The old header ended in a hard
+            horizontal line across the page where its gradient met the one behind it; light that
+            falls off has no edge to give away.
+          */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[38rem]">
+            <div className="absolute -top-56 left-1/2 h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-indigo-600/35 blur-[130px]" />
+            <div className="absolute -top-40 -right-32 h-[30rem] w-[30rem] rounded-full bg-orange-500/25 blur-[120px]" />
+            <div className="absolute -top-32 -left-32 h-[26rem] w-[26rem] rounded-full bg-violet-600/25 blur-[120px]" />
+          </div>
+
+          <header className="relative z-10 flex w-full justify-center px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10 sm:pt-16 sm:pb-12">
+            <a
+              href="https://selorax.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:opacity-80"
+            >
               <Image
                 src={seloraxLogo}
                 alt="SeloraX"
@@ -52,8 +68,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               />
             </a>
           </header>
-          <main className="-mt-16 w-full max-w-sm px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:max-w-md">
-            {children}
+
+          {/* Centred on anything taller than the card, so a desktop window is not mostly empty */}
+          <main className="relative z-10 flex w-full flex-1 justify-center px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:items-center sm:pb-16">
+            <div className="w-full max-w-sm sm:max-w-md">{children}</div>
           </main>
         </div>
       </body>

@@ -17,14 +17,21 @@ export default async function SearchPage() {
   const members = await listTeamMembers();
 
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
-      <div className="mb-6 text-center">
-        <h1 className="text-xl font-bold text-slate-800">Find a Team Member</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          {members.length > 0 ? `Search ${members.length} people by name, username or employee ID` : 'Search by name, username or employee ID'}
-        </p>
+    <div className="animate-rise overflow-hidden rounded-3xl bg-white shadow-[0_24px_70px_-20px_rgba(2,6,23,0.75)] ring-1 ring-white/10">
+      {/* A sliver of the brand gradient, matching the profile card */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-violet-500 to-orange-500" />
+
+      <div className="p-6 sm:p-8">
+        <div className="mb-6 text-center">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Find a Team Member</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            {members.length > 0
+              ? `Search ${members.length} people by name, username or employee ID`
+              : 'Search by name, username or employee ID'}
+          </p>
+        </div>
+        <SearchForm members={members} />
       </div>
-      <SearchForm members={members} />
     </div>
   );
 }

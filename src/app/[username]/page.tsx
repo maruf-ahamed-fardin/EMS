@@ -59,7 +59,8 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
 const digits = (value: unknown) => String(value ?? '').replace(/\D/g, '');
 
-const iconBox = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors';
+const iconBox =
+  'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95';
 const indigoBox = `${iconBox} bg-indigo-100 text-indigo-600 hover:bg-indigo-200`;
 const greenBox = `${iconBox} bg-green-100 text-green-600 hover:bg-green-200`;
 const externalLink = { target: '_blank', rel: 'noopener noreferrer' };
@@ -79,7 +80,7 @@ interface ContactRowProps {
 
 function ContactRow({ href, action, icon, value, label, external, green, whatsapp }: ContactRowProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-1 transition-colors hover:bg-white">
       <a href={href} aria-label={action} className={green ? greenBox : indigoBox} {...(external && externalLink)}>
         {icon}
       </a>
@@ -155,7 +156,7 @@ function SocialLinks({ socials }: { socials?: Socials }) {
           key={key}
           href={href!}
           aria-label={label}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-50 text-indigo-400 transition-colors hover:bg-indigo-100 hover:text-indigo-600"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400 ring-1 ring-slate-100 transition-all hover:-translate-y-0.5 hover:bg-indigo-50 hover:text-indigo-600 hover:ring-indigo-100"
           {...externalLink}
         >
           <Icon className="h-5 w-5" />
@@ -210,21 +211,24 @@ export default async function TeamProfilePage({ params }: PageParams) {
   });
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-2xl">
-      <div className="flex justify-center pt-8 pb-4">
+    <div className="animate-rise overflow-hidden rounded-3xl bg-white shadow-[0_24px_70px_-20px_rgba(2,6,23,0.75)] ring-1 ring-white/10">
+      {/* A sliver of the brand gradient, so the white card is not floating unattached */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-indigo-600 via-violet-500 to-orange-500" />
+
+      <div className="flex justify-center pt-7 pb-4">
         <ProfileAvatar key={profilePic} src={profilePic} name={user.name} />
       </div>
 
       <div className="px-6 pb-5 text-center">
-        <h1 className="text-xl font-bold text-slate-800 wrap-break-word sm:text-2xl">{user.name}</h1>
+        <h1 className="text-xl font-bold tracking-tight text-slate-900 wrap-break-word sm:text-2xl">{user.name}</h1>
         {role && (
-          <span className="mt-2 inline-block rounded-full bg-indigo-50 px-3 py-0.5 text-xs font-semibold text-indigo-600">
+          <span className="mt-2.5 inline-block rounded-full bg-gradient-to-r from-indigo-50 to-orange-50 px-3.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
             {role}
           </span>
         )}
       </div>
 
-      <div className="mx-4 mb-5 rounded-2xl border border-slate-100 bg-slate-50 p-4 sm:mx-5">
+      <div className="mx-4 mb-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 sm:mx-5">
         <ContactDetails profileData={profileData} />
       </div>
 

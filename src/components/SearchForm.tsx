@@ -41,7 +41,7 @@ export default function SearchForm({ members }: { members: TeamMemberSummary[] }
             autoCorrect="off"
             spellCheck={false}
             enterKeyHint="search"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-base text-slate-700 placeholder-slate-300 outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 shadow-sm text-base text-slate-700 placeholder-slate-300 outline-none transition-all focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 sm:text-sm"
           />
         </div>
       </form>
@@ -60,11 +60,11 @@ export default function SearchForm({ members }: { members: TeamMemberSummary[] }
             <li key={member.username}>
               <Link
                 href={`/${encodeURIComponent(member.username)}`}
-                className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-indigo-50"
+                className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-all hover:bg-indigo-50"
               >
                 <Avatar member={member} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-slate-700">
+                  <span className="block truncate text-sm font-semibold text-slate-700 transition-colors group-hover:text-indigo-700">
                     {member.name || member.username}
                   </span>
                   <span className="block truncate text-xs text-slate-400">
@@ -99,7 +99,7 @@ function Avatar({ member }: { member: TeamMemberSummary }) {
   };
 
   return (
-    <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-indigo-600 to-orange-500">
+    <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-indigo-600 to-orange-500 ring-2 ring-white transition-transform group-hover:scale-105">
       {member.photo && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element -- any external host, and no layout shift at this size
         <img
