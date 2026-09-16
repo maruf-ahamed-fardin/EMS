@@ -2,11 +2,22 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import seloraxLogo from '@/assets/SeloraX logo.png';
+import { siteUrl } from '@/lib/site';
 import './globals.css';
 
+const title = 'Team-SeloraX';
+const description = 'Find and connect with members of the SeloraX team.';
+
 export const metadata: Metadata = {
-  title: { default: 'Team-SeloraX', template: '%s | Team-SeloraX' },
-  description: 'Find and connect with members of the SeloraX team.',
+  // Makes the relative URLs below absolute, which link previews require
+  metadataBase: new URL(siteUrl()),
+  title: { default: title, template: '%s | Team-SeloraX' },
+  description,
+  applicationName: title,
+  // Profile cards are shared in chat apps far more often than they are searched for,
+  // so these tags decide how most people first see the site.
+  openGraph: { type: 'website', siteName: title, title, description, url: '/' },
+  twitter: { card: 'summary_large_image', title, description },
 };
 
 export const viewport: Viewport = {

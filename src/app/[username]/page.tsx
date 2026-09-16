@@ -33,13 +33,22 @@ async function getMember(params: PageParams['params']) {
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
   const member = await getMember(params);
-  if (!member) return { title: 'Team Member Not Found' };
+  // Nothing to index, and no point letting a typo'd URL become a search result
+  if (!member) return { title: 'Team Member Not Found', robots: { index: false } };
 
   const { user } = member;
   const role = user.designation || user.role;
+  const title = user.name ?? user.username ?? 'Team member';
+  const description = role ? `${title}, ${role} at SeloraX` : `${title} at SeloraX`;
+  // Always the username URL, so a link shared by employee ID still credits one canonical page
+  const url = `/${encodeURIComponent(user.username ?? '')}`;
+
   return {
-    title: user.name,
-    description: role ? `${user.name}, ${role} at SeloraX` : `${user.name} at SeloraX`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { type: 'profile', title, description, url },
+    twitter: { card: 'summary_large_image', title, description },
   };
 }
 

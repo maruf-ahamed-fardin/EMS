@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR per ecosystem keeps the review load down; CI still gates each one.
+      next:
+        patterns: ['next', 'eslint-config-next', '@next/*', 'react', 'react-dom', '@types/react', '@types/react-dom']
+      dev:
+        dependency-type: development
+        exclude-patterns: ['eslint-config-next', '@types/react', '@types/react-dom']
+      production:
+        dependency-type: production
+        exclude-patterns: ['next', 'react', 'react-dom']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

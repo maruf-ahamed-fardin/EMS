@@ -35,8 +35,20 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Known vulnerabilities in dependencies
+        run: npm audit --audit-level=high
       - name: Migrations match the schema
         run: npm run db:generate && test -z "$(git status --porcelain drizzle)"
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  # Separate job so a slow audit or lint never hides a broken Docker build
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: docker build -t teamprofile .
+
