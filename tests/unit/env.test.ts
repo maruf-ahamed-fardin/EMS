@@ -37,3 +37,43 @@ describe('parseEnv', () => {
     expect(message).not.toContain('hunter2');
   });
 });
+
+describe('parseEnv in production', () => {
+  const prod = {
+    NODE_ENV: 'production',
+    MYSQL_HOST: 'hr-db.internal',
+    MYSQL_USER: 'reader',
+    MYSQL_DATABASE: 'selorax',
+  };
+
+  it('accepts a complete configuration', () => {
+    const env = parseEnv(prod);
+    expect(env.MYSQL_PORT).toBe(3306);
+    expect(env.MYSQL_TLS).toBe('verify');
+  });
+
+  it('names every missing HR variable instead of guessing a host', () => {
+    let message = '';
+    try {
+      parseEnv({ NODE_ENV: 'production' });
+    } catch (error) {
+      message = String(error);
+    }
+    expect(message).toMatch(/MYSQL_HOST/);
+    expect(message).toMatch(/MYSQL_USER/);
+    expect(message).toMatch(/MYSQL_DATABASE/);
+  });
+
+  it('refuses to skip certificate verification', () => {
+    expect(() => parseEnv({ ...prod, MYSQL_TLS: 'off' })).toThrow(/MYSQL_TLS/);
+    expect(() => parseEnv({ ...prod, DATABASE_TLS: 'off' })).toThrow(/DATABASE_TLS/);
+  });
+
+  it('still allows TLS to be off outside production', () => {
+    expect(parseEnv({ ...prod, NODE_ENV: 'development', MYSQL_TLS: 'off' }).MYSQL_TLS).toBe('off');
+  });
+
+  it('rejects a port that is not a number', () => {
+    expect(() => parseEnv({ ...prod, MYSQL_PORT: 'not-a-port' })).toThrow(/MYSQL_PORT/);
+  });
+});

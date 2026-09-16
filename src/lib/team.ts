@@ -1,5 +1,7 @@
 import 'server-only';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
+import { sslOptions } from '@/server/db/connection';
+import { getEnv } from '@/server/env';
 
 export interface PublicUser {
   username?: string;
@@ -60,15 +62,22 @@ let pool: Pool | null = null;
 
 function getPool(): Pool {
   if (!pool) {
+    const env = getEnv();
+    // No fallbacks: a half-configured deploy should fail loudly, not quietly read someone else's database
+    if (!env.MYSQL_HOST || !env.MYSQL_USER || !env.MYSQL_DATABASE) {
+      throw new Error('HR database is not configured: set MYSQL_HOST, MYSQL_USER and MYSQL_DATABASE');
+    }
     pool = mysql.createPool({
-      host: process.env.MYSQL_HOST || 'localhost',
-      port: parseInt(process.env.MYSQL_PORT || '3306', 10),
-      user: process.env.MYSQL_USER || 'root',
-      password: process.env.MYSQL_PASSWORD || '',
-      database: process.env.MYSQL_DATABASE || 'selorax',
+      host: env.MYSQL_HOST,
+      port: env.MYSQL_PORT,
+      user: env.MYSQL_USER,
+      password: env.MYSQL_PASSWORD ?? '',
+      database: env.MYSQL_DATABASE,
       waitForConnections: true,
       connectionLimit: 5,
-      ssl: { rejectUnauthorized: false },
+      // Verifies the server certificate. MYSQL_TLS=off is rejected in production by the env schema.
+      ssl: sslOptions({ tls: env.MYSQL_TLS, caFile: env.MYSQL_CA_FILE }),
+      timezone: 'Z',
     });
   }
   return pool;

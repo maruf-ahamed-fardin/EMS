@@ -10,11 +10,17 @@ export class HttpError extends Error {
   }
 }
 
-/** RFC 9457 problem details response. */
-export function problem(status: number, title: string, detail?: string, extra?: Record<string, unknown>): Response {
+/** RFC 9457 problem details response. `extra` is merged into the body, `headers` into the response. */
+export function problem(
+  status: number,
+  title: string,
+  detail?: string,
+  extra?: Record<string, unknown>,
+  headers?: Record<string, string>,
+): Response {
   return Response.json(
     { type: 'about:blank', title, status, ...(detail && { detail }), ...extra },
-    { status, headers: { 'Content-Type': 'application/problem+json' } },
+    { status, headers: { ...headers, 'Content-Type': 'application/problem+json' } },
   );
 }
 
