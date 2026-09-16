@@ -31,6 +31,11 @@ const schema = z.object({
   /** Unset means: verify in production, and off only when the host is this machine. See lib/team.ts. */
   MYSQL_TLS: z.enum(['verify', 'off']).optional(),
   MYSQL_CA_FILE: z.string().optional(),
+  /**
+   * Development only: read the HR data from a JSON file instead of connecting to MySQL, so the
+   * site runs without a database and without real credentials. Refused in production.
+   */
+  HR_DATA_FILE: z.string().optional(),
   /** Browser origins allowed to send state-changing requests (the public frontend), comma separated */
   ALLOWED_ORIGINS: commaList.default([]),
 }).superRefine((env, ctx) => {
@@ -43,6 +48,10 @@ const schema = z.object({
   // An unverified connection to the HR database can be read or rewritten in transit.
   for (const key of ['MYSQL_TLS', 'DATABASE_TLS'] as const) {
     if (env[key] === 'off') ctx.addIssue({ code: 'custom', path: [key], message: 'Must be "verify" in production' });
+  }
+  // Serving real visitors from a JSON file would be silent, and stale in a way nobody would notice
+  if (env.HR_DATA_FILE) {
+    ctx.addIssue({ code: 'custom', path: ['HR_DATA_FILE'], message: 'Cannot be used in production' });
   }
 });
 

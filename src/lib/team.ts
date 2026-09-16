@@ -1,4 +1,5 @@
 import 'server-only';
+import { readFile } from 'node:fs/promises';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { sslOptions } from '@/server/db/connection';
 import { getEnv, type Env } from '@/server/env';
@@ -105,8 +106,30 @@ function getPool(): Pool {
   return pool;
 }
 
+/**
+ * Development stand-in for kv_store: the same three keys as a JSON file, so the site runs with no
+ * database and no real credentials. Read fresh on every cache miss, so editing the file shows up.
+ */
+async function loadTeamDataFromFile(path: string): Promise<TeamData> {
+  let contents: string;
+  try {
+    contents = await readFile(path, 'utf8');
+  } catch {
+    throw new Error(`HR_DATA_FILE is set to "${path}", which cannot be read`);
+  }
+  try {
+    return JSON.parse(contents) as TeamData;
+  } catch {
+    throw new Error(`HR_DATA_FILE "${path}" is not valid JSON`);
+  }
+}
+
 // Single query for all 3 keys instead of 3 separate queries
 async function loadTeamData(): Promise<TeamData> {
+  const env = getEnv();
+  // The env schema refuses HR_DATA_FILE in production, so this can never serve real visitors
+  if (env.HR_DATA_FILE) return loadTeamDataFromFile(env.HR_DATA_FILE);
+
   const [rows] = await getPool().execute<KvRow[]>(
     'SELECT k, v FROM kv_store WHERE k IN (?, ?, ?)',
     ['sharedUsers', 'profilePics', 'sharedProfiles']

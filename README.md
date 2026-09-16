@@ -47,6 +47,8 @@ npm test
 npm run test:coverage  # same tests, with a coverage summary
 ```
 
+With no MySQL to hand, set `HR_DATA_FILE` to a JSON file holding the three `kv_store` keys and the site serves profiles from it instead of connecting to a database - useful for frontend work, and it needs no real credentials. `tests/fixtures/kv-sample.json` works as a starting point. The environment schema refuses it in production.
+
 A local MySQL for development and the database tests comes from `docker compose up -d`. It listens on port 3307 and creates `selorax_team` and `teamprofile_test` with the right collation.
 
 ## Database and sync

@@ -179,3 +179,45 @@ describe('HR connection settings', () => {
     expect(createPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: { rejectUnauthorized: true } }));
   });
 });
+
+describe('HR_DATA_FILE (development stand-in for kv_store)', () => {
+  it('serves profiles from the file without opening a connection', async () => {
+    const { findTeamMember } = await loadWith({ HR_DATA_FILE: 'tests/fixtures/kv-sample.json' });
+
+    const member = await findTeamMember('ashekrabbani');
+    expect(member?.user.username).toBe('ashekrabbani');
+    expect(createPool).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('still strips the private fields the fixture carries', async () => {
+    const { findTeamMember } = await loadWith({ HR_DATA_FILE: 'tests/fixtures/kv-sample.json' });
+    const member = await findTeamMember('ashekrabbani');
+
+    expect(member?.user).not.toHaveProperty('password');
+    expect(member?.user).not.toHaveProperty('salary');
+  });
+
+  it('matches by employee ID and resolves photos and profiles', async () => {
+    const { findTeamMember } = await loadWith({ HR_DATA_FILE: 'tests/fixtures/kv-sample.json' });
+
+    const byId = await findTeamMember('SX-001');
+    expect(byId?.redirectTo).toBe('ashekrabbani');
+    expect(byId?.profilePic).toBeTruthy();
+    expect(byId?.profileData).toBeTruthy();
+  });
+
+  it('says which file it could not read', async () => {
+    const { findTeamMember } = await loadWith({ HR_DATA_FILE: 'tests/fixtures/does-not-exist.json' });
+    await expect(findTeamMember('ashekrabbani')).rejects.toThrow(/does-not-exist\.json.*cannot be read/);
+  });
+
+  it('says when the file is not JSON', async () => {
+    const { findTeamMember } = await loadWith({ HR_DATA_FILE: 'package-lock.json' });
+    // Valid JSON, but none of the three keys: no member, and no crash
+    expect(await findTeamMember('ashekrabbani')).toBeNull();
+
+    const broken = await loadWith({ HR_DATA_FILE: 'README.md' });
+    await expect(broken.findTeamMember('ashekrabbani')).rejects.toThrow(/is not valid JSON/);
+  });
+});

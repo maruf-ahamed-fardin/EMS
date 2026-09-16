@@ -74,6 +74,11 @@ describe('parseEnv in production', () => {
     expect(parseEnv({ ...prod, NODE_ENV: 'development', MYSQL_TLS: 'off' }).MYSQL_TLS).toBe('off');
   });
 
+  it('refuses to serve real visitors from a JSON file', () => {
+    expect(() => parseEnv({ ...prod, HR_DATA_FILE: 'tests/fixtures/kv-sample.json' })).toThrow(/HR_DATA_FILE/);
+    expect(parseEnv({ ...prod, NODE_ENV: 'development', HR_DATA_FILE: 'x.json' }).HR_DATA_FILE).toBe('x.json');
+  });
+
   it('rejects a port that is not a number', () => {
     expect(() => parseEnv({ ...prod, MYSQL_PORT: 'not-a-port' })).toThrow(/MYSQL_PORT/);
   });

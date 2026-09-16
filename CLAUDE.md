@@ -17,6 +17,10 @@ There are **two data paths**, and only the first is live:
 
 When changing profile behaviour that users see, change path 1. Don't assume path 2 is wired up.
 
+For local work without a database, `HR_DATA_FILE` points path 1 at a JSON file with the same shape
+as the three `kv_store` keys (`tests/fixtures/kv-sample.json`). It is development only - the env
+schema refuses it in production, so it can never serve real visitors.
+
 ## Conventions
 
 - **Environment:** every variable goes through the zod schema in `src/server/env.ts`. Never read
