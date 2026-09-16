@@ -20,6 +20,9 @@ next-env.d.ts
 # Test coverage output
 coverage
 
+# Local development data (HR_DATA_FILE), personal to each machine
+*.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
