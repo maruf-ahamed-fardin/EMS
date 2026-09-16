@@ -17,6 +17,9 @@ next-env.d.ts
 # TypeScript incremental build cache
 *.tsbuildinfo
 
+# Test coverage output
+coverage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

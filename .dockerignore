@@ -1,6 +1,9 @@
 .git
 node_modules
 .next
+coverage
+*.tsbuildinfo
+docker-compose.yml
 .env
 .env*.local
 tests
