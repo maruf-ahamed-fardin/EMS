@@ -33,7 +33,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">
+      {/*
+        Extensions (ColorZilla's cz-shortcut-listen, Grammarly's data-gr-*, password managers)
+        add attributes to <body> before React hydrates, which React reports as a mismatch even
+        though the server HTML is correct. This suppresses that comparison for this element's own
+        attributes only - children are still checked, and nothing here is dynamic.
+      */}
+      <body className="antialiased" suppressHydrationWarning>
         <div className="flex min-h-dvh flex-col items-center bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
           <header className="flex w-full justify-center bg-gradient-to-r from-indigo-950 via-indigo-800 to-orange-500 px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-24 sm:pt-14 sm:pb-28">
             <a href="https://selorax.io" target="_blank" rel="noopener noreferrer">
