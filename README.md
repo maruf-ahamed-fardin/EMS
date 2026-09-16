@@ -73,7 +73,13 @@ To run the database tests too, point `TEST_DATABASE_URL` at a MySQL 8 server. Us
 
 Deployed on Vercel. `vercel.json` pins the framework preset to Next.js. Set the variables from `.env.example` in the Vercel project settings.
 
-The app can also run in Docker: `docker build -t teamprofile .`, then run the image with the same variables. It listens on port 3000.
+`SITE_URL` is needed at **build** time, not just at runtime: statically rendered pages bake their absolute URLs into the output, so link previews and canonical URLs come from whatever the build saw. Vercel supplies its own deployment URL, so nothing is needed there. Elsewhere, pass it to the build:
+
+```bash
+docker build --build-arg SITE_URL=https://team.selorax.io -t teamprofile .
+```
+
+Then run the image with the same variables from `.env.example`. It listens on port 3000. If the running server's `SITE_URL` disagrees with the one baked into the build, it says so at startup.
 
 ## Continuous integration
 

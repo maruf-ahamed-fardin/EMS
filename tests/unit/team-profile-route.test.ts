@@ -83,9 +83,39 @@ describe('GET /api/team-profile', () => {
     expect(other.status).toBe(200);
   });
 
-  it('reports the remaining budget on a normal response', async () => {
-    const response = await call(await loadRoute(), '?id=nadia');
-    expect(response.headers.get('RateLimit-Limit')).toBe('60');
-    expect(response.headers.get('RateLimit-Remaining')).toBe('59');
+  it('keeps per-caller budget headers off responses the CDN shares', async () => {
+    const GET = await loadRoute();
+    const hit = await call(GET, '?id=nadia');
+    findTeamMember.mockResolvedValue(null);
+    const miss = await call(GET, '?id=nobody');
+
+    for (const response of [hit, miss]) {
+      expect(response.headers.get('Cache-Control')).toMatch(/^public,/);
+      expect(response.headers.get('RateLimit-Limit')).toBeNull();
+      expect(response.headers.get('RateLimit-Remaining')).toBeNull();
+    }
+  });
+
+  it('reports the budget on the 429, which is never cached', async () => {
+    const GET = await loadRoute();
+    let blocked: Response | undefined;
+    for (let i = 0; i < 61 && !blocked; i++) {
+      const response = await call(GET, `?id=SX-${i}`);
+      if (response.status === 429) blocked = response;
+    }
+    expect(blocked?.headers.get('RateLimit-Limit')).toBe('60');
+    expect(blocked?.headers.get('Cache-Control')).toBe('private, no-store');
+  });
+
+  it('serves everyone instead of sharing one bucket when no address is available', async () => {
+    const GET = await loadRoute();
+    // `next start` with no proxy sends no x-forwarded-for; one shared bucket would 429 the whole site
+    for (let i = 0; i < 200; i++) {
+      const response = await GET(
+        new NextRequest(`https://team.selorax.io/api/team-profile?id=SX-${i}`),
+        { params: Promise.resolve({}) },
+      );
+      expect(response.status).toBe(200);
+    }
   });
 });

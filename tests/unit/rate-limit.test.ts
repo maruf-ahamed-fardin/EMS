@@ -58,26 +58,32 @@ describe('clientAddress', () => {
     expect(clientAddress(req({ 'x-forwarded-for': '203.0.113.7, 70.41.3.18' }))).toBe('203.0.113.7');
   });
 
-  it('falls back to x-real-ip, then to a constant', () => {
+  it('falls back to x-real-ip', () => {
     expect(clientAddress(req({ 'x-real-ip': '203.0.113.9' }))).toBe('203.0.113.9');
-    expect(clientAddress(req({}))).toBe('unknown');
   });
 
   it('ignores an empty x-forwarded-for', () => {
     expect(clientAddress(req({ 'x-forwarded-for': '  ', 'x-real-ip': '203.0.113.9' }))).toBe('203.0.113.9');
   });
+
+  it('returns null when nothing identifies the caller, rather than one shared key', () => {
+    expect(clientAddress(req({}))).toBeNull();
+    expect(clientAddress(req({ 'x-forwarded-for': '   ' }))).toBeNull();
+  });
 });
 
 describe('rateLimitHeaders', () => {
   it('reports the limit, what is left and seconds to reset', () => {
-    const headers = rateLimitHeaders({ allowed: true, remaining: 4, resetAt: Date.now() + 30_000 }, 60);
-    expect(headers['RateLimit-Limit']).toBe('60');
-    expect(headers['RateLimit-Remaining']).toBe('4');
-    expect(Number(headers['RateLimit-Reset'])).toBeGreaterThan(25);
+    const headers = rateLimitHeaders({ allowed: true, remaining: 4, resetAt: 30_000 }, 60, 0);
+    expect(headers).toEqual({
+      'RateLimit-Limit': '60',
+      'RateLimit-Remaining': '4',
+      'RateLimit-Reset': '30',
+    });
   });
 
   it('never reports a negative reset for a window that already passed', () => {
-    const headers = rateLimitHeaders({ allowed: true, remaining: 0, resetAt: Date.now() - 5_000 }, 60);
+    const headers = rateLimitHeaders({ allowed: true, remaining: 0, resetAt: 0 }, 60, 5_000);
     expect(headers['RateLimit-Reset']).toBe('0');
   });
 });

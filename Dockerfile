@@ -6,7 +6,11 @@ RUN npm ci
 
 FROM node:24-alpine AS build
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1 BUILD_STANDALONE=1
+# Statically rendered pages bake absolute URLs in at build time, so the public URL has to be known
+# here: `docker build --build-arg SITE_URL=https://team.selorax.io .`. Setting it only on the
+# running container leaves link previews and canonical URLs pointing at localhost.
+ARG SITE_URL
+ENV NEXT_TELEMETRY_DISABLED=1 BUILD_STANDALONE=1 SITE_URL=$SITE_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

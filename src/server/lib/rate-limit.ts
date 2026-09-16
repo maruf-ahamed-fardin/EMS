@@ -66,20 +66,31 @@ export class RateLimiter {
 }
 
 /**
- * Best-effort client address. `x-forwarded-for` is set by the platform edge (Vercel) and cannot be
- * overridden by the caller there; behind a different proxy, make sure it rewrites the header too.
+ * The caller's address, or null when nothing identifies them.
+ *
+ * `x-forwarded-for` is set by the platform edge (Vercel) and cannot be overridden by the caller
+ * there; behind a different proxy, make sure it rewrites the header too. Node itself does not
+ * expose the socket address to a Route Handler, so a server reached directly - `next start` with
+ * no proxy in front, which is what the Docker image runs - has nothing to key on. Returning null
+ * lets callers skip limiting rather than drop every visitor into one shared bucket, which would
+ * turn a busy minute into a site-wide 429.
  */
-export function clientAddress(request: Request): string {
+export function clientAddress(request: Request): string | null {
   const forwarded = request.headers.get('x-forwarded-for');
   const first = forwarded?.split(',')[0]?.trim();
-  return first || request.headers.get('x-real-ip')?.trim() || 'unknown';
+  return first || request.headers.get('x-real-ip')?.trim() || null;
 }
 
-/** Headers describing the caller's remaining budget, for both allowed and rejected responses. */
-export function rateLimitHeaders(result: RateLimitResult, limit: number): Record<string, string> {
+/**
+ * Headers describing the caller's remaining budget.
+ *
+ * Only ever put these on a response that is not publicly cacheable: they describe one caller, so a
+ * shared cache would hand one visitor's budget to everyone who follows.
+ */
+export function rateLimitHeaders(result: RateLimitResult, limit: number, now = Date.now()): Record<string, string> {
   return {
     'RateLimit-Limit': String(limit),
     'RateLimit-Remaining': String(result.remaining),
-    'RateLimit-Reset': String(Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000))),
+    'RateLimit-Reset': String(Math.max(0, Math.ceil((result.resetAt - now) / 1000))),
   };
 }
