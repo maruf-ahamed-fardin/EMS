@@ -21,6 +21,14 @@ For local work without a database, `HR_DATA_FILE` points path 1 at a JSON file w
 as the three `kv_store` keys (`tests/fixtures/kv-sample.json`). It is development only - the env
 schema refuses it in production, so it can never serve real visitors.
 
+## The `ems/` folder is a different project
+
+`ems/` holds the SeloraX Employee Management System: its own npm workspace (NestJS + Prisma + Postgres
+backend, Next.js frontend, shared contracts) with its own lockfile, `.npmrc`, lint, tests and CI
+(`.github/workflows/ems.yml`). Nothing in it is imported by the app above, and the root tsconfig, ESLint,
+Tailwind and Docker context exclude it. Run its commands from `ems/`, and read `ems/README.md` and
+`ems/docs/plan.md` before working there. None of the conventions below apply to it.
+
 ## Conventions
 
 - **Environment:** every variable goes through the zod schema in `src/server/env.ts`. Never read

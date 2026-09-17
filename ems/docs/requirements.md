@@ -1,0 +1,38 @@
+# Requirements
+
+The specification is the "Master prompt: production employee management system". Scope, assumptions and
+the definition of done per phase are in [plan.md §1, §13 and §15](plan.md). This page tracks progress.
+
+## In scope
+
+Authentication, roles and permissions, employees, departments, positions, dashboard, attendance, leave,
+documents, in-app notifications, reports (CSV, XLSX, PDF), audit logs, users, settings, global search,
+tests and deployment preparation.
+
+## Later (extension points only)
+
+Payroll, performance, recruitment, onboarding, assets; email, SMS and push delivery; biometric, RFID and
+mobile check-in.
+
+## Progress
+
+| Phase | Deliverable | Status |
+|---|---|---|
+| 1 | Architecture: workspace, contracts, API skeleton, schema and baseline migration, app shell, CI, docs | **Done**, apart from running the migration against a real database (waiting for Docker Desktop) |
+| 2 | Authentication and RBAC | Next |
+| 3 | Employees | |
+| 4 | Departments and positions | |
+| 5 | Dashboard and global search | |
+| 6 | Attendance | |
+| 7 | Leave | |
+| 8 | Documents | |
+| 9 | Notifications | |
+| 10 | Reports | |
+| 11 | Audit log viewer | |
+| 12 | Hardening, users, roles and settings screens | |
+
+## Constraints
+
+- No real credentials or HR data until the September 2026 password and token rotation is confirmed (D8).
+- Every phase ends with the gate in plan §13: typecheck, lint, tests, no migration drift, a manual check
+  at 375, 768 and 1280 px, then a commit.
