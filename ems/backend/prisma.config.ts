@@ -12,7 +12,6 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
-    seed: 'tsx prisma/seed.ts',
   },
   datasource: {
     // Commands that never connect (generate, validate) still need a URL, or Prisma 7.10 skips the

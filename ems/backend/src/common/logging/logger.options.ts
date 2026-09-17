@@ -1,4 +1,5 @@
 import type { IncomingMessage } from 'node:http';
+import { RequestMethod } from '@nestjs/common';
 import type { Params } from 'nestjs-pino';
 import type { AppConfig } from '../../config/env';
 
@@ -23,6 +24,8 @@ const QUIET_PATHS = new Set(['/api/v1/health', '/api/v1/health/ready']);
 
 export function loggerOptions(config: AppConfig): Params {
   return {
+    // nestjs-pino defaults to "*", which Express 5's router warns about and rewrites
+    forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
     pinoHttp: {
       level: config.LOG_LEVEL,
       // requestContextMiddleware has already set req.id

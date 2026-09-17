@@ -69,16 +69,17 @@ function httpExceptionMessage(exception: HttpException, statusCode: number): str
   if (statusCode >= 500) return 'Something went wrong';
 
   const response = exception.getResponse();
-  const detail =
-    typeof response === 'string'
-      ? response
-      : typeof (response as { message?: unknown }).message === 'string'
-        ? (response as { message: string }).message
-        : undefined;
+  if (typeof response === 'string') return response;
 
-  // Nest's own defaults ("Cannot GET /x", "Forbidden resource") read poorly; ours replace them.
-  const isNestDefault = !detail || detail.startsWith('Cannot ') || detail === exception.name || detail === 'Forbidden resource';
-  return isNestDefault ? (GENERIC_MESSAGES[statusCode] ?? exception.message) : detail;
+  const { message, error } = response as { message?: unknown; error?: unknown };
+  // `new ForbiddenException()` has no `error` field; one given a message does. The route-not-found
+  // and guard messages ("Cannot GET /x", "Forbidden resource") are Nest's too. Ours read better.
+  const isNestDefault =
+    typeof message !== 'string' ||
+    error === undefined ||
+    message.startsWith('Cannot ') ||
+    message === 'Forbidden resource';
+  return isNestDefault ? (GENERIC_MESSAGES[statusCode] ?? exception.message) : message;
 }
 
 function prismaClientError(exception: unknown): { status: number; message: string } | undefined {
