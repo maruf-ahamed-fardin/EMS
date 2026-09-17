@@ -100,7 +100,7 @@ describeWithDatabase('dashboard and search', () => {
 
     it("includes HR's own day", () => {
       // Unpaid leave has no balance
-    expect(overview.me?.leaveBalances.map((b) => b.leaveType)).toEqual(['Annual', 'Casual', 'Sick']);
+      expect(overview.me?.leaveBalances.map((b) => b.leaveType)).toEqual(['Annual', 'Casual', 'Sick']);
     });
   });
 
