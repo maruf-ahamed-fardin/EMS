@@ -11,7 +11,10 @@ import { SessionGuard } from './auth/guards/session.guard';
 import { AppThrottlerGuard } from './auth/guards/throttler.guard';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { loggerOptions } from './common/logging/logger.options';
+import { CalendarModule } from './calendar/calendar.service';
 import { APP_CONFIG, ConfigModule, type AppConfig } from './config/config.module';
+import { DashboardCacheModule } from './dashboard/dashboard-cache';
+import { DashboardModule } from './dashboard/dashboard.controller';
 import { EmployeesModule } from './employees/employees.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
@@ -29,10 +32,13 @@ import { RolesModule } from './roles/roles.module';
     AuditModule,
     MailModule,
     AuthModule,
+    CalendarModule,
+    DashboardCacheModule,
     HealthModule,
     RolesModule,
     EmployeesModule,
     OrganizationModule,
+    DashboardModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs

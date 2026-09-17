@@ -3,6 +3,7 @@ import * as argon2 from 'argon2';
 import { checkPassword, PASSWORD_PROBLEM_MESSAGES } from '../src/auth/password-policy';
 import { syncCatalogue } from '../src/catalogue/sync-catalogue';
 import { PrismaClient } from '../src/generated/prisma/client';
+import { seedDemoActivity } from './demo-activity';
 import { DEMO_PEOPLE, seedDemoData } from './demo-data';
 
 /**
@@ -25,7 +26,9 @@ async function main() {
     const catalogue = await syncCatalogue(prisma);
     const hash = await argon2.hash(password, { type: argon2.argon2id, memoryCost: 19_456, timeCost: 2, parallelism: 1 });
     const { employeeCount } = await seedDemoData(prisma, hash);
+    const activity = await seedDemoActivity(prisma);
     console.error(`Seeded catalogue ${JSON.stringify(catalogue)}, ${employeeCount} employees and demo users:`);
+    console.error(`  ${activity.attendanceRows} attendance rows over ${activity.days} working days, ${activity.leaveRequests} leave requests`);
     for (const [role, person] of Object.entries(DEMO_PEOPLE)) console.error(`  ${role.padEnd(12)} ${person.email}`);
   } finally {
     await prisma.$disconnect();

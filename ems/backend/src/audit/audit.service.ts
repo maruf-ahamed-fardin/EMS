@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { currentRequest } from '../common/request-context';
+import { DashboardCache } from '../dashboard/dashboard-cache';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { auditView } from './redaction';
@@ -18,13 +19,24 @@ type Db = Pick<PrismaService, 'auditLog'> | Prisma.TransactionClient;
 
 @Injectable()
 export class AuditService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly dashboardCache: DashboardCache,
+  ) {}
 
   /**
    * Writes one audit row. Pass the transaction client when recording a change, so the row commits or
    * rolls back with it. Actor, IP, user agent and request id come from the request context.
+   *
+   * Every data change is audited, so this is also where cached dashboard numbers are dropped. The row
+   * may still be inside an uncommitted transaction, and a dashboard read in that gap would cache the
+   * old numbers, so the cache is cleared once more shortly afterwards.
    */
   async record(entry: AuditEntry, db: Db = this.prisma): Promise<void> {
+    if (!entry.action.startsWith('auth.')) {
+      this.dashboardCache.invalidate();
+      setTimeout(() => this.dashboardCache.invalidate(), 2000).unref();
+    }
     const context = currentRequest();
     await db.auditLog.create({
       data: {
