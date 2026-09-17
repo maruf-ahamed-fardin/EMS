@@ -87,17 +87,41 @@ export class TestBrowser {
     return this.agent.get(`/api/v1${path}`).set('x-forwarded-for', this.ip);
   }
 
-  async post(path: string, body?: object) {
+  private async token(): Promise<string> {
     if (!this.csrf) {
       const res = await this.get('/auth/csrf');
       this.csrf = (res.body as { data: { csrfToken: string } }).data.csrfToken;
     }
+    return this.csrf;
+  }
+
+  async patch(path: string, body: object) {
+    return this.agent
+      .patch(`/api/v1${path}`)
+      .set('x-forwarded-for', this.ip)
+      .set('origin', APP_ORIGIN)
+      .set('sec-fetch-site', 'same-origin')
+      .set('x-csrf-token', await this.token())
+      .send(body);
+  }
+
+  async delete(path: string) {
+    return this.agent
+      .delete(`/api/v1${path}`)
+      .set('x-forwarded-for', this.ip)
+      .set('origin', APP_ORIGIN)
+      .set('sec-fetch-site', 'same-origin')
+      .set('x-csrf-token', await this.token());
+  }
+
+  async post(path: string, body?: object) {
+    const token = await this.token();
     const res = await this.agent
       .post(`/api/v1${path}`)
       .set('x-forwarded-for', this.ip)
       .set('origin', APP_ORIGIN)
       .set('sec-fetch-site', 'same-origin')
-      .set('x-csrf-token', this.csrf)
+      .set('x-csrf-token', token)
       .send(body ?? {});
     // Login and logout rotate the token
     const rotated = cookieValue(res.headers['set-cookie'], 'ems_csrf');

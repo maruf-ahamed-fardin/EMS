@@ -1,15 +1,23 @@
+import { can, type DataResponse, type EmployeeFormOptions } from '@ems/contracts';
 import type { Metadata } from 'next';
-import { ModulePage } from '@/components/shared/module-page';
+import { Forbidden } from '@/components/shared/module-page';
+import { PageHeader } from '@/components/shared/page-header';
+import { serverApiJson } from '@/lib/server-api';
+import { getSession } from '@/lib/session';
+import { CreateEmployeeWizard } from './create-employee-wizard';
 
 export const metadata: Metadata = { title: 'Add employee' };
 
-export default function Page() {
+export default async function NewEmployeePage() {
+  const session = await getSession();
+  if (!session || !can(session.permissions, 'employee.create')) return <Forbidden />;
+
+  const { data: options } = await serverApiJson<DataResponse<EmployeeFormOptions>>('/employees/form-options');
+
   return (
-    <ModulePage
-      title="Add employee"
-      description="Create an employee record and, optionally, their sign-in."
-      phase={3}
-      anyOf={[['employee.create']]}
-    />
+    <>
+      <PageHeader title="Add employee" description="Four short steps, then a review before anything is saved." />
+      <CreateEmployeeWizard options={options} />
+    </>
   );
 }

@@ -538,7 +538,7 @@ function toUpdateData(changes: Record<string, unknown>): Prisma.EmployeeUnchecke
   for (const key of ['dateOfBirth', 'joiningDate'] as const) {
     if (typeof data[key] === 'string') data[key] = toDateOnly(data[key]);
   }
-  return data as Prisma.EmployeeUncheckedUpdateInput;
+  return data;
 }
 
 function pick(source: Record<string, unknown>, keys: string[]): Record<string, unknown> {
