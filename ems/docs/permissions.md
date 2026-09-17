@@ -2,7 +2,7 @@
 
 The catalogue and the default matrix are code in `packages/contracts` (`permissions.ts`, `roles.ts`)
 and are described in [plan.md §4](plan.md). At runtime the database is the source of truth: the
-defaults are seeded once (Phase 2) and then changed in Roles & permissions.
+defaults are created by `syncCatalogue()` (release step and dev seed) and then changed in Roles & permissions.
 
 ## Model
 
@@ -17,12 +17,30 @@ defaults are seeded once (Phase 2) and then changed in Roles & permissions.
 
 | Layer | How | Trust |
 |---|---|---|
-| API (Phase 2) | `@RequirePermission()` guard, then `ScopeService` turns the scope into a Prisma `where` | **The security boundary** |
+| API | `@RequirePermission()` guard, then `ScopeService` turns the scope into a Prisma `where` | **The security boundary** |
 | Services | Row-level rules such as "not your own leave request" | Security |
 | Frontend | `<Can>`, `useCan()`, the navigation filter and page guards | Presentation only |
 
 A page the user can't open renders "You don't have access to this page". An API call for a record
 outside the caller's scope answers 404, not 403, so it doesn't confirm the record exists.
+
+## Using it in a module
+
+```ts
+@RequirePermission('employee.view')                 // 403 without the permission
+@Get('employees/:id')
+async findOne(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
+  const employee = await this.prisma.employee.findFirst({
+    // Out of scope matches nothing, so the caller gets 404 and learns nothing
+    where: { id, ...this.scope.employeeWhere(auth, 'employee.view') },
+  });
+  if (!employee) throw new NotFoundException();
+  return { data: toView(employee) };
+}
+```
+
+Permission changes reach sessions within 60 seconds (the `PermissionsService` cache), and at once on
+the instance that made them.
 
 ## Default roles
 

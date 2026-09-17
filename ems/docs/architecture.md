@@ -32,28 +32,35 @@ closed (`CORS_ORIGINS` exists only for development tools).
 |---|---|
 | `main.ts`, `configure-app.ts` | Bootstrap. `configureApp` is shared with the e2e tests, so they run the real middleware stack. |
 | `config/` | `parseEnv` (zod) and the global `ConfigModule`. Inject with `@InjectConfig()`. |
-| `common/request-context.ts` | Request id and the AsyncLocalStorage context used by logging, errors and (Phase 2+) audit. |
+| `common/request-context.ts` | Request id and the AsyncLocalStorage context used by logging, errors, the session guard and audit. |
 | `common/errors/` | The one exception filter and zod → field error mapping. |
 | `common/logging/` | pino options, redaction list. |
 | `prisma/` | `PrismaService`, global. |
+| `auth/` | Login, sessions, password reset and change; the CSRF, session, throttle and permission guards (applied globally in that order); `ScopeService`; `@Public()`, `@RequirePermission()`, `@CurrentAuth()`. |
+| `audit/` | `AuditService.record()`, with per-entity allow-lists in `redaction.ts`. |
+| `mail/` | The `Mailer` interface: console (development), SMTP (production), memory (tests). |
+| `catalogue/` | `syncCatalogue()`: permissions and system roles from contracts. `sync-cli.ts` is the release step. |
+| `roles/` | `GET /roles`, `GET /permissions`. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
 | `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
 
-Modules from later phases (`auth/`, `employees/`, …) sit beside these, as in plan §2.
+Modules from later phases (`employees/`, `attendance/`, …) sit beside these, as in plan §2.
 
 ## Frontend layout (`frontend/src`)
 
 | Path | Role |
 |---|---|
-| `app/(auth)/` | Public pages (login; forgot and reset password in Phase 2). |
+| `app/(auth)/` | Public pages: login, forgot password, reset password. |
 | `app/(app)/` | Everything behind sign-in. The layout checks the session and renders `AppShell`. |
 | `components/ui/` | shadcn/ui primitives, generated, then imported from `@/lib/utils` for `cn`. |
 | `components/shell/` | App shell: sidebar rail, mobile drawer, header, user menu. |
 | `components/shared/` | `PageHeader`, `StatePanel` (empty, error, forbidden), `ModulePage` placeholder. |
 | `components/auth/permissions.tsx` | `PermissionsProvider`, `useCan`, `<Can>`. |
 | `lib/navigation.ts` | The single navigation config, filtered by permissions. |
-| `lib/session.ts` | `getSession()`. Phase 1 uses the preview session; Phase 2 calls `/auth/me`. |
-| `lib/preview-session.ts` | **Development-only, temporary.** Refused in production builds; deleted in Phase 2. |
+| `lib/session.ts` | `getSession()`: `GET /auth/me` with the visitor's cookies. Null on 401; throws otherwise. |
+| `lib/api-client.ts` | Browser calls through `/api`: CSRF token on writes, `ApiRequestError` on failure. |
+| `lib/server-api.ts` | Server component calls straight to `API_ORIGIN`, forwarding cookies. |
+| `components/forms/` | `TextField` (label, input, error, ARIA) and `FormAlert`. |
 
 ## Differences from the plan
 

@@ -1,6 +1,6 @@
 # Employee Management System (EMS): plan
 
-Status: **decided, Phase 1 built** (2026-09-17). Phase 2 is next.
+Status: **decided; Phases 1–2 built** (2026-09-17). Phase 3 is next.
 Date: 2026-09-17
 Source: the "Master prompt: production employee management system" specification.
 

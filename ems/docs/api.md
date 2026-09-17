@@ -23,18 +23,29 @@ Types for all three are in `@ems/contracts` (`DataResponse`, `ListResponse`, `Ap
 |---|---|---|
 | 401 | No valid session | "You need to sign in" |
 | 403 | Signed in, permission missing | "You don't have access to this" |
+| 403 | A write failed the CSRF checks | "Your session needs refreshing. Reload the page and try again." |
 | 404 | Not found, **or out of the caller's scope** (existence isn't revealed) | "Not found" |
 | 409 | A unique value is taken, or a rule blocks the change | Specific, e.g. "Department still has 3 active employees" |
-| 422 | Input failed validation | "Validation failed", with `errors` per field |
+| 422 | Input failed validation or a business rule on a field | "Validation failed", with `errors` per field |
 | 429 | Rate limited | "Too many requests. Try again shortly." |
 | 500 | Anything unexpected | "Something went wrong" (details only in the log, found by `requestId`) |
 
-## Headers
+## Authentication and CSRF
 
-- `x-request-id` on every response. A caller's own id is reused when it looks like one (8–128 of
-  `A-Za-z0-9._:-`), so a trace can pass through the Next.js proxy.
-- `cache-control: private, no-store` by default.
-- Security headers from helmet; no `x-powered-by`.
+- **Session:** `POST /auth/login` sets `ems_session` (httpOnly, SameSite=Lax, Secure over https,
+  7 days at most, ends after 8 idle hours). The API stores only its sha256.
+- **Every route needs a session** unless the handler is marked `@Public()`.
+- **Writes** (anything but GET/HEAD/OPTIONS) must pass three checks, in addition to the SameSite cookie:
+  1. `Sec-Fetch-Site`, when the browser sends it, is `same-origin` (or `none`);
+  2. `Origin`, when present, is `APP_URL` (or a `CORS_ORIGINS` entry);
+  3. the `x-csrf-token` header equals the `ems_csrf` cookie. `GET /auth/csrf` issues the cookie;
+     login rotates it.
+
+  The web app's `api()` helper (`frontend/src/lib/api-client.ts`) does all of this.
+- **Rate limits:** 300 requests a minute per session (or IP before sign-in). Login: 5 a minute per IP and
+  email. Forgot password: 3 an hour per IP and email. Reset and change password: 10 an hour.
+- **Lockout:** 10 wrong passwords in a row lock the account for 15 minutes. Every failed sign-in, including
+  a locked or inactive account, answers "Email or password is incorrect".
 
 ## Lists
 
@@ -43,7 +54,24 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 
 ## Endpoints available now
 
-| Method and path | Auth | Returns |
+| Method and path | Access | Result |
 |---|---|---|
-| `GET /api/v1/health` | public | `{ "status": "ok" }`. Liveness; never touches the database. |
-| `GET /api/v1/health/ready` | public | `{ "status": "ok", "checks": { "database": "ok" } }`, or 503 with `"unavailable"` |
+| `GET /health` | public | `{ "status": "ok" }`. Liveness; never touches the database. |
+| `GET /health/ready` | public | `{ "status": "ok", "checks": { "database": "ok" } }`, or 503 `"unavailable"` |
+| `GET /auth/csrf` | public | `{ data: { csrfToken } }` and the `ems_csrf` cookie |
+| `POST /auth/login` | public | `{ email, password }` → `{ data: MeResponse }` and the session cookie. 401 on any failure. |
+| `POST /auth/logout` | session | 204. Revokes the session and clears both cookies. |
+| `POST /auth/logout-others` | session | `{ data: { sessionsRevoked } }`. Every other session of this user ends. |
+| `GET /auth/me` | session | `{ data: MeResponse }`: user, role and `permissions: { key: scope }` |
+| `POST /auth/forgot-password` | public | `{ email }` → always 202 with the same message. Emails a 30-minute, single-use link when the account exists. |
+| `POST /auth/reset-password` | public | `{ token, password }` → 204. Signs the user out everywhere. 422 when the link is invalid, used or expired, or the password is weak. |
+| `POST /auth/change-password` | session | `{ currentPassword, newPassword }` → 204. Signs out other sessions, keeps this one. |
+| `GET /roles` | `role.manage` | Roles with user counts and their grants |
+| `GET /permissions` | `role.manage` | The permission catalogue |
+
+Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
+`auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).
+Emails are recorded; passwords and tokens never are.
+
+`test/authorization-matrix.e2e-spec.ts` checks every protected route above for every role. Add each new
+route to its table.

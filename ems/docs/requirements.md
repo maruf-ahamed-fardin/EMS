@@ -19,8 +19,8 @@ mobile check-in.
 | Phase | Deliverable | Status |
 |---|---|---|
 | 1 | Architecture: workspace, contracts, API skeleton, schema and baseline migration, app shell, CI, docs | **Done**, apart from running the migration against a real database (waiting for Docker Desktop) |
-| 2 | Authentication and RBAC | Next |
-| 3 | Employees | |
+| 2 | Authentication and RBAC | **Built.** The database-backed tests (auth flows, authorization matrix) are written but not yet run: waiting for Docker Desktop |
+| 3 | Employees | Next |
 | 4 | Departments and positions | |
 | 5 | Dashboard and global search | |
 | 6 | Attendance | |
