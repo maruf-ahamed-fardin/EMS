@@ -1,4 +1,5 @@
 import type { ActivityItem, DashboardOverview } from '@ems/contracts';
+import { formatDate } from './employees';
 
 export function greeting(hour: number): string {
   if (hour < 12) return 'Good morning';
@@ -60,7 +61,9 @@ export function relativeTime(iso: string, now = new Date()): string {
   if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Dhaka' }).format(new Date(iso));
+  // Fixed month names (see formatDate): ICU may print "Sept"
+  const dhakaDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(new Date(iso));
+  return formatDate(dhakaDay).replace(/ \d{4}$/, '');
 }
 
 const ACTIONS: Record<string, (subject: string) => string> = {

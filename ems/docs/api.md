@@ -90,6 +90,9 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `POST /positions` | `position.manage` | 201. `title`, `departmentId` (null for a shared position), `level`. One title per department, shared titles included (409). |
 | `PATCH /positions/:id` | `position.manage` | Refuses moving it to another department, or deactivating it, while active employees hold it (409). |
 | `DELETE /positions/:id` | `position.manage` | 204. Soft delete. 409 while active employees hold it. |
+| `GET /dashboard/overview` | session | Variant by `employee.view` scope: **organization** (ALL), **team** (TEAM), **personal** (OWN). Headcount, today's attendance (`expected`, `present`, `onTime`, `late`, `onLeave`, `notCheckedIn`), attention counts, pending leave (only requests the viewer may approve, never their own), who is out, new joiners, activity (all non-sign-in changes with `audit.view`; team members' changes for managers), and `me` (the viewer's own day). Cached 30 s per scope; any audited change clears it. |
+| `GET /dashboard/attendance-trend` | `attendance.view` TEAM or ALL | `?range=today` (hourly check-ins so far), `week` (7 working days) or `month` (22 working days). Past days count settled rows; today uses today's expected count. |
+| `GET /search` | session | `?q=` (2–100 characters) → up to 5 employees (scoped like the employee list), departments and positions |
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).

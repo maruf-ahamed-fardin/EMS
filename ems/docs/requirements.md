@@ -22,8 +22,8 @@ mobile check-in.
 | 2 | Authentication and RBAC | **Done.** Auth flows and the authorization matrix pass against PostgreSQL. |
 | 3 | Employees | **Done.** Deferred to their phases: photo upload and the Documents step (8), leave balance proration (7), Attendance/Leave/Documents profile tabs (6–8). |
 | 4 | Departments and positions | **Done.** Delete with active employees returns 409 with the count. |
-| 5 | Dashboard and global search | Next |
-| 6 | Attendance | |
+| 5 | Dashboard and global search | **Done.** Every overview number is checked against direct SQL counts for all three variants. Visual check of the charts in a browser still to do. |
+| 6 | Attendance | Next |
 | 7 | Leave | |
 | 8 | Documents | |
 | 9 | Notifications | |

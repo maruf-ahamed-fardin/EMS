@@ -43,6 +43,8 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `roles/` | `GET /roles`, `GET /permissions`. |
 | `employees/` | Employee CRUD, status changes, activity, `/me/profile`. Explicit selects in `employee-view.ts`; filters, sort and code allocation in `employee-query.ts`. |
 | `organization/` | Departments and positions: CRUD, head, counts, the "no active employees" delete rules. |
+| `calendar/` | The working calendar: `work-calendar.ts` (pure date functions in the organization's time zone) and `CalendarService` (attendance settings with plan D6 defaults, holidays). |
+| `dashboard/` | Overview, attendance trend, global search, and `DashboardCache` (cleared by `AuditService` on every non-sign-in change). |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
 | `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
 
@@ -67,6 +69,16 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | `lib/employees.ts` | Labels, date and phone formatting, list URLs, activity wording. |
 | `app/(app)/departments/`, `app/(app)/positions/` | Department cards and detail, positions table; create and edit in dialogs. |
 | `components/shared/delete-button.tsx` | Confirmed delete that stays visible but disabled, with the reason, when a rule blocks it. |
+| `components/dashboard/` | Stat tiles, presence bar, department bars and the attendance trend chart (Recharts). |
+| `components/shell/command-search.tsx` | Ctrl/⌘K search dialog. cmdk's own filtering is off: the API already filtered and scoped the results. |
+
+### Charts
+
+Chart colors are theme tokens (`--chart-1`, `--chart-2`, `--chart-context`, `--chart-grid` in
+`globals.css`), checked with the dataviz palette validator against the card surface in both modes:
+light `#5B4BFF` + `#0891B2`, dark `#8B7DFF` + `#1592B8`. The dark pair's tritan separation (6.9) needs
+secondary encoding, which the chart has: a legend and direct labels. Every chart also has a table view.
+Status colors (on time, late, not checked in) always come with an icon and a label.
 
 ## Differences from the plan
 
@@ -81,6 +93,9 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | DataTable on TanStack Table | A plain table (md+) and cards (phones), with filters, sort and page in the URL | One list so far; add TanStack Table when row selection or column controls are built. |
 | DatePicker component | Native `<input type="date">` | Accessible and mobile-friendly with no extra dependency. |
 | 5-step create form with a Documents step | Personal, Employment, Contact, Account, Review | Documents need storage (Phase 8); that step is added then. |
+| Dashboard "Absent today" and department donut (preview) | "Not checked in" and a horizontal bar list | Absence is only settled after the day ends (assumption 3). Comparing department sizes is a bar's job. |
+| Attendance and leave demo data in Phases 6–8 | Seeded in Phase 5 (`prisma/demo-activity.ts`) | The dashboard needs real numbers to be checked against SQL. It uses the D6 defaults; Phases 6–7 build the flows. |
+| Dashboard cache cleared on relevant writes | Cleared by `AuditService.record` on every non-sign-in change | One place covers every module, including later ones. A read racing an uncommitted transaction could cache old numbers, so the cache is cleared again 2 s later. |
 
 ## Dependencies
 
