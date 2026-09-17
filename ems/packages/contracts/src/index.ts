@@ -4,6 +4,7 @@ export * from './auth';
 export * from './dashboard';
 export * from './employees';
 export * from './enums';
+export * from './leave';
 export * from './organization';
 export * from './permissions';
 export * from './roles';

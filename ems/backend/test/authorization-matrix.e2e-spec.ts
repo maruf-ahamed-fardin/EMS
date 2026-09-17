@@ -29,6 +29,9 @@ const MATRIX: Array<{ method: 'get'; path: string; expect: Expectation }> = [
   { method: 'get', path: '/attendance/summary?from=2026-09-01&to=2026-09-30', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
   { method: 'get', path: '/settings/attendance', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 403, employee: 403 } },
   { method: 'get', path: '/holidays', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/leave/requests', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/leave/balances', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/leave/types', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
 ];
 
 const ROLES = Object.keys(DEMO_PEOPLE) as SystemRoleKey[];

@@ -35,6 +35,15 @@ export class CalendarService {
     return zonedDate(now, (await this.settings()).timeZone);
   }
 
+  /** Holidays in a range with their names, for explaining why a day doesn't count. */
+  async holidayNamesBetween(from: string, to: string): Promise<Map<string, string>> {
+    const rows = await this.prisma.holiday.findMany({
+      where: { date: { gte: dateOnly(from), lte: dateOnly(to) } },
+      select: { date: true, name: true },
+    });
+    return new Map(rows.map((row) => [row.date.toISOString().slice(0, 10), row.name]));
+  }
+
   async holidaysBetween(from: string, to: string): Promise<Set<string>> {
     const rows = await this.prisma.holiday.findMany({
       where: { date: { gte: dateOnly(from), lte: dateOnly(to) } },

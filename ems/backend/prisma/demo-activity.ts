@@ -46,13 +46,13 @@ export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), s
   const random = mulberry32(Number(today.replaceAll('-', '')));
   const holidays = new Set<string>();
 
-  const leaveTypes = new Map<string, { id: string; allocation: number }>();
+  const leaveTypes = new Map<string, { id: string; allocation: number; isPaid: boolean }>();
   for (const type of LEAVE_TYPES) {
     const existing = await prisma.leaveType.findFirst({ where: { code: type.code, deletedAt: null }, select: { id: true } });
     const row = existing
       ? await prisma.leaveType.update({ where: { id: existing.id }, data: type, select: { id: true } })
       : await prisma.leaveType.create({ data: type, select: { id: true } });
-    leaveTypes.set(type.code, { id: row.id, allocation: type.defaultDaysPerYear });
+    leaveTypes.set(type.code, { id: row.id, allocation: type.defaultDaysPerYear, isPaid: type.isPaid });
   }
 
   const employees = await prisma.employee.findMany({
@@ -111,7 +111,7 @@ export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), s
 
   // Balances: allocation, minus used (approved) and pending days
   const balanceRows = active.flatMap((employee) =>
-    [...leaveTypes.entries()].map(([code, type]) => {
+    [...leaveTypes.entries()].filter(([, type]) => type.isPaid).map(([code, type]) => {
       const mine = leaves.filter((l) => l.employeeId === employee.id && l.typeCode === code);
       const used = mine.filter((l) => l.status === 'APPROVED').reduce((sum, l) => sum + l.days.length, 0);
       const pending = mine.filter((l) => l.status === 'PENDING').reduce((sum, l) => sum + l.days.length, 0);

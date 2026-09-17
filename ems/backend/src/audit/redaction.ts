@@ -16,6 +16,9 @@ export const AUDIT_FIELDS: Record<string, readonly string[]> = {
   attendance: ['employeeId', 'workDate', 'firstInAt', 'lastOutAt', 'status', 'lateMinutes', 'workedMinutes', 'note', 'created'],
   setting: ['timeZone', 'weekendDays', 'workdayStart', 'graceMinutes'],
   holiday: ['date', 'name', 'attendanceRowsUpdated'],
+  leave_type: ['name', 'code', 'defaultDaysPerYear', 'carryForwardMax', 'isPaid', 'requiresDocument', 'isActive'],
+  leave_balance: ['employeeId', 'leaveTypeId', 'year', 'allocated', 'carriedForward', 'note'],
+  leave_request: ['employeeId', 'leaveTypeId', 'startDate', 'endDate', 'days', 'status', 'note'],
 };
 
 /** Second line of defence: keys that are never written, even if an allow-list names them. */

@@ -34,6 +34,7 @@ import {
   organizationYear,
   toDateOnly,
 } from './employee-query';
+import { proratedAllocation } from '../leave/leave-rules';
 import { EMPLOYEE_DETAIL_SELECT, EMPLOYEE_LIST_SELECT, toDetail, toListItem } from './employee-view';
 
 type Tx = Prisma.TransactionClient;
@@ -211,11 +212,17 @@ export class EmployeesService {
           select: { id: true },
         });
 
-        // This year's leave balances for every active leave type (plan §7); proration arrives with Phase 7
-        const leaveTypes = await tx.leaveType.findMany({ where: { deletedAt: null, isActive: true }, select: { id: true, defaultDaysPerYear: true } });
-        if (leaveTypes.length > 0) {
+        // This year's balances for every active paid leave type, prorated from the joining date (plan §7)
+        const year = organizationYear();
+        const leaveTypes = await tx.leaveType.findMany({ where: { deletedAt: null, isActive: true, isPaid: true }, select: { id: true, defaultDaysPerYear: true } });
+        if (leaveTypes.length > 0 && input.joiningDate <= `${year}-12-31`) {
           await tx.leaveBalance.createMany({
-            data: leaveTypes.map((type) => ({ employeeId: employee.id, leaveTypeId: type.id, year: organizationYear(), allocated: type.defaultDaysPerYear })),
+            data: leaveTypes.map((type) => ({
+              employeeId: employee.id,
+              leaveTypeId: type.id,
+              year,
+              allocated: proratedAllocation(Number(type.defaultDaysPerYear), input.joiningDate, year),
+            })),
           });
         }
 

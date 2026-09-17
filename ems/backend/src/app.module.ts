@@ -15,6 +15,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AttendanceModule } from './attendance/attendance.controller';
 import { CalendarModule } from './calendar/calendar.service';
 import { ClockModule } from './common/clock';
+import { LeaveModule } from './leave/leave.controller';
 import { SettingsModule } from './settings/settings.controller';
 import { APP_CONFIG, ConfigModule, type AppConfig } from './config/config.module';
 import { DashboardCacheModule } from './dashboard/dashboard-cache';
@@ -47,6 +48,7 @@ import { RolesModule } from './roles/roles.module';
     DashboardModule,
     AttendanceModule,
     SettingsModule,
+    LeaveModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs
