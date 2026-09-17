@@ -41,10 +41,11 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `mail/` | The `Mailer` interface: console (development), SMTP (production), memory (tests). |
 | `catalogue/` | `syncCatalogue()`: permissions and system roles from contracts. `sync-cli.ts` is the release step. |
 | `roles/` | `GET /roles`, `GET /permissions`. |
+| `employees/` | Employee CRUD, status changes, activity, `/me/profile`. Explicit selects in `employee-view.ts`; filters, sort and code allocation in `employee-query.ts`. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
 | `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
 
-Modules from later phases (`employees/`, `attendance/`, …) sit beside these, as in plan §2.
+Modules from later phases (`departments/`, `attendance/`, …) sit beside these, as in plan §2.
 
 ## Frontend layout (`frontend/src`)
 
@@ -60,7 +61,9 @@ Modules from later phases (`employees/`, `attendance/`, …) sit beside these, a
 | `lib/session.ts` | `getSession()`: `GET /auth/me` with the visitor's cookies. Null on 401; throws otherwise. |
 | `lib/api-client.ts` | Browser calls through `/api`: CSRF token on writes, `ApiRequestError` on failure. |
 | `lib/server-api.ts` | Server component calls straight to `API_ORIGIN`, forwarding cookies. |
-| `components/forms/` | `TextField` (label, input, error, ARIA) and `FormAlert`. |
+| `components/forms/` | `TextField` and `SelectField` (label, input, error, ARIA) and `FormAlert`. |
+| `app/(app)/employees/` | List (filters in the URL, table and phone cards), profile with tabs, create wizard, edit page. `employee-fields.tsx` holds the field groups both forms share. |
+| `lib/employees.ts` | Labels, date and phone formatting, list URLs, activity wording. |
 
 ## Differences from the plan
 
@@ -71,6 +74,10 @@ Modules from later phases (`employees/`, `attendance/`, …) sit beside these, a
 | Next.js `middleware` | `src/proxy.ts` | Next 16 renamed middleware to proxy. |
 | MinIO in docker compose | Not yet | MinIO images are gone from Docker Hub. Phase 8 picks the S3-compatible image. |
 | Brand `#2E4BDB`, Geist | Violet `#5B4BFF`, Plus Jakarta Sans + Geist Mono | Follows `plan-preview.html`. |
+| Idempotency key on create | Unique indexes on email and employee ID, plus a disabled submit button while saving | A double submit gets a 409 naming the duplicate instead of creating a second record. Revisit for creates without a natural unique key. |
+| DataTable on TanStack Table | A plain table (md+) and cards (phones), with filters, sort and page in the URL | One list so far; add TanStack Table when row selection or column controls are built. |
+| DatePicker component | Native `<input type="date">` | Accessible and mobile-friendly with no extra dependency. |
+| 5-step create form with a Documents step | Personal, Employment, Contact, Account, Review | Documents need storage (Phase 8); that step is added then. |
 
 ## Dependencies
 

@@ -13,6 +13,11 @@ const MATRIX: Array<{ method: 'get'; path: string; expect: Expectation }> = [
   { method: 'get', path: '/roles', expect: { anonymous: 401, super_admin: 200, hr_admin: 403, manager: 403, employee: 403 } },
   { method: 'get', path: '/permissions', expect: { anonymous: 401, super_admin: 200, hr_admin: 403, manager: 403, employee: 403 } },
   { method: 'get', path: '/health', expect: { anonymous: 200, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  // Employee lists are scoped rather than forbidden: an employee's list holds only their own record
+  { method: 'get', path: '/employees', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/employees/form-options', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 403, employee: 403 } },
+  { method: 'get', path: '/employees/check-unique?email=a@b.co', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 403, employee: 403 } },
+  { method: 'get', path: '/me/profile', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
 ];
 
 const ROLES = Object.keys(DEMO_PEOPLE) as SystemRoleKey[];

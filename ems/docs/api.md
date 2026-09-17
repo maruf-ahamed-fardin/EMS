@@ -68,6 +68,18 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `POST /auth/change-password` | session | `{ currentPassword, newPassword }` → 204. Signs out other sessions, keeps this one. |
 | `GET /roles` | `role.manage` | Roles with user counts and their grants |
 | `GET /permissions` | `role.manage` | The permission catalogue |
+| `GET /employees` | `employee.view` (scoped) | List. Query: `page`, `limit`, `q`, `departmentId`, `positionId`, `managerId`, `status`, `employmentType`, `joinedFrom`, `sort` (`name`, `code`, `joined`, `created`; prefix `-` for descending) |
+| `GET /employees/form-options` | `employee.create` or `employee.update` | Departments, positions, active managers, assignable roles, next free employee ID |
+| `GET /employees/check-unique` | `employee.create` or `employee.update` | `?email=&employeeCode=&excludeId=` → availability, with the ID of whoever holds the email |
+| `POST /employees` | `employee.create` | 201 with the detail. Checks the department, the position (must belong to the department) and the manager. Optional account: `createAccount`, `roleKey` (only `employee` without `user.manage`); emails a 3-day set-password link. Creates this year's leave balances. 409 with `errors.email` or `errors.employeeCode` on duplicates. |
+| `GET /employees/:id` | `employee.view` (scoped) | Detail. `private` only with `employee.view_private` for that person; `account` only with `user.view`; `allowedActions` for the viewer. 404 outside scope. |
+| `PATCH /employees/:id` | `employee.update` (scoped) | Any record field except status. Only real changes are saved and audited. Refuses reporting loops. Changing the email also changes the sign-in email. |
+| `POST /employees/:id/deactivate` | `employee.update` (scoped) | Signs the person out everywhere, cancels pending leave and releases the days. Not your own record. |
+| `POST /employees/:id/reactivate` | `employee.update` (scoped) | Makes the record active again |
+| `DELETE /employees/:id` | `employee.delete` (scoped) | 204. Soft delete, inactive records only. Disables the account and clears the person as a manager or department head. |
+| `GET /employees/:id/activity` | `employee.view` (scoped) | Audit timeline: action, actor and the **names** of changed fields, never their values |
+| `GET /me/profile` | session | Your own detail. 404 when no employee record is linked. |
+| `PATCH /me/profile` | session | `phone`, `address`, `emergencyContact` only (assumption 8). Anything else is 422. |
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).
