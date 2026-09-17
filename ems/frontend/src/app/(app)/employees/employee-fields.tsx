@@ -18,6 +18,10 @@ import { cn } from '@/lib/utils';
  */
 type Values = CreateEmployeeInput;
 
+// Module-level, so the availability check effect sees a stable value
+const CODE_SHAPE = /^[A-Za-z]{2,5}-\d{3,6}$/;
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function PersonalFields() {
   const { register, control, formState } = useFormContext<Values>();
   const errors = formState.errors;
@@ -133,7 +137,7 @@ export function EmploymentFields({ options, excludeEmployeeId }: { options: Empl
           registration={register('employeeCode')}
           error={errors.employeeCode}
         />
-        <Availability field="employeeCode" value={employeeCode ?? ''} excludeId={excludeEmployeeId} valid={/^[A-Za-z]{2,5}-\d{3,6}$/} />
+        <Availability field="employeeCode" value={employeeCode ?? ''} excludeId={excludeEmployeeId} valid={CODE_SHAPE} />
       </div>
     </div>
   );
@@ -149,7 +153,7 @@ export function ContactFields({ excludeEmployeeId }: { excludeEmployeeId?: strin
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <TextField label="Work email" type="email" required autoComplete="off" registration={register('email')} error={errors.email} />
-          <Availability field="email" value={email ?? ''} excludeId={excludeEmployeeId} valid={/^[^\s@]+@[^\s@]+\.[^\s@]+$/} />
+          <Availability field="email" value={email ?? ''} excludeId={excludeEmployeeId} valid={EMAIL_SHAPE} />
         </div>
         <TextField label="Phone" type="tel" required placeholder="+880 1711-204318" registration={register('phone')} error={errors.phone} />
       </div>
@@ -185,16 +189,14 @@ function Availability({
   excludeId?: string;
   valid: RegExp;
 }) {
-  const [state, setState] = useState<{ status: 'idle' | 'checking' | 'available' | 'taken'; takenBy?: string }>({ status: 'idle' });
+  // The latest answer, remembered with the value it was for; a newer value simply has no answer yet
+  const [result, setResult] = useState<{ value: string; status: 'available' | 'taken' | 'unknown'; takenBy?: string } | null>(null);
   const trimmed = value.trim();
+  const checkable = valid.test(trimmed);
 
   useEffect(() => {
-    if (!valid.test(trimmed)) {
-      setState({ status: 'idle' });
-      return;
-    }
+    if (!checkable) return;
     let cancelled = false;
-    setState({ status: 'checking' });
     const timer = setTimeout(() => {
       const params = new URLSearchParams({ [field]: trimmed, ...(excludeId ? { excludeId } : {}) });
       api<{ data: { email?: { available: boolean; takenBy?: string }; employeeCode?: { available: boolean } } }>(
@@ -202,17 +204,29 @@ function Availability({
       )
         .then(({ data }) => {
           if (cancelled) return;
-          const result = data[field];
-          if (!result) return setState({ status: 'idle' });
-          setState(result.available ? { status: 'available' } : { status: 'taken', takenBy: 'takenBy' in result ? result.takenBy : undefined });
+          const answer = data[field];
+          if (!answer) return setResult({ value: trimmed, status: 'unknown' });
+          setResult(
+            answer.available
+              ? { value: trimmed, status: 'available' }
+              : { value: trimmed, status: 'taken', takenBy: 'takenBy' in answer ? answer.takenBy : undefined },
+          );
         })
-        .catch(() => !cancelled && setState({ status: 'idle' }));
+        .catch(() => !cancelled && setResult({ value: trimmed, status: 'unknown' }));
     }, 400);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [field, trimmed, excludeId, valid]);
+  }, [field, trimmed, excludeId, checkable]);
+
+  const state = !checkable
+    ? { status: 'idle' as const }
+    : result?.value === trimmed
+      ? result.status === 'unknown'
+        ? { status: 'idle' as const }
+        : result
+      : { status: 'checking' as const, takenBy: undefined };
 
   if (state.status === 'idle') return null;
   return (

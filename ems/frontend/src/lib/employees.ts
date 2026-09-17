@@ -23,23 +23,28 @@ export const GENDER_LABELS: Record<Gender, string> = {
   UNDISCLOSED: 'Prefer not to say',
 };
 
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-const dateTimeFormat = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
+// Fixed names: ICU versions disagree on en-GB's short September ("Sep" or "Sept")
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dateTimeParts = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
   hour: '2-digit',
   minute: '2-digit',
+  hourCycle: 'h23',
   timeZone: 'Asia/Dhaka',
 });
 
-/** `2026-09-21` → `21 Sep 2026`. Calendar dates are formatted in UTC so they never shift a day. */
+/** `2026-09-21` → `21 Sep 2026`. Read straight from the string, so a calendar date never shifts a day. */
 export function formatDate(isoDate: string): string {
-  return dateFormat.format(new Date(`${isoDate.slice(0, 10)}T00:00:00Z`));
+  const [year, month, day] = isoDate.slice(0, 10).split('-').map(Number);
+  return `${day} ${MONTHS[(month ?? 1) - 1]} ${year}`;
 }
 
+/** An instant in Dhaka time: `21 Sep 2026, 09:03`. */
 export function formatDateTime(iso: string): string {
-  return dateTimeFormat.format(new Date(iso));
+  const parts = Object.fromEntries(dateTimeParts.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+  return `${formatDate(`${parts.year}-${parts.month}-${parts.day}`)}, ${parts.hour}:${parts.minute}`;
 }
 
 /** `+8801711204318` → `+880 1711-204318`; other numbers are left as entered. */
