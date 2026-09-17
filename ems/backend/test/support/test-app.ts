@@ -46,7 +46,7 @@ export async function startTestApp(): Promise<TestApp> {
   if (!url) throw new Error('TEST_DATABASE_URL is not set');
   resetDatabase(url);
 
-  const config = parseEnv({ NODE_ENV: 'test', LOG_LEVEL: 'silent', DATABASE_URL: url, APP_URL: APP_ORIGIN, TRUST_PROXY_HOPS: '1' });
+  const config = parseEnv({ NODE_ENV: 'test', LOG_LEVEL: 'silent', DATABASE_URL: url, APP_URL: APP_ORIGIN, TRUST_PROXY_HOPS: '1', JOBS_ENABLED: 'false' });
   const mailer = new MemoryMailer();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(APP_CONFIG)

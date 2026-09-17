@@ -43,6 +43,12 @@ const envSchema = z
       .default('http://localhost:3000')
       .transform((value) => new URL(value).origin),
 
+    /** Background jobs (closing attendance days). Tests and one-off scripts turn them off. */
+    JOBS_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
+
     MAIL_DRIVER: z.enum(['console', 'smtp']).default('console'),
     /** smtp://user:pass@host:port. Required when MAIL_DRIVER=smtp. */
     SMTP_URL: z.string().optional(),

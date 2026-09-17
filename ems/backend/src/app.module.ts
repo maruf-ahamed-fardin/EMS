@@ -11,7 +11,11 @@ import { SessionGuard } from './auth/guards/session.guard';
 import { AppThrottlerGuard } from './auth/guards/throttler.guard';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { loggerOptions } from './common/logging/logger.options';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AttendanceModule } from './attendance/attendance.controller';
 import { CalendarModule } from './calendar/calendar.service';
+import { ClockModule } from './common/clock';
+import { SettingsModule } from './settings/settings.controller';
 import { APP_CONFIG, ConfigModule, type AppConfig } from './config/config.module';
 import { DashboardCacheModule } from './dashboard/dashboard-cache';
 import { DashboardModule } from './dashboard/dashboard.controller';
@@ -28,6 +32,8 @@ import { RolesModule } from './roles/roles.module';
     LoggerModule.forRootAsync({ inject: [APP_CONFIG], useFactory: (config: AppConfig) => loggerOptions(config) }),
     // In-memory counters: correct for one instance. Use the Redis storage when running several (plan §12).
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+    ScheduleModule.forRoot(),
+    ClockModule,
     PrismaModule,
     AuditModule,
     MailModule,
@@ -39,6 +45,8 @@ import { RolesModule } from './roles/roles.module';
     EmployeesModule,
     OrganizationModule,
     DashboardModule,
+    AttendanceModule,
+    SettingsModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs

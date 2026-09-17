@@ -14,6 +14,7 @@ import {
 import type { AuthContext } from '../auth/auth-context';
 import { ScopeService } from '../auth/scope.service';
 import { CalendarService } from '../calendar/calendar.service';
+import { Clock } from '../common/clock';
 import {
   addDays,
   dateOnly,
@@ -57,9 +58,10 @@ export class DashboardService {
     private readonly scope: ScopeService,
     private readonly calendar: CalendarService,
     private readonly cache: DashboardCache,
+    private readonly clock: Clock,
   ) {}
 
-  overview(auth: AuthContext, now = new Date()): Promise<DashboardOverview> {
+  overview(auth: AuthContext, now = this.clock.now()): Promise<DashboardOverview> {
     // Organization numbers are the same for everyone who sees them; team and personal ones aren't
     const variant = variantFor(auth);
     const key = `overview:${variant === 'organization' ? 'org' : auth.user.id}:${auth.permissions['audit.view'] ?? '-'}:${auth.permissions['user.view'] ?? '-'}`;
@@ -325,7 +327,7 @@ export class DashboardService {
 
   // ─── Trend ──────────────────────────────────────────────────────────────────────────────────
 
-  trend(auth: AuthContext, range: TrendRange, now = new Date()): Promise<AttendanceTrend> {
+  trend(auth: AuthContext, range: TrendRange, now = this.clock.now()): Promise<AttendanceTrend> {
     const scope = auth.permissions['attendance.view'];
     if (scope !== 'ALL' && scope !== 'TEAM') throw new ForbiddenException();
     const key = `trend:${range}:${scope === 'ALL' ? 'org' : auth.user.id}`;
