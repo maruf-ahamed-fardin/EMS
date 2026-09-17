@@ -34,6 +34,24 @@ export class ScopeService {
     }
   }
 
+  /**
+   * Whether one already-loaded employee is within reach of `key`. Use it for decisions about a record
+   * the caller can see anyway, such as showing private fields or offering an action.
+   */
+  reaches(auth: AuthContext, key: PermissionKey, employee: { id: string; managerId: string | null }): boolean {
+    const own = auth.user.employeeId;
+    switch (this.scopeOf(auth, key)) {
+      case 'ALL':
+        return true;
+      case 'TEAM':
+        return own !== null && (employee.id === own || employee.managerId === own);
+      case 'OWN':
+        return own !== null && employee.id === own;
+      default:
+        return false;
+    }
+  }
+
   /** Records that belong to an in-scope employee: `{ employee: employeeWhere(...) }` for related tables. */
   relatedToEmployee(auth: AuthContext, key: PermissionKey): { employee: Prisma.EmployeeWhereInput } {
     return { employee: this.employeeWhere(auth, key) };

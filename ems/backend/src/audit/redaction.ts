@@ -5,6 +5,11 @@
  */
 export const AUDIT_FIELDS: Record<string, readonly string[]> = {
   user: ['email', 'status', 'roleId', 'employeeId', 'lockedUntil', 'reason', 'sessionsRevoked'],
+  employee: [
+    'employeeCode', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender', 'address', 'emergencyContact',
+    'departmentId', 'positionId', 'managerId', 'joiningDate', 'employmentType', 'status', 'workLocation',
+    'deactivatedAt', 'deletedAt', 'leaveRequestsCancelled', 'sessionsRevoked', 'accountCreated',
+  ],
   role: ['key', 'name', 'description', 'permissions'],
 };
 

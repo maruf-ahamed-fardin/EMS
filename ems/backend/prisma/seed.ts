@@ -3,7 +3,7 @@ import * as argon2 from 'argon2';
 import { checkPassword, PASSWORD_PROBLEM_MESSAGES } from '../src/auth/password-policy';
 import { syncCatalogue } from '../src/catalogue/sync-catalogue';
 import { PrismaClient } from '../src/generated/prisma/client';
-import { DEMO_PEOPLE, seedDemoUsers } from './demo-data';
+import { DEMO_PEOPLE, seedDemoData } from './demo-data';
 
 /**
  * Development seed (plan §14): the catalogue plus one demo user per role.
@@ -24,8 +24,8 @@ async function main() {
   try {
     const catalogue = await syncCatalogue(prisma);
     const hash = await argon2.hash(password, { type: argon2.argon2id, memoryCost: 19_456, timeCost: 2, parallelism: 1 });
-    await seedDemoUsers(prisma, hash);
-    console.error(`Seeded catalogue ${JSON.stringify(catalogue)} and demo users:`);
+    const { employeeCount } = await seedDemoData(prisma, hash);
+    console.error(`Seeded catalogue ${JSON.stringify(catalogue)}, ${employeeCount} employees and demo users:`);
     for (const [role, person] of Object.entries(DEMO_PEOPLE)) console.error(`  ${role.padEnd(12)} ${person.email}`);
   } finally {
     await prisma.$disconnect();

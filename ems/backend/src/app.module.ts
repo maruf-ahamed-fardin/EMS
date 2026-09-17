@@ -12,6 +12,7 @@ import { AppThrottlerGuard } from './auth/guards/throttler.guard';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { loggerOptions } from './common/logging/logger.options';
 import { APP_CONFIG, ConfigModule, type AppConfig } from './config/config.module';
+import { EmployeesModule } from './employees/employees.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -29,6 +30,7 @@ import { RolesModule } from './roles/roles.module';
     AuthModule,
     HealthModule,
     RolesModule,
+    EmployeesModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs

@@ -11,7 +11,7 @@ import { parseEnv } from '../../src/config/env';
 import { configureApp } from '../../src/configure-app';
 import { MAILER, MemoryMailer } from '../../src/mail/mailer';
 import { PrismaService } from '../../src/prisma/prisma.service';
-import { seedDemoUsers } from '../../prisma/demo-data';
+import { seedDemoData } from '../../prisma/demo-data';
 
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 /** `describe` when a test database is configured, `describe.skip` otherwise. */
@@ -61,7 +61,7 @@ export async function startTestApp(): Promise<TestApp> {
 
   const prisma = app.get(PrismaService);
   await syncCatalogue(prisma);
-  await seedDemoUsers(prisma, await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id }));
+  await seedDemoData(prisma, await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id }));
 
   return { app, prisma, mailer, close: () => app.close() };
 }

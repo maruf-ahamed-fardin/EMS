@@ -26,3 +26,6 @@ export function sessionState(session: SessionTimes, now: Date): SessionState {
 export function shouldTouch(lastSeenAt: Date, now: Date): boolean {
   return now.getTime() - lastSeenAt.getTime() >= SESSION_TOUCH_INTERVAL_MS;
 }
+
+/** A new employee's set-password link lasts longer than a reset link: they may not be at work yet. */
+export const INVITE_TOKEN_TTL_MS = 72 * 60 * 60 * 1000;
