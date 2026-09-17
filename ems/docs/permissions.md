@@ -31,8 +31,9 @@ outside the caller's scope answers 404, not 403, so it doesn't confirm the recor
 @Get('employees/:id')
 async findOne(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
   const employee = await this.prisma.employee.findFirst({
-    // Out of scope matches nothing, so the caller gets 404 and learns nothing
-    where: { id, ...this.scope.employeeWhere(auth, 'employee.view') },
+    // Out of scope matches nothing, so the caller gets 404 and learns nothing.
+    // Never spread employeeWhere next to `id`: an OWN scope's own `id` would replace it.
+    where: this.scope.employeeById(auth, 'employee.view', id),
   });
   if (!employee) throw new NotFoundException();
   return { data: toView(employee) };

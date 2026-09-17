@@ -18,17 +18,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { api } from '@/lib/api-client';
+import { initials } from '@/lib/utils';
 
 export interface ShellUser {
   name: string;
   email: string;
   roleName: string;
-}
-
-export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const letters = parts.length > 1 ? [parts[0]?.[0], parts.at(-1)?.[0]] : [parts[0]?.[0], parts[0]?.[1]];
-  return letters.filter(Boolean).join('').toUpperCase() || '?';
 }
 
 export function UserMenu({ user }: { user: ShellUser }) {

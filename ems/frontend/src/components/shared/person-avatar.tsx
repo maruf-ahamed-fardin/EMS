@@ -1,5 +1,4 @@
-import { initials } from '@/components/shell/user-menu';
-import { cn } from '@/lib/utils';
+import { cn, initials } from '@/lib/utils';
 
 const SIZES = { sm: 'size-8 text-xs', md: 'size-10 text-sm', xl: 'size-16 text-xl md:size-20 md:text-2xl' } as const;
 

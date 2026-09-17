@@ -74,7 +74,7 @@ export class EmployeesService {
   async get(auth: AuthContext, id: string): Promise<EmployeeDetail> {
     if (!UUID.test(id)) throw new NotFoundException();
     const row = await this.prisma.employee.findFirst({
-      where: { id, ...this.scope.employeeWhere(auth, 'employee.view') },
+      where: this.scope.employeeById(auth, 'employee.view', id),
       select: EMPLOYEE_DETAIL_SELECT,
     });
     if (!row) throw new NotFoundException();
@@ -392,14 +392,14 @@ export class EmployeesService {
 
   private async assertVisible(auth: AuthContext, id: string): Promise<void> {
     if (!UUID.test(id)) throw new NotFoundException();
-    const visible = await this.prisma.employee.count({ where: { id, ...this.scope.employeeWhere(auth, 'employee.view') } });
+    const visible = await this.prisma.employee.count({ where: this.scope.employeeById(auth, 'employee.view', id) });
     if (!visible) throw new NotFoundException();
   }
 
   /** Loads a record the caller may change with `key`; 404 when it is outside that scope. */
   private async loadForChange(auth: AuthContext, id: string, key: 'employee.update' | 'employee.delete') {
     if (!UUID.test(id)) throw new NotFoundException();
-    const row = await this.prisma.employee.findFirst({ where: { id, ...this.scope.employeeWhere(auth, key) }, select: CHANGE_SELECT });
+    const row = await this.prisma.employee.findFirst({ where: this.scope.employeeById(auth, key, id), select: CHANGE_SELECT });
     if (!row) throw new NotFoundException();
     return row;
   }

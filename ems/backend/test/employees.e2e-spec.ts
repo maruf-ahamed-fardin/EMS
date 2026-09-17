@@ -178,7 +178,7 @@ describeWithDatabase('employees', () => {
 
   describe('update', () => {
     it('saves only real changes and records which fields changed', async () => {
-      const res = await patch(as.hr_admin, `/employees/${ids.managersReport}`, { workLocation: 'Remote', phone: '+8801700000001' });
+      const res = await patch(as.hr_admin, `/employees/${ids.managersReport}`, { workLocation: 'Sylhet office', phone: '+8801700000001' });
       expect(res.status).toBe(200);
       const activity = (await as.hr_admin.get(`/employees/${ids.managersReport}/activity`).expect(200)).body.data;
       expect(activity[0]).toMatchObject({ action: 'employee.updated', changedFields: ['phone', 'workLocation'] });

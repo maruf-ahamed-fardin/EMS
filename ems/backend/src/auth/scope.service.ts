@@ -35,6 +35,15 @@ export class ScopeService {
   }
 
   /**
+   * One employee by id, only if it is within reach of `key`. Always use this for single-record lookups:
+   * spreading `employeeWhere` next to an `id` lets the scope's own `id` (OWN scope) silently replace the
+   * requested one, which answers with the caller's record instead of 404.
+   */
+  employeeById(auth: AuthContext, key: PermissionKey, id: string): Prisma.EmployeeWhereInput {
+    return { AND: [{ id }, this.employeeWhere(auth, key)] };
+  }
+
+  /**
    * Whether one already-loaded employee is within reach of `key`. Use it for decisions about a record
    * the caller can see anyway, such as showing private fields or offering an action.
    */

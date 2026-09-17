@@ -143,6 +143,13 @@ describe('ScopeService.employeeWhere', () => {
     expect(scope.employeeWhere(auth('manager', null), 'employee.view')).toEqual(nothing);
     expect(scope.employeeWhere(auth('employee', null), 'employee.view')).toEqual(nothing);
   });
+
+  it('keeps both the requested id and the scope when looking up one record', () => {
+    // Regression: `{ id, ...employeeWhere }` let an OWN scope's id replace the requested id
+    expect(scope.employeeById(auth('employee'), 'employee.view', 'someone-else')).toEqual({
+      AND: [{ id: 'someone-else' }, { deletedAt: null, id: 'emp-1' }],
+    });
+  });
 });
 
 describe('auditView', () => {
