@@ -1,6 +1,6 @@
 # Employee Management System (EMS): plan
 
-Status: **decided; Phases 1–3 built** (2026-09-17). Phase 4 is next.
+Status: **decided; Phases 1–4 built and tested against PostgreSQL** (2026-09-17). Phase 5 is next.
 Date: 2026-09-17
 Source: the "Master prompt: production employee management system" specification.
 

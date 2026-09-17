@@ -42,10 +42,11 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `catalogue/` | `syncCatalogue()`: permissions and system roles from contracts. `sync-cli.ts` is the release step. |
 | `roles/` | `GET /roles`, `GET /permissions`. |
 | `employees/` | Employee CRUD, status changes, activity, `/me/profile`. Explicit selects in `employee-view.ts`; filters, sort and code allocation in `employee-query.ts`. |
+| `organization/` | Departments and positions: CRUD, head, counts, the "no active employees" delete rules. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
 | `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
 
-Modules from later phases (`departments/`, `attendance/`, …) sit beside these, as in plan §2.
+Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in plan §2.
 
 ## Frontend layout (`frontend/src`)
 
@@ -64,6 +65,8 @@ Modules from later phases (`departments/`, `attendance/`, …) sit beside these,
 | `components/forms/` | `TextField` and `SelectField` (label, input, error, ARIA) and `FormAlert`. |
 | `app/(app)/employees/` | List (filters in the URL, table and phone cards), profile with tabs, create wizard, edit page. `employee-fields.tsx` holds the field groups both forms share. |
 | `lib/employees.ts` | Labels, date and phone formatting, list URLs, activity wording. |
+| `app/(app)/departments/`, `app/(app)/positions/` | Department cards and detail, positions table; create and edit in dialogs. |
+| `components/shared/delete-button.tsx` | Confirmed delete that stays visible but disabled, with the reason, when a rule blocks it. |
 
 ## Differences from the plan
 

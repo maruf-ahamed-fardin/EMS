@@ -80,6 +80,16 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `GET /employees/:id/activity` | `employee.view` (scoped) | Audit timeline: action, actor and the **names** of changed fields, never their values |
 | `GET /me/profile` | session | Your own detail. 404 when no employee record is linked. |
 | `PATCH /me/profile` | session | `phone`, `address`, `emergencyContact` only (assumption 8). Anything else is 422. |
+| `GET /departments` | `department.view` | All active departments (`?includeInactive=true`, `?q=`) with head, active employee count and position count. Not scoped: structure isn't personal data. |
+| `GET /departments/head-options` | `department.create` or `department.update` | Active employees who can be made head |
+| `POST /departments` | `department.create` | 201. `name`, `code` (2–10 letters or digits, upper-cased), `description`, `headEmployeeId`. 409 with `errors.name` / `errors.code` on duplicates (case-insensitive). |
+| `GET /departments/:id` | `department.view` | Detail with positions, active and inactive counts, `allowedActions` |
+| `PATCH /departments/:id` | `department.update` | Any field. Head must be an active employee (422). Deactivating needs zero active employees (409). |
+| `DELETE /departments/:id` | `department.delete` | 204. Soft delete; its positions are soft-deleted and the head cleared. **409 while it has active employees**, with the count in the message. |
+| `GET /positions` | `position.view` | `?departmentId=`, `?q=`, `?includeInactive=true`. Each with department and active holder count. |
+| `POST /positions` | `position.manage` | 201. `title`, `departmentId` (null for a shared position), `level`. One title per department, shared titles included (409). |
+| `PATCH /positions/:id` | `position.manage` | Refuses moving it to another department, or deactivating it, while active employees hold it (409). |
+| `DELETE /positions/:id` | `position.manage` | 204. Soft delete. 409 while active employees hold it. |
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).

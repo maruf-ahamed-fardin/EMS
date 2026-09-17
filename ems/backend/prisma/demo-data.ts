@@ -5,11 +5,11 @@ import type { PrismaClient } from '../src/generated/prisma/client';
 export const DEMO_DOMAIN = 'demo.selorax.test';
 
 const DEPARTMENTS = [
-  { code: 'DEV', name: 'Development', positions: ['Engineering Manager', 'Senior Software Engineer', 'Software Engineer', 'QA Engineer'] },
-  { code: 'MKT', name: 'Marketing', positions: ['Marketing Lead', 'Content Strategist', 'Designer'] },
-  { code: 'HR', name: 'Human Resources', positions: ['Head of People', 'HR Manager', 'HR Executive'] },
-  { code: 'FIN', name: 'Finance', positions: ['Finance Lead', 'Accountant'] },
-  { code: 'SAL', name: 'Sales', positions: ['Sales Lead', 'Account Executive'] },
+  { code: 'DEV', name: 'Development', description: 'Builds and runs the SeloraX platform.', positions: ['Engineering Manager', 'Senior Software Engineer', 'Software Engineer', 'QA Engineer'] },
+  { code: 'MKT', name: 'Marketing', description: 'Brand, content and campaigns.', positions: ['Marketing Lead', 'Content Strategist', 'Designer'] },
+  { code: 'HR', name: 'Human Resources', description: 'Hiring, people operations and payroll support.', positions: ['Head of People', 'HR Manager', 'HR Executive'] },
+  { code: 'FIN', name: 'Finance', description: 'Accounts, budgeting and reporting.', positions: ['Finance Lead', 'Accountant'] },
+  { code: 'SAL', name: 'Sales', description: 'Merchant acquisition and accounts.', positions: ['Sales Lead', 'Account Executive'] },
 ] as const;
 
 type DepartmentCode = (typeof DEPARTMENTS)[number]['code'];
@@ -69,7 +69,9 @@ export async function seedDemoData(prisma: PrismaClient, passwordHash: string) {
   const positionIds = new Map<string, string>();
   for (const department of DEPARTMENTS) {
     const existing = await prisma.department.findFirst({ where: { code: department.code, deletedAt: null }, select: { id: true } });
-    const row = existing ?? (await prisma.department.create({ data: { code: department.code, name: department.name }, select: { id: true } }));
+    const row = existing
+      ? await prisma.department.update({ where: { id: existing.id }, data: { description: department.description }, select: { id: true } })
+      : await prisma.department.create({ data: { code: department.code, name: department.name, description: department.description }, select: { id: true } });
     departmentIds[department.code] = row.id;
     for (const title of department.positions) {
       const position =

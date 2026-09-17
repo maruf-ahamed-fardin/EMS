@@ -11,6 +11,8 @@ export const AUDIT_FIELDS: Record<string, readonly string[]> = {
     'deactivatedAt', 'deletedAt', 'leaveRequestsCancelled', 'sessionsRevoked', 'accountCreated',
   ],
   role: ['key', 'name', 'description', 'permissions'],
+  department: ['name', 'code', 'description', 'headEmployeeId', 'isActive', 'deletedAt', 'positionsDeleted'],
+  position: ['title', 'departmentId', 'level', 'isActive', 'deletedAt'],
 };
 
 /** Second line of defence: keys that are never written, even if an allow-list names them. */

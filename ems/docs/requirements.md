@@ -18,11 +18,11 @@ mobile check-in.
 
 | Phase | Deliverable | Status |
 |---|---|---|
-| 1 | Architecture: workspace, contracts, API skeleton, schema and baseline migration, app shell, CI, docs | **Done**, apart from running the migration against a real database (waiting for Docker Desktop) |
-| 2 | Authentication and RBAC | **Built.** The database-backed tests (auth flows, authorization matrix) are written but not yet run: waiting for Docker Desktop |
-| 3 | Employees | **Built.** Database-backed tests written, not yet run (Docker). Deferred to their phases: photo upload and the Documents step (8), leave balance proration (7), Attendance/Leave/Documents profile tabs (6–8). |
-| 4 | Departments and positions | Next |
-| 5 | Dashboard and global search | |
+| 1 | Architecture: workspace, contracts, API skeleton, schema and baseline migration, app shell, CI, docs | **Done.** Migration applied to PostgreSQL 16; no drift. |
+| 2 | Authentication and RBAC | **Done.** Auth flows and the authorization matrix pass against PostgreSQL. |
+| 3 | Employees | **Done.** Deferred to their phases: photo upload and the Documents step (8), leave balance proration (7), Attendance/Leave/Documents profile tabs (6–8). |
+| 4 | Departments and positions | **Done.** Delete with active employees returns 409 with the count. |
+| 5 | Dashboard and global search | Next |
 | 6 | Attendance | |
 | 7 | Leave | |
 | 8 | Documents | |
