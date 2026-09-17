@@ -79,7 +79,7 @@ function fieldErrorsOf(exception: HttpException): Record<string, string> | undef
 function httpExceptionMessage(exception: HttpException, statusCode: number): string {
   if (statusCode >= 500) return 'Something went wrong';
   // The throttler's own text ("ThrottlerException: Too Many Requests") isn't for people
-  if (statusCode === HttpStatus.TOO_MANY_REQUESTS) return GENERIC_MESSAGES[statusCode] ?? 'Too many requests';
+  if (statusCode === Number(HttpStatus.TOO_MANY_REQUESTS)) return GENERIC_MESSAGES[statusCode] ?? 'Too many requests';
 
   const response = exception.getResponse();
   if (typeof response === 'string') return response;

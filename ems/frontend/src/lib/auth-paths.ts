@@ -1,12 +1,11 @@
-/** Cookie holding the session token. Set httpOnly by the API (Phase 2). */
-export const SESSION_COOKIE = 'ems_session';
+export { SESSION_COOKIE } from '@ems/contracts';
 
 /** Remembers the collapsed sidebar, read on the server so the first paint has the right width. */
 export const SIDEBAR_COOKIE = 'ems_sidebar';
 
 export const HOME_PATH = '/dashboard';
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/preview-session', '/sign-out'];
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

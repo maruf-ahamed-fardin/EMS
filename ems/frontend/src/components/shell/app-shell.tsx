@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { usePermissions } from '@/components/auth/permissions';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { HOME_PATH, SIDEBAR_COOKIE } from '@/lib/auth-paths';
@@ -18,7 +17,6 @@ import { type ShellUser, UserMenu } from './user-menu';
 interface AppShellProps {
   user: ShellUser;
   initiallyCollapsed: boolean;
-  preview: boolean;
   children: React.ReactNode;
 }
 
@@ -26,7 +24,7 @@ interface AppShellProps {
  * Desktop (≥1024px): 248px sidebar that collapses to a 64px rail, remembered in a cookie.
  * Tablet (768–1023px): the rail. Mobile (<768px): a drawer opened from the header.
  */
-export function AppShell({ user, initiallyCollapsed, preview, children }: AppShellProps) {
+export function AppShell({ user, initiallyCollapsed, children }: AppShellProps) {
   const permissions = usePermissions();
   const pathname = usePathname();
   const groups = useMemo(() => visibleNavigation(permissions), [permissions]);
@@ -107,15 +105,6 @@ export function AppShell({ user, initiallyCollapsed, preview, children }: AppShe
           <p className="truncate text-sm font-semibold md:text-base">{active?.label ?? 'SeloraX People'}</p>
 
           <div className="ml-auto flex items-center gap-2">
-            {preview && (
-              <Badge
-                variant="outline"
-                className="hidden border-warning/40 bg-warning/10 text-warning-text sm:inline-flex"
-                title="Development preview session. Real sign-in arrives in Phase 2."
-              >
-                Preview session
-              </Badge>
-            )}
             <UserMenu user={user} />
           </div>
         </header>

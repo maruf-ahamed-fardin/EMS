@@ -1,8 +1,11 @@
 'use client';
 
-import { LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { KeyRound, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -14,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { api } from '@/lib/api-client';
 
 export interface ShellUser {
   name: string;
@@ -29,6 +33,19 @@ export function initials(name: string): string {
 
 export function UserMenu({ user }: { user: ShellUser }) {
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch {
+      // Already signed out or the session expired: the login page is still the right place
+    }
+    router.replace('/login');
+    router.refresh();
+  }
 
   return (
     <DropdownMenu>
@@ -57,6 +74,11 @@ export function UserMenu({ user }: { user: ShellUser }) {
             <UserRound aria-hidden /> My profile
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/profile/security">
+            <KeyRound aria-hidden /> Password & sign-in
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs text-muted-foreground">Theme</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
@@ -71,14 +93,15 @@ export function UserMenu({ user }: { user: ShellUser }) {
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        {/* A form POST, so a link or prefetch elsewhere can never sign someone out */}
-        <form action="/sign-out" method="post">
-          <DropdownMenuItem asChild>
-            <button type="submit" className="w-full">
-              <LogOut aria-hidden /> Sign out
-            </button>
-          </DropdownMenuItem>
-        </form>
+        <DropdownMenuItem
+          disabled={signingOut}
+          onSelect={(event) => {
+            event.preventDefault();
+            signOut().catch(() => toast.error('Could not sign out. Try again.'));
+          }}
+        >
+          <LogOut aria-hidden /> {signingOut ? 'Signing out…' : 'Sign out'}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

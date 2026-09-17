@@ -18,9 +18,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <PermissionsProvider permissions={session.permissions}>
       <AppShell
-        user={{ name: session.name, email: session.email, roleName: session.roleName }}
+        user={{ name: session.name, email: session.email, roleName: session.role.name }}
         initiallyCollapsed={collapsed}
-        preview={session.preview}
       >
         {children}
       </AppShell>
