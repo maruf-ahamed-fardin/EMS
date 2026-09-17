@@ -1,0 +1,30 @@
+{
+  "name": "selorax-ems",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SeloraX Employee Management System",
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "npm run build -w @ems/contracts && concurrently -n contracts,api,web -c gray,magenta,cyan \"npm run dev -w @ems/contracts\" \"npm run dev -w @ems/backend\" \"npm run dev -w @ems/frontend\"",
+    "build": "npm run build -w @ems/contracts && npm run build -w @ems/backend && npm run build -w @ems/frontend",
+    "typecheck": "npm run build -w @ems/contracts && npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run build -w @ems/contracts && npm run test --workspaces --if-present",
+    "check:payload": "node scripts/check-payload.mjs",
+    "db:generate": "npm run prisma:generate -w @ems/backend",
+    "db:migrate": "npm run db:migrate -w @ems/backend",
+    "db:deploy": "npm run db:deploy -w @ems/backend",
+    "db:seed": "npm run db:seed -w @ems/backend",
+    "db:reset": "npm run db:reset -w @ems/backend"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.4"
+  }
+}
