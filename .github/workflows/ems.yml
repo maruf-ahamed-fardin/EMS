@@ -1,0 +1,70 @@
+name: EMS
+
+on:
+  push:
+    branches: [main]
+    paths: ['ems/**', '.github/workflows/ems.yml']
+  pull_request:
+    paths: ['ems/**', '.github/workflows/ems.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ems-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: ems
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ems
+          POSTGRES_PASSWORD: ems-ci
+          POSTGRES_DB: ems_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U ems -d ems_test"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_test
+      SHADOW_DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_shadow
+      TEST_DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_test
+      API_ORIGIN: http://127.0.0.1:4000
+      PRISMA_HIDE_UPDATE_MESSAGE: '1'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ems/package-lock.json
+      # Before installing anything: a compromised config file must never get as far as running
+      - name: Hidden payload check
+        run: node scripts/check-payload.mjs
+      - run: npm ci
+      - name: Known vulnerabilities in dependencies
+        run: npm audit --audit-level=high
+      - run: npm run db:generate
+      - run: npm run typecheck
+      - run: npm run lint
+      - name: Create the shadow database
+        run: PGPASSWORD=ems-ci psql -h 127.0.0.1 -U ems -d ems_test -c 'CREATE DATABASE ems_shadow'
+      - run: npm test
+      # Prisma 7.10 can exit 0 without comparing anything, so the step also requires its summary
+      - name: Migrations match the schema
+        run: |
+          set +e
+          out=$(npm run --silent db:drift -w @ems/backend 2>&1); code=$?
+          echo "$out"
+          if [ $code -eq 2 ]; then echo "::error::schema.prisma has changes with no migration"; exit 1; fi
+          if [ $code -ne 0 ] || ! echo "$out" | grep -q "No difference detected"; then echo "::error::drift check did not run"; exit 1; fi
+      - run: npm run build

@@ -16,6 +16,16 @@ updates:
         dependency-type: production
         exclude-patterns: ['next', 'react', 'react-dom']
 
+  # The EMS workspace (ems/), grouped into one weekly PR
+  - package-ecosystem: npm
+    directory: /ems
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      ems:
+        patterns: ['*']
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

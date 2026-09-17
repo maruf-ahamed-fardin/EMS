@@ -1,8 +1,21 @@
 # Employee Management System (EMS): plan
 
-Status: **draft for decision**. Nothing has been built yet.
+Status: **decided, Phase 1 built** (2026-09-17). Phase 2 is next.
 Date: 2026-09-17
 Source: the "Master prompt: production employee management system" specification.
+
+> **Decisions taken on 2026-09-17** (these override the recommendations in section 0 where they differ)
+>
+> - **D1:** the EMS lives **inside `selorax-teamprofile`**, as a self-contained workspace in `ems/`
+>   (its own `package.json`, lockfile, lint and tests). The Team-SeloraX app at the repo root is unchanged.
+>   Paths in section 2 such as `selorax-ems/backend` are `ems/backend` in practice.
+> - **D2–D7:** the recommendations are accepted as written.
+> - **Local services:** Docker Desktop (Postgres and Mailpit in `ems/docker-compose.yml`).
+>   MinIO is no longer published on Docker Hub, so the S3-compatible image for D4 is chosen in Phase 8.
+> - **Visual direction:** `plan-preview.html` is followed where it differs from section 11 (violet brand
+>   `#5B4BFF`, Plus Jakarta Sans + Geist Mono, light and dark themes).
+> - **Versions:** NestJS 11, Prisma 7.10 and TypeScript 6 rather than the newest majors. See
+>   `architecture.md`, "Dependencies".
 
 This plan covers the whole specification. It answers §52 (before coding) and sets out the order of work in §45.
 Read section 0 first. It lists the decisions that change what gets built.

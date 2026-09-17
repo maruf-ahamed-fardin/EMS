@@ -1,0 +1,33 @@
+# Local development services only. Nothing here is used in production.
+#   docker compose up -d
+# Ports bind to 127.0.0.1, so these services aren't reachable from the network.
+name: selorax-ems
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ems
+      POSTGRES_PASSWORD: ems-local-only
+      POSTGRES_DB: ems
+    ports: ['127.0.0.1:5433:5432']
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Creates ems_test and ems_shadow next to ems (first start only)
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/10-databases.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ems -d ems']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # The S3-compatible bucket for documents is added in Phase 8. The plan named MinIO, but its images
+  # are no longer published on Docker Hub (checked 2026-09-17), so the image is chosen then.
+
+  # Catches outgoing email (password resets, Phase 2). Inbox at http://127.0.0.1:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ['127.0.0.1:1025:1025', '127.0.0.1:8025:8025']
+
+volumes:
+  postgres-data:

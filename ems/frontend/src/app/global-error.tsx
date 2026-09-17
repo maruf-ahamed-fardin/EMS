@@ -7,7 +7,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <body style={{ fontFamily: 'system-ui, sans-serif', display: 'grid', placeItems: 'center', minHeight: '100dvh', margin: 0 }}>
         <main style={{ maxWidth: 420, padding: 24, textAlign: 'center' }}>
           <h1 style={{ fontSize: 20 }}>Something went wrong</h1>
-          <p style={{ color: '#5a6078' }}>SeloraX People couldn't load. Try again in a moment.</p>
+          <p style={{ color: '#5a6078' }}>SeloraX People couldn&rsquo;t load. Try again in a moment.</p>
           {error.digest && <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#5a6078' }}>Reference: {error.digest}</p>}
           <button type="button" onClick={reset} style={{ marginTop: 16, padding: '10px 16px', borderRadius: 9, border: 0, background: '#5b4bff', color: '#fff', fontWeight: 600 }}>
             Try again

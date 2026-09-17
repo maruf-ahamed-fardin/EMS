@@ -17,5 +17,7 @@ export default defineConfig({
     // Commands that never connect (generate, validate) still need a URL, or Prisma 7.10 skips the
     // schema engine silently and exits 0. The placeholder points nowhere and has no credentials.
     url: process.env.DATABASE_URL ?? 'postgresql://unset@127.0.0.1:1/unset',
+    // Scratch database for `migrate dev` and the drift check (`npm run db:drift`)
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });
