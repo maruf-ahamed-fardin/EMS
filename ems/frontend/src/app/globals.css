@@ -1,1 +1,150 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * SeloraX EMS theme. Values follow the plan's visual preview (docs/plan-preview.html): cool
+ * blue-grey neutrals, one violet brand colour, and green/amber/red reserved for status.
+ * Status colours come in pairs: a fill for dots and soft backgrounds, and a darker text colour
+ * that keeps small text at WCAG AA on the surface.
+ */
+:root {
+  --radius: 0.5625rem; /* 9px controls; panels use --radius-2xl (16px) */
+
+  --background: #f6f7fb;
+  --foreground: #10131f;
+  --card: #ffffff;
+  --card-foreground: #10131f;
+  --popover: #ffffff;
+  --popover-foreground: #10131f;
+  --primary: #5b4bff;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f9;
+  --secondary-foreground: #10131f;
+  --muted: #eaedf5;
+  --muted-foreground: #5a6078;
+  --accent: #eceaff;
+  --accent-foreground: #4535e0;
+  --destructive: #dd3150;
+  --border: rgba(16, 19, 40, 0.1);
+  --input: rgba(16, 19, 40, 0.14);
+  --ring: #5b4bff;
+
+  --success: #0c9a68;
+  --success-text: #077a51;
+  --warning: #d38b0b;
+  --warning-text: #8f5c00;
+  --danger-text: #b8233f;
+  --info: #0ea5d4;
+  --info-text: #04769a;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #5a6078;
+  --sidebar-accent: #eceaff;
+  --sidebar-accent-foreground: #4535e0;
+  --sidebar-border: rgba(16, 19, 40, 0.08);
+
+  --brand-gradient: linear-gradient(135deg, #7b6cff 0%, #4f8bff 55%, #35c8f0 100%);
+  --shadow-panel: 0 1px 2px rgba(16, 19, 40, 0.05), 0 12px 32px -20px rgba(16, 19, 40, 0.25);
+}
+
+.dark {
+  --background: #0b0d15;
+  --foreground: #eceef7;
+  --card: #11141f;
+  --card-foreground: #eceef7;
+  --popover: #171b29;
+  --popover-foreground: #eceef7;
+  --primary: #8b7dff;
+  --primary-foreground: #0b0d15;
+  --secondary: #171b29;
+  --secondary-foreground: #eceef7;
+  --muted: #1e2334;
+  --muted-foreground: #9198af;
+  --accent: #1b1838;
+  --accent-foreground: #c4bdff;
+  --destructive: #ff6b7d;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.13);
+  --ring: #8b7dff;
+
+  --success: #3ddc97;
+  --success-text: #3ddc97;
+  --warning: #f5b544;
+  --warning-text: #f5b544;
+  --danger-text: #ff6b7d;
+  --info: #45d0f5;
+  --info-text: #45d0f5;
+
+  --sidebar: #0f111a;
+  --sidebar-foreground: #9198af;
+  --sidebar-accent: #1b1838;
+  --sidebar-accent-foreground: #c4bdff;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -24px rgba(0, 0, 0, 0.7);
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 3px);
+  --radius-xl: calc(var(--radius) + 5px);
+  --radius-2xl: 1rem;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-text: var(--success-text);
+  --color-warning: var(--warning);
+  --color-warning-text: var(--warning-text);
+  --color-danger-text: var(--danger-text);
+  --color-info: var(--info);
+  --color-info-text: var(--info-text);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --shadow-panel: var(--shadow-panel);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11";
+  }
+  /* Figures in tables and KPIs line up */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
