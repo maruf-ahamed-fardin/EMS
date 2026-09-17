@@ -1,10 +1,14 @@
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { HealthResponse, ReadinessResponse } from '@ems/contracts';
 import type { Response } from 'express';
+import { Public } from '../auth/decorators';
 import { PrismaService } from '../prisma/prisma.service';
 
 const CHECK_TIMEOUT_MS = 2000;
 
+@Public()
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}

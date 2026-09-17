@@ -35,11 +35,16 @@ describe('parseEnv', () => {
   });
 
   it('requires TLS for the database in production', () => {
-    expect(problemsOf({ ...base, NODE_ENV: 'production' })).toEqual([
-      'DATABASE_URL needs sslmode=verify-full (or require) in production',
-    ]);
-    expect(() => parseEnv({ ...base, NODE_ENV: 'production', DATABASE_URL: `${base.DATABASE_URL}?sslmode=verify-full` })).not.toThrow();
-    expect(() => parseEnv({ ...base, NODE_ENV: 'production', DATABASE_ALLOW_INSECURE: 'true' })).not.toThrow();
+    const production = {
+      ...base,
+      NODE_ENV: 'production',
+      APP_URL: 'https://ems.selorax.io',
+      MAIL_DRIVER: 'smtp',
+      SMTP_URL: 'smtps://mailer.example:465',
+    };
+    expect(problemsOf(production)).toEqual(['DATABASE_URL needs sslmode=verify-full (or require) in production']);
+    expect(() => parseEnv({ ...production, DATABASE_URL: `${base.DATABASE_URL}?sslmode=verify-full` })).not.toThrow();
+    expect(() => parseEnv({ ...production, DATABASE_ALLOW_INSECURE: 'true' })).not.toThrow();
   });
 
   it('never includes a value in the error', () => {
@@ -55,5 +60,24 @@ describe('parseEnv', () => {
       }
       throw new Error('expected parseEnv to throw');
     }
+  });
+});
+
+describe('parseEnv (auth and mail)', () => {
+  it('reduces APP_URL to its origin', () => {
+    expect(parseEnv({ ...base, APP_URL: 'http://localhost:3000/some/path' }).APP_URL).toBe('http://localhost:3000');
+  });
+
+  it('requires https, smtp and TLS together in production', () => {
+    expect(problemsOf({ ...base, NODE_ENV: 'production', DATABASE_ALLOW_INSECURE: 'true', APP_URL: 'http://ems.example' })).toEqual([
+      'APP_URL must be https in production',
+      'MAIL_DRIVER must be smtp in production',
+    ]);
+  });
+
+  it('needs an SMTP URL when mail goes over SMTP', () => {
+    expect(problemsOf({ ...base, MAIL_DRIVER: 'smtp' })).toEqual([
+      'SMTP_URL must be an smtp:// or smtps:// URL when MAIL_DRIVER=smtp',
+    ]);
   });
 });

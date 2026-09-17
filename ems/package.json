@@ -21,6 +21,7 @@
     "db:generate": "npm run prisma:generate -w @ems/backend",
     "db:migrate": "npm run db:migrate -w @ems/backend",
     "db:deploy": "npm run db:deploy -w @ems/backend",
+    "db:seed": "npm run db:seed -w @ems/backend",
     "db:reset": "npm run db:reset -w @ems/backend"
   },
   "devDependencies": {

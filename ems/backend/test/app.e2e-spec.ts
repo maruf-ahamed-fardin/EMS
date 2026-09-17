@@ -70,6 +70,52 @@ describe('API shell (no database)', () => {
     expect(res.headers['x-powered-by']).toBeUndefined();
   });
 
+  it('answers 401 on a protected route without a session', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
+    expect(res.body).toMatchObject({ statusCode: 401, message: 'You need to sign in' });
+  });
+
+  it('issues a CSRF cookie that the page can read', async () => {
+    const res = await request(app.getHttpServer()).get('/api/v1/auth/csrf').expect(200);
+    const cookie = ([] as string[]).concat(res.headers['set-cookie'] ?? []).find((c) => c.startsWith('ems_csrf='));
+    expect(cookie).toBeDefined();
+    expect(cookie).not.toMatch(/HttpOnly/i);
+    expect(cookie).toMatch(/SameSite=Lax/i);
+    expect(res.body.data.csrfToken).toBe(cookie?.split(';')[0]?.split('=')[1]);
+  });
+
+  it('rejects a write without the CSRF token before touching the database', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .set('origin', 'http://localhost:3000')
+      .send({ email: 'a@b.co', password: 'x' })
+      .expect(403);
+    expect(res.body.message).toMatch(/Reload the page/);
+    expect(queryRaw).not.toHaveBeenCalledWith(expect.anything());
+  });
+
+  it('rejects a write from another site even with a token', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .set('origin', 'https://evil.example')
+      .set('cookie', 'ems_csrf=abcdefghijklmnopqrstuvwxyz0123456789')
+      .set('x-csrf-token', 'abcdefghijklmnopqrstuvwxyz0123456789')
+      .send({ email: 'a@b.co', password: 'x' })
+      .expect(403);
+  });
+
+  it('validates login input and reports each field', async () => {
+    const token = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .set('origin', 'http://localhost:3000')
+      .set('cookie', `ems_csrf=${token}`)
+      .set('x-csrf-token', token)
+      .send({ email: 'not-an-email', password: '' })
+      .expect(422);
+    expect(res.body.errors).toEqual({ email: 'Enter a valid email address', password: 'Enter your password' });
+  });
+
   it('does not allow cross-origin browser calls by default', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/health').set('origin', 'https://evil.example');
     expect(res.headers['access-control-allow-origin']).toBeUndefined();

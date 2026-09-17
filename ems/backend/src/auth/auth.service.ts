@@ -7,6 +7,7 @@ import { MAILER, type Mailer } from '../mail/mailer';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthContext } from './auth-context';
 import { PasswordService } from './password.service';
+import { PermissionsService } from './permissions.service';
 import { LOCKOUT_DURATION_MS, LOCKOUT_THRESHOLD, RESET_TOKEN_TTL_MS } from './session-policy';
 import { displayName, SessionsService } from './sessions.service';
 
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionsService,
+    private readonly permissions: PermissionsService,
     private readonly audit: AuditService,
     @Inject(MAILER) private readonly mailer: Mailer,
     @InjectConfig() private readonly config: AppConfig,
@@ -132,17 +134,13 @@ export class AuthService {
         employee: { select: { firstName: true, lastName: true } },
       },
     });
-    const grants = await this.prisma.rolePermission.findMany({
-      where: { roleId: user.role.id },
-      select: { scope: true, permission: { select: { key: true } } },
-    });
     return {
       id: user.id,
       email: user.email,
       name: displayName(user),
       role: { key: user.role.key, name: user.role.name },
       employeeId: user.employeeId,
-      permissions: Object.fromEntries(grants.map((grant) => [grant.permission.key, grant.scope])),
+      permissions: await this.permissions.forRole(user.role.id),
     };
   }
 

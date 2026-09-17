@@ -55,7 +55,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
-      return { statusCode, message: httpExceptionMessage(exception, statusCode), requestId };
+      const errors = statusCode < 500 ? fieldErrorsOf(exception) : undefined;
+      return { statusCode, message: httpExceptionMessage(exception, statusCode), ...(errors ? { errors } : {}), requestId };
     }
 
     const prisma = prismaClientError(exception);
@@ -65,8 +66,20 @@ export class ApiExceptionFilter implements ExceptionFilter {
   }
 }
 
+/** Services throw `{ message, error, errors: { field: message } }` for rules zod can't check. */
+function fieldErrorsOf(exception: HttpException): Record<string, string> | undefined {
+  const response = exception.getResponse();
+  if (typeof response !== 'object' || response === null) return undefined;
+  const { errors } = response as { errors?: unknown };
+  if (typeof errors !== 'object' || errors === null) return undefined;
+  const entries = Object.entries(errors).filter((entry): entry is [string, string] => typeof entry[1] === 'string');
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 function httpExceptionMessage(exception: HttpException, statusCode: number): string {
   if (statusCode >= 500) return 'Something went wrong';
+  // The throttler's own text ("ThrottlerException: Too Many Requests") isn't for people
+  if (statusCode === HttpStatus.TOO_MANY_REQUESTS) return GENERIC_MESSAGES[statusCode] ?? 'Too many requests';
 
   const response = exception.getResponse();
   if (typeof response === 'string') return response;
