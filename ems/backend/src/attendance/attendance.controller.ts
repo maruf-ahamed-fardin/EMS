@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Injectable, Logger, Module, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Injectable, Logger, Module, type OnApplicationBootstrap, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import {
   type AttendanceItem,
@@ -88,7 +88,7 @@ export class AttendanceController {
  * down are caught up. Closing is idempotent, so overlapping runs or several instances are harmless.
  */
 @Injectable()
-export class AttendanceScheduler {
+export class AttendanceScheduler implements OnApplicationBootstrap {
   private readonly logger = new Logger(AttendanceScheduler.name);
   private running = false;
 
@@ -96,6 +96,11 @@ export class AttendanceScheduler {
     private readonly attendance: AttendanceService,
     @InjectConfig() private readonly config: AppConfig,
   ) {}
+
+  /** Catch up at start-up rather than waiting for the first 10-minute tick. */
+  onApplicationBootstrap(): void {
+    void this.closePendingDays();
+  }
 
   @Interval('close-attendance-days', 10 * 60 * 1000)
   async closePendingDays(): Promise<void> {

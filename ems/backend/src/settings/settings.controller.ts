@@ -16,7 +16,6 @@ import { CalendarService } from '../calendar/calendar.service';
 import { dateOnly } from '../calendar/work-calendar';
 import { Clock } from '../common/clock';
 import { conflict } from '../common/errors/http-errors';
-import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 class UpdateAttendanceSettingsDto extends createZodDto(updateAttendanceSettingsInput) {}
@@ -42,14 +41,14 @@ export class SettingsService {
    */
   async updateAttendance(input: UpdateAttendanceSettingsInput): Promise<AttendanceSettings> {
     const before = await this.calendar.settings();
-    const after = { ...before, ...Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) } as AttendanceSettings;
+    const after = { ...before, ...Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined)) };
     after.weekendDays = [...after.weekendDays].sort((a, b) => a - b);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.setting.upsert({
         where: { key: 'attendance' },
-        create: { key: 'attendance', value: after as unknown as Prisma.InputJsonValue },
-        update: { value: after as unknown as Prisma.InputJsonValue },
+        create: { key: 'attendance', value: after },
+        update: { value: after },
       });
       await this.audit.record({ action: 'settings.updated', entityType: 'setting', entityId: 'attendance', before: { ...before }, after: { ...after } }, tx);
     });

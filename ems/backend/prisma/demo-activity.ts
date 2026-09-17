@@ -1,5 +1,6 @@
 import { type AttendanceSettings, DEFAULT_ATTENDANCE_SETTINGS } from '@ems/contracts';
-import { addDays, dateOnly, lateAfter, workingDaysUpTo, zonedDate, zonedTime } from '../src/calendar/work-calendar';
+import { checkInStatus, workedMinutes } from '../src/attendance/attendance-rules';
+import { addDays, dateOnly, workingDaysUpTo, zonedDate, zonedTime } from '../src/calendar/work-calendar';
 import type { PrismaClient } from '../src/generated/prisma/client';
 import { DEMO_DOMAIN } from './demo-data';
 
@@ -151,7 +152,6 @@ export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), s
   });
 
   // ─── Attendance ───────────────────────────────────────────────────────────────────────────────
-  const lateThreshold = lateAfter(settings);
   let attendanceCount = 0;
   for (const day of [...pastDays, today]) {
     const isToday = day === today;
@@ -185,15 +185,16 @@ export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), s
       if (isToday && firstInAt > now) continue;
       const outCandidate = new Date(firstInAt.getTime() + (8 * 60 + Math.floor(random() * 90)) * 60_000);
       const lastOutAt = isToday && outCandidate > now ? null : outCandidate;
-      const late = firstInAt > zonedTime(day, lateThreshold, tz);
+      // The same rule the check-in API applies
+      const { status, lateMinutes } = checkInStatus(firstInAt, day, settings, true);
       attendances.push({
         employeeId: employee.id,
         workDate: dateOnly(day),
-        status: late ? 'LATE' : 'PRESENT',
+        status,
         firstInAt,
         lastOutAt,
-        workedMinutes: lastOutAt ? Math.round((lastOutAt.getTime() - firstInAt.getTime()) / 60_000) : 0,
-        lateMinutes: late ? Math.round((firstInAt.getTime() - zonedTime(day, settings.workdayStart, tz).getTime()) / 60_000) : 0,
+        workedMinutes: workedMinutes(firstInAt, lastOutAt),
+        lateMinutes,
         sourceSummary: 'WEB',
       });
     }

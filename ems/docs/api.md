@@ -93,6 +93,17 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `GET /dashboard/overview` | session | Variant by `employee.view` scope: **organization** (ALL), **team** (TEAM), **personal** (OWN). Headcount, today's attendance (`expected`, `present`, `onTime`, `late`, `onLeave`, `notCheckedIn`), attention counts, pending leave (only requests the viewer may approve, never their own), who is out, new joiners, activity (all non-sign-in changes with `audit.view`; team members' changes for managers), and `me` (the viewer's own day). Cached 30 s per scope; any audited change clears it. |
 | `GET /dashboard/attendance-trend` | `attendance.view` TEAM or ALL | `?range=today` (hourly check-ins so far), `week` (7 working days) or `month` (22 working days). Past days count settled rows; today uses today's expected count. |
 | `GET /search` | session | `?q=` (2–100 characters) → up to 5 employees (scoped like the employee list), departments and positions |
+| `GET /attendance/today` | `attendance.self` | The viewer's day: record, `onLeave`, `canCheckIn`, `canCheckOut`, `reason`, `lateAfter`. 404 without an employee record. |
+| `POST /attendance/check-in` | `attendance.self` | Server time only (any time in the body is ignored). PRESENT, or LATE after start + grace; never late on a weekend or holiday. 409 when already checked in or on approved leave. |
+| `POST /attendance/check-out` | `attendance.self` | 409 without a check-in, or when already checked out. Sets worked minutes. |
+| `GET /attendance` | `attendance.view` (scoped) | Records with `page`, `limit`, `from`, `to`, `employeeId`, `departmentId`, `status`. `corrected` marks records an administrator changed. |
+| `GET /attendance/summary` | `attendance.view` (scoped) | `?from=&to=&employeeId=` → counts by status, present rate, average worked minutes, total late minutes |
+| `POST /attendance` | `attendance.manage` | 201. A record for a day that has none: `employeeId`, `workDate` (not in the future), `firstIn`/`lastOut` as `HH:mm` in the organization's time zone, optional `status`, required `note`. 409 when the day has a record. |
+| `PATCH /attendance/:id` | `attendance.manage` (scoped) | Correction with the same fields. Status is derived from the times unless given; ABSENT, ON_LEAVE, HOLIDAY and WEEKEND can't carry times. Adds ADMIN punches and an `attendance.corrected` audit entry with before and after. |
+| `POST /attendance/close-day` | `attendance.manage` | `{ date }` → gives everyone without a record HOLIDAY, WEEKEND, ON_LEAVE or ABSENT. Idempotent. Today only from 23:55. The server also does this by itself every 10 minutes and at start-up (`JOBS_ENABLED`). |
+| `GET /settings/attendance`, `PATCH /settings/attendance` | `settings.manage` | `timeZone`, `weekendDays` (0 = Sunday), `workdayStart` (`HH:mm`), `graceMinutes`. Applies from now on. |
+| `GET /holidays` | session | `?year=` |
+| `POST /holidays`, `DELETE /holidays/:id` | `settings.manage` | Adding a holiday for a closed day turns its absences into HOLIDAY; removing it turns them back. 409 for a date that is already a holiday. |
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).

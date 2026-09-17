@@ -17,6 +17,7 @@ describe('API shell (no database)', () => {
       NODE_ENV: 'test',
       LOG_LEVEL: 'silent',
       DATABASE_URL: 'postgresql://unused@127.0.0.1:1/unused',
+      JOBS_ENABLED: 'false',
     });
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(APP_CONFIG)

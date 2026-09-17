@@ -8,6 +8,7 @@ import { AppModule } from '../../src/app.module';
 import { syncCatalogue } from '../../src/catalogue/sync-catalogue';
 import { APP_CONFIG } from '../../src/config/config.module';
 import { parseEnv } from '../../src/config/env';
+import { Clock } from '../../src/common/clock';
 import { configureApp } from '../../src/configure-app';
 import { MAILER, MemoryMailer } from '../../src/mail/mailer';
 import { PrismaService } from '../../src/prisma/prisma.service';
@@ -41,19 +42,21 @@ export interface TestApp {
 }
 
 /** A fresh database with the catalogue and one demo user per role, and the real app on top. */
-export async function startTestApp(): Promise<TestApp> {
+export async function startTestApp(options: { clock?: Clock } = {}): Promise<TestApp> {
   const url = TEST_DATABASE_URL;
   if (!url) throw new Error('TEST_DATABASE_URL is not set');
   resetDatabase(url);
 
   const config = parseEnv({ NODE_ENV: 'test', LOG_LEVEL: 'silent', DATABASE_URL: url, APP_URL: APP_ORIGIN, TRUST_PROXY_HOPS: '1', JOBS_ENABLED: 'false' });
   const mailer = new MemoryMailer();
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(APP_CONFIG)
     .useValue(config)
     .overrideProvider(MAILER)
-    .useValue(mailer)
-    .compile();
+    .useValue(mailer);
+  // Tests that depend on the time of day pass a FixedClock they can move
+  if (options.clock) builder = builder.overrideProvider(Clock).useValue(options.clock);
+  const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false });
   configureApp(app, config);

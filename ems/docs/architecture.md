@@ -45,6 +45,9 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `organization/` | Departments and positions: CRUD, head, counts, the "no active employees" delete rules. |
 | `calendar/` | The working calendar: `work-calendar.ts` (pure date functions in the organization's time zone) and `CalendarService` (attendance settings with plan D6 defaults, holidays). |
 | `dashboard/` | Overview, attendance trend, global search, and `DashboardCache` (cleared by `AuditService` on every non-sign-in change). |
+| `attendance/` | `attendance-rules.ts` (late, worked minutes, closing status: pure), `AttendanceIngestService.recordPunch()` (the one path for web and future devices), `AttendanceService` (lists, summary, corrections, closing days) and the scheduler. |
+| `settings/` | Attendance settings and holidays. |
+| `common/clock.ts` | `Clock`, injected wherever "now" matters; tests replace it with `FixedClock`. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
 | `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
 
@@ -95,6 +98,8 @@ Status colors (on time, late, not checked in) always come with an icon and a lab
 | 5-step create form with a Documents step | Personal, Employment, Contact, Account, Review | Documents need storage (Phase 8); that step is added then. |
 | Dashboard "Absent today" and department donut (preview) | "Not checked in" and a horizontal bar list | Absence is only settled after the day ends (assumption 3). Comparing department sizes is a bar's job. |
 | Attendance and leave demo data in Phases 6–8 | Seeded in Phase 5 (`prisma/demo-activity.ts`) | The dashboard needs real numbers to be checked against SQL. It uses the D6 defaults; Phases 6–7 build the flows. |
+| Nightly close at 23:55 (`@nestjs/schedule` cron) | A 10-minute interval plus a run at start-up that closes every closable day of the last week | The time zone is a setting, so a fixed cron time could be wrong; the interval also catches up days missed while the server was down. Closing is idempotent. |
+| Absence and missing check-out notifications | Counted and logged when a day closes | Notifications arrive in Phase 9 and will hook in here. |
 | Dashboard cache cleared on relevant writes | Cleared by `AuditService.record` on every non-sign-in change | One place covers every module, including later ones. A read racing an uncommitted transaction could cache old numbers, so the cache is cleared again 2 s later. |
 
 ## Dependencies

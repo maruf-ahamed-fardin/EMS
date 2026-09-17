@@ -1,4 +1,7 @@
-import type { DataResponse, EmployeeActivityItem, EmployeeDetail, ListResponse } from '@ems/contracts';
+import type { AttendanceItem, AttendanceSummary, DataResponse, EmployeeActivityItem, EmployeeDetail, ListResponse } from '@ems/contracts';
+import { AttendanceStatusBadge } from '@/components/attendance/attendance-status-badge';
+import { dhakaToday, formatDuration, formatTime, monthStartOf } from '@/lib/attendance';
+import { percent } from '@/lib/dashboard';
 import { ChevronRight, History, Lock, Pencil, ShieldCheck } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -14,15 +17,32 @@ import { EmployeeActions } from './employee-actions';
 
 export const metadata: Metadata = { title: 'Employee' };
 
-const TABS = ['overview', 'personal', 'employment', 'activity'] as const;
+const TABS = ['overview', 'personal', 'employment', 'attendance', 'activity'] as const;
+
+/** This month's attendance, or null when the viewer can't see this person's attendance. */
+async function loadAttendance(id: string) {
+  const to = dhakaToday();
+  const from = monthStartOf(to);
+  try {
+    const [summary, recent] = await Promise.all([
+      serverApiJson<DataResponse<AttendanceSummary>>(`/attendance/summary?from=${from}&to=${to}&employeeId=${id}`),
+      serverApiJson<ListResponse<AttendanceItem>>(`/attendance?employeeId=${id}&limit=10`),
+    ]);
+    return { summary: summary.data, recent: recent.data };
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 403) return null;
+    throw error;
+  }
+}
 
 async function load(id: string) {
   try {
-    const [detail, activity] = await Promise.all([
+    const [detail, activity, attendance] = await Promise.all([
       serverApiJson<DataResponse<EmployeeDetail>>(`/employees/${encodeURIComponent(id)}`),
       serverApiJson<ListResponse<EmployeeActivityItem>>(`/employees/${encodeURIComponent(id)}/activity?limit=20`),
+      loadAttendance(encodeURIComponent(id)),
     ]);
-    return { employee: detail.data, activity: activity.data };
+    return { employee: detail.data, activity: activity.data, attendance };
   } catch (error) {
     // Out of scope and missing look the same, on purpose
     if (error instanceof ApiRequestError && error.status === 404) notFound();
@@ -39,7 +59,7 @@ export default async function EmployeePage({
 }) {
   const { id } = await params;
   const { tab } = await searchParams;
-  const { employee, activity } = await load(id);
+  const { employee, activity, attendance } = await load(id);
   const initialTab = (TABS as readonly string[]).includes(tab ?? '') ? tab! : 'overview';
 
   return (
@@ -107,6 +127,7 @@ export default async function EmployeePage({
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="employment">Employment</TabsTrigger>
+          {attendance && <TabsTrigger value="attendance">Attendance</TabsTrigger>}
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -171,6 +192,39 @@ export default async function EmployeePage({
             />
           </Panel>
         </TabsContent>
+
+        {attendance && (
+          <TabsContent value="attendance" className="mt-4 grid gap-4 lg:grid-cols-[1fr_2fr]">
+            <Panel title="This month">
+              <Rows
+                rows={[
+                  ['Present', `${attendance.summary.byStatus.PRESENT + attendance.summary.byStatus.LATE} days (${percent(attendance.summary.byStatus.PRESENT + attendance.summary.byStatus.LATE, attendance.summary.byStatus.PRESENT + attendance.summary.byStatus.LATE + attendance.summary.byStatus.ABSENT)})`],
+                  ['Late', `${attendance.summary.byStatus.LATE} days · ${formatDuration(attendance.summary.totalLateMinutes)}`],
+                  ['Absent', `${attendance.summary.byStatus.ABSENT} days`],
+                  ['On leave', `${attendance.summary.byStatus.ON_LEAVE} days`],
+                  ['Average day', formatDuration(attendance.summary.averageWorkedMinutes)],
+                ]}
+              />
+            </Panel>
+            <Panel title="Recent days" action={<Link href={`/attendance?employeeId=${employee.id}`} className="text-sm font-medium text-primary hover:underline">All</Link>}>
+              {attendance.recent.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No attendance recorded yet.</p>
+              ) : (
+                <ul className="divide-y">
+                  {attendance.recent.map((row) => (
+                    <li key={row.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                      <span className="w-28 shrink-0 tabular">{formatDate(row.workDate)}</span>
+                      <AttendanceStatusBadge status={row.status} />
+                      <span className="ml-auto text-muted-foreground tabular">
+                        {formatTime(row.firstInAt)} – {formatTime(row.lastOutAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          </TabsContent>
+        )}
 
         <TabsContent value="activity" className="mt-4">
           <Panel title="Activity">
