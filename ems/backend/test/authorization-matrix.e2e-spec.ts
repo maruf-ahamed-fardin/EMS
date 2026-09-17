@@ -21,6 +21,9 @@ const MATRIX: Array<{ method: 'get'; path: string; expect: Expectation }> = [
   { method: 'get', path: '/departments', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
   { method: 'get', path: '/departments/head-options', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 403, employee: 403 } },
   { method: 'get', path: '/positions', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/dashboard/overview', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/dashboard/attendance-trend', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 403 } },
+  { method: 'get', path: '/search?q=sx', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
 ];
 
 const ROLES = Object.keys(DEMO_PEOPLE) as SystemRoleKey[];
