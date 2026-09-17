@@ -33,16 +33,43 @@ const envSchema = z
     CORS_ORIGINS: commaList,
     /** Proxy hops in front of the API (Next.js rewrite, load balancer). Used for client IPs. */
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
+
+    /**
+     * The web app's public URL. Writes must come from this origin (CSRF check), links in emails point
+     * here, and an https URL makes the cookies Secure.
+     */
+    APP_URL: z
+      .url({ protocol: /^https?$/, message: 'must be an http(s) URL' })
+      .default('http://localhost:3000')
+      .transform((value) => new URL(value).origin),
+
+    MAIL_DRIVER: z.enum(['console', 'smtp']).default('console'),
+    /** smtp://user:pass@host:port. Required when MAIL_DRIVER=smtp. */
+    SMTP_URL: z.string().optional(),
+    MAIL_FROM: z.string().min(3).default('SeloraX People <no-reply@selorax.local>'),
   })
   .superRefine((env, ctx) => {
-    if (env.NODE_ENV !== 'production' || env.DATABASE_ALLOW_INSECURE) return;
-    const sslMode = safeSslMode(env.DATABASE_URL);
-    if (!sslMode || !SECURE_SSL_MODES.has(sslMode)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['DATABASE_URL'],
-        message: 'needs sslmode=verify-full (or require) in production',
-      });
+    if (env.MAIL_DRIVER === 'smtp' && !env.SMTP_URL?.match(/^smtps?:\/\//)) {
+      ctx.addIssue({ code: 'custom', path: ['SMTP_URL'], message: 'must be an smtp:// or smtps:// URL when MAIL_DRIVER=smtp' });
+    }
+    if (env.NODE_ENV !== 'production') return;
+
+    if (!env.DATABASE_ALLOW_INSECURE) {
+      const sslMode = safeSslMode(env.DATABASE_URL);
+      if (!sslMode || !SECURE_SSL_MODES.has(sslMode)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['DATABASE_URL'],
+          message: 'needs sslmode=verify-full (or require) in production',
+        });
+      }
+    }
+    if (!env.APP_URL.startsWith('https://')) {
+      ctx.addIssue({ code: 'custom', path: ['APP_URL'], message: 'must be https in production' });
+    }
+    // Console mail would silently drop every password reset
+    if (env.MAIL_DRIVER !== 'smtp') {
+      ctx.addIssue({ code: 'custom', path: ['MAIL_DRIVER'], message: 'must be smtp in production' });
     }
   });
 
