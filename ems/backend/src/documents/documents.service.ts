@@ -62,7 +62,7 @@ export function expiryOf(expiresAt: string | null, today: string): DocumentExpir
 export function downloadName(title: string, mimeType: DocumentMimeType): string {
   const unsafe = (c: string) => c.charCodeAt(0) < 32 || c === '\u007f' || '/\\:*?"<>|'.includes(c);
   const cleaned = Array.from(title, (c) => (unsafe(c) ? '-' : c)).join('');
-  const base = cleaned.replace(/-{2,}/g, '-').replace(/\s+/g, ' ').trim().slice(0, 100) || 'document';
+  const base = cleaned.replace(/-{2,}/g, '-').replace(/\s+/g, ' ').replace(/^[\s-]+|[\s-]+$/g, '').slice(0, 100) || 'document';
   return `${base}.${DOCUMENT_MIME_TYPES[mimeType].extension}`;
 }
 

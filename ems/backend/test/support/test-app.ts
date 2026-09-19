@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
@@ -38,6 +40,8 @@ export interface TestApp {
   app: NestExpressApplication;
   prisma: PrismaService;
   mailer: MemoryMailer;
+  /** Where the local storage driver keeps this run's documents; removed on close. */
+  storageDir: string;
   close: () => Promise<void>;
 }
 
@@ -47,7 +51,17 @@ export async function startTestApp(options: { clock?: Clock } = {}): Promise<Tes
   if (!url) throw new Error('TEST_DATABASE_URL is not set');
   resetDatabase(url);
 
-  const config = parseEnv({ NODE_ENV: 'test', LOG_LEVEL: 'silent', DATABASE_URL: url, APP_URL: APP_ORIGIN, TRUST_PROXY_HOPS: '1', JOBS_ENABLED: 'false' });
+  const storageDir = mkdtempSync(path.join(tmpdir(), 'ems-test-storage-'));
+  const config = parseEnv({
+    NODE_ENV: 'test',
+    LOG_LEVEL: 'silent',
+    DATABASE_URL: url,
+    APP_URL: APP_ORIGIN,
+    TRUST_PROXY_HOPS: '1',
+    JOBS_ENABLED: 'false',
+    STORAGE_DRIVER: 'local',
+    STORAGE_LOCAL_DIR: storageDir,
+  });
   const mailer = new MemoryMailer();
   let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(APP_CONFIG)
@@ -66,7 +80,16 @@ export async function startTestApp(options: { clock?: Clock } = {}): Promise<Tes
   await syncCatalogue(prisma);
   await seedDemoData(prisma, await argon2.hash(DEMO_PASSWORD, { type: argon2.argon2id }));
 
-  return { app, prisma, mailer, close: () => app.close() };
+  return {
+    app,
+    prisma,
+    mailer,
+    storageDir,
+    close: async () => {
+      await app.close();
+      rmSync(storageDir, { recursive: true, force: true });
+    },
+  };
 }
 
 function cookieValue(setCookie: string | string[] | undefined, name: string): string | undefined {
@@ -130,6 +153,19 @@ export class TestBrowser {
     const rotated = cookieValue(res.headers['set-cookie'], 'ems_csrf');
     if (rotated !== undefined) this.csrf = rotated || undefined;
     return res;
+  }
+
+  /** multipart/form-data, as the browser sends a file upload. */
+  async upload(path: string, fields: Record<string, string>, file?: { content: Buffer; filename: string; contentType?: string }) {
+    let req = this.agent
+      .post(`/api/v1${path}`)
+      .set('x-forwarded-for', this.ip)
+      .set('origin', APP_ORIGIN)
+      .set('sec-fetch-site', 'same-origin')
+      .set('x-csrf-token', await this.token());
+    for (const [name, value] of Object.entries(fields)) req = req.field(name, value);
+    if (file) req = req.attach('file', file.content, { filename: file.filename, contentType: file.contentType ?? 'application/octet-stream' });
+    return req;
   }
 
   login(email: string, password = DEMO_PASSWORD) {
