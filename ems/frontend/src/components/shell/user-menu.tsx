@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { api } from '@/lib/api-client';
 import { initials } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface ShellUser {
   name: string;
@@ -29,6 +30,7 @@ export interface ShellUser {
 export function UserMenu({ user }: { user: ShellUser }) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
@@ -38,6 +40,8 @@ export function UserMenu({ user }: { user: ShellUser }) {
     } catch {
       // Already signed out or the session expired: the login page is still the right place
     }
+    // Nothing of this person's (notifications, say) may show to whoever signs in next on this browser
+    queryClient.clear();
     router.replace('/login');
     router.refresh();
   }

@@ -20,6 +20,17 @@ async function csrfToken(): Promise<string> {
 }
 
 /**
+ * The session has ended (expired, revoked, or signed out in another tab): go to sign-in and come back
+ * here afterwards. A full navigation, so nothing cached for this user survives. Sign-in itself answers
+ * 401 for a wrong password, which the form shows instead.
+ */
+function onUnauthorized(path: string): void {
+  if (path === '/auth/login' || typeof window === 'undefined') return;
+  const here = `${window.location.pathname}${window.location.search}`;
+  window.location.assign(`/login?next=${encodeURIComponent(here)}`);
+}
+
+/**
  * Browser-side API calls through the same-origin /api proxy. Sends the CSRF token on writes, and throws
  * ApiRequestError with the API's message and field errors on failure.
  */
@@ -36,6 +47,7 @@ export async function api<T = void>(path: string, init: { method?: 'GET' | 'POST
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
 
+  if (response.status === 401) onUnauthorized(path);
   if (!response.ok) throw await readApiError(response);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
@@ -52,6 +64,7 @@ export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
     credentials: 'same-origin',
     body: form,
   });
+  if (response.status === 401) onUnauthorized(path);
   if (!response.ok) throw await readApiError(response);
   return (await response.json()) as T;
 }

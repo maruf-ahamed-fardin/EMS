@@ -18,6 +18,9 @@ export function proxy(request: NextRequest) {
   if (isPublicPath(pathname) || request.cookies.has(SESSION_COOKIE)) {
     const headers = new Headers(request.headers);
     headers.set('x-nonce', nonce);
+    // For the (app) layout's redirect when the cookie turns out to be an expired session. Always set
+    // here, so a value sent by the browser never gets through.
+    headers.set('x-pathname', `${pathname}${search}`);
     headers.set('Content-Security-Policy', csp);
     response = NextResponse.next({ request: { headers } });
   } else {

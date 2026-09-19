@@ -3,10 +3,11 @@
 import { EMPLOYEE_SORTS, EmploymentType, type EmployeeSort } from '@ems/contracts';
 import { LoaderCircle, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EMPLOYMENT_TYPE_LABELS, employeesHref } from '@/lib/employees';
+import { SEARCH_MAX_LENGTH, useUrlSearch } from '@/lib/use-url-search';
 
 const ANY = '__any__';
 
@@ -31,23 +32,13 @@ export function EmployeeFilters({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [search, setSearch] = useState(params.q ?? '');
-  const firstRender = useRef(true);
 
   function go(changes: Record<string, string | undefined>) {
     startTransition(() => router.replace(employeesHref(params, changes), { scroll: false }));
   }
 
-  // Search as you type, after a short pause
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    const timer = setTimeout(() => go({ q: search.trim() || undefined }), 350);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `go` changes every render; only the text matters
-  }, [search]);
+  // Search as you type, after a short pause; follows the URL when it changes some other way
+  const [search, setSearch] = useUrlSearch(params.q, (q) => go({ q }));
 
   return (
     <div className="flex flex-col gap-3 border-b p-4 lg:flex-row lg:items-center">
@@ -55,6 +46,7 @@ export function EmployeeFilters({
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
           type="search"
+          maxLength={SEARCH_MAX_LENGTH}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search name, ID or email"

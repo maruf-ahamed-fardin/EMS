@@ -3,9 +3,10 @@
 import { UserStatus } from '@ems/contracts';
 import { LoaderCircle, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SEARCH_MAX_LENGTH, useUrlSearch } from '@/lib/use-url-search';
 
 const ANY = '__any__';
 const STATUS_LABELS: Record<UserStatus, string> = { ACTIVE: 'Active', INACTIVE: 'Inactive', LOCKED: 'Locked' };
@@ -21,25 +22,16 @@ function href(params: Record<string, string | undefined>, changes: Record<string
 export function UserFilters({ params, roles }: { params: Record<string, string | undefined>; roles: Array<{ id: string; name: string }> }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [search, setSearch] = useState(params.q ?? '');
-  const firstRender = useRef(true);
   const go = (changes: Record<string, string | undefined>) => startTransition(() => router.replace(href(params, changes), { scroll: false }));
 
-  useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    const timer = setTimeout(() => go({ q: search.trim() || undefined }), 350);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `go` changes every render; only the text matters
-  }, [search]);
+  // Search as you type, after a short pause; follows the URL when it changes some other way
+  const [search, setSearch] = useUrlSearch(params.q, (q) => go({ q }));
 
   return (
     <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center">
       <div className="relative sm:w-80">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email or ID" aria-label="Search accounts" className="h-10 pr-9 pl-9" />
+        <Input type="search" maxLength={SEARCH_MAX_LENGTH} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email or ID" aria-label="Search accounts" className="h-10 pr-9 pl-9" />
         {pending && <LoaderCircle className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-label="Updating" />}
       </div>
       <div className="grid grid-cols-2 gap-3 sm:ml-auto sm:flex">

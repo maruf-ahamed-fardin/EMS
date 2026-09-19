@@ -196,7 +196,8 @@ export default async function EmployeePage({
         </dl>
       </section>
 
-      <Tabs defaultValue={initialTab} className="mt-6">
+      {/* Keyed by the tab in the URL, so a link to ?tab=… (and Back) switches tab; state survives a search-param change otherwise */}
+      <Tabs key={initialTab} defaultValue={initialTab} className="mt-6">
         <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="personal">Personal</TabsTrigger>

@@ -12,9 +12,11 @@ import { TextField } from '@/components/forms/text-field';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api-client';
 import { applyApiError } from '@/lib/form-errors';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function LoginForm({ next, passwordWasReset }: { next: string; passwordWasReset: boolean }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const {
     register,
@@ -31,6 +33,8 @@ export function LoginForm({ next, passwordWasReset }: { next: string; passwordWa
       setFormError(applyApiError(error, setError, ['email', 'password']));
       return;
     }
+    // A fresh start for the new person, whatever the last one left in this tab
+    queryClient.clear();
     router.replace(next);
     router.refresh();
   });
