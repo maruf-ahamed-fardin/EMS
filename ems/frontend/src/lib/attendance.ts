@@ -1,13 +1,5 @@
-import type { AttendanceStatus } from '@ems/contracts';
-
-export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
-  PRESENT: 'On time',
-  LATE: 'Late',
-  ABSENT: 'Absent',
-  ON_LEAVE: 'On leave',
-  HOLIDAY: 'Holiday',
-  WEEKEND: 'Weekend',
-};
+// Shared with the reports, so both use the same words
+export { ATTENDANCE_STATUS_LABELS } from '@ems/contracts';
 
 export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 

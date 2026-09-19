@@ -21,6 +21,7 @@ export const AUDIT_FIELDS: Record<string, readonly string[]> = {
   leave_request: ['employeeId', 'leaveTypeId', 'startDate', 'endDate', 'days', 'status', 'note'],
   document: ['employeeId', 'documentTypeId', 'title', 'mimeType', 'sizeBytes', 'expiresAt', 'deletedAt'],
   document_type: ['name', 'code', 'isSensitive', 'hasExpiry', 'deletedAt'],
+  report: ['report', 'format', 'filters', 'rows'],
 };
 
 /** Second line of defence: keys that are never written, even if an allow-list names them. */

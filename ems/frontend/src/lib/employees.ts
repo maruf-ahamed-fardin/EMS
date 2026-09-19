@@ -1,11 +1,7 @@
-import type { EmployeeStatus, EmploymentType, Gender } from '@ems/contracts';
+import { EMPLOYEE_STATUS_LABELS, type EmploymentType, type Gender } from '@ems/contracts';
 
-export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
-  FULL_TIME: 'Full-time',
-  PART_TIME: 'Part-time',
-  CONTRACT: 'Contract',
-  INTERN: 'Intern',
-};
+// Shared with the reports, so both use the same words
+export { EMPLOYMENT_TYPE_LABELS } from '@ems/contracts';
 
 export const EMPLOYMENT_TYPE_HINTS: Record<EmploymentType, string> = {
   FULL_TIME: 'Permanent, 40 h',
@@ -14,7 +10,7 @@ export const EMPLOYMENT_TYPE_HINTS: Record<EmploymentType, string> = {
   INTERN: 'Up to 6 months',
 };
 
-export const STATUS_LABELS: Record<EmployeeStatus, string> = { ACTIVE: 'Active', INACTIVE: 'Inactive' };
+export const STATUS_LABELS = EMPLOYEE_STATUS_LABELS;
 
 export const GENDER_LABELS: Record<Gender, string> = {
   FEMALE: 'Female',

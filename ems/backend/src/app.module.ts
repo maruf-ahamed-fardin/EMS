@@ -27,6 +27,7 @@ import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.controller';
 import { OrganizationModule } from './organization/organization.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.controller';
 import { RolesModule } from './roles/roles.module';
 
 @Module({
@@ -53,6 +54,7 @@ import { RolesModule } from './roles/roles.module';
     SettingsModule,
     LeaveModule,
     DocumentsModule,
+    ReportsModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs
