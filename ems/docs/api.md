@@ -150,6 +150,11 @@ nothing; `dedupe_key` makes repeats impossible where an event can be seen twice)
 
 Only active accounts receive notifications.
 
+| Method and path | Access | Result |
+|---|---|---|
+| `GET /reports/:report` | `report.view` (scoped) | `employees`, `attendance`, `leave` or `departments`. `?format=json` (default) returns `{ title, filters, columns, data, meta, summary }`, one page (`page`, `limit` up to 100). Filters: employees `departmentId`, `status`, `employmentType`, `joinedFrom`, `joinedTo`; attendance `from`, `to`, `departmentId`, `employeeId`, `status`; leave the same plus `leaveTypeId` (requests that overlap the dates); departments `from`, `to`. `from`/`to` are required where they exist and span a year at most (422). |
+| `GET /reports/:report?format=csv\|xlsx\|pdf` | `report.export` (scoped) | The whole report as a download (`Content-Disposition: attachment`, `no-store`), streamed in batches of 2 000 rows. 413 before anything is sent when it would exceed 50 000 rows. Audited as `report.exported` with the filters and row count. CSV: UTF-8 with a byte-order mark; cells starting with `= + - @` get a leading apostrophe. XLSX: the table (bold, frozen header) and an About sheet with filters and totals. PDF: landscape A4 with the header on every page; non-Latin text shows as `?` (use CSV or XLSX for Bangla names). |
+
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).
 Emails are recorded; passwords and tokens never are.
