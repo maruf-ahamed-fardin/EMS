@@ -1,5 +1,19 @@
-import type { AttendanceItem, AttendanceSummary, DataResponse, EmployeeActivityItem, EmployeeDetail, ListResponse } from '@ems/contracts';
+import {
+  type AttendanceItem,
+  type AttendanceSummary,
+  can,
+  type DataResponse,
+  type EmployeeActivityItem,
+  type EmployeeDetail,
+  type LeaveBalanceRow,
+  type LeaveRequestItem,
+  type ListResponse,
+} from '@ems/contracts';
 import { AttendanceStatusBadge } from '@/components/attendance/attendance-status-badge';
+import { BalanceAdjustDialog } from '@/components/leave/balance-adjust-dialog';
+import { LeaveBalanceCards } from '@/components/leave/leave-balance-cards';
+import { LeaveRequestActions } from '@/components/leave/leave-request-actions';
+import { LeaveStatusBadge } from '@/components/leave/leave-status-badge';
 import { dhakaToday, formatDuration, formatTime, monthStartOf } from '@/lib/attendance';
 import { percent } from '@/lib/dashboard';
 import { ChevronRight, History, Lock, Pencil, ShieldCheck } from 'lucide-react';
@@ -12,12 +26,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ApiRequestError } from '@/lib/api-error';
 import { describeActivity, EMPLOYMENT_TYPE_LABELS, formatDate, formatDateTime, formatPhone, GENDER_LABELS } from '@/lib/employees';
+import { daysLabel, formatLeaveRange } from '@/lib/leave';
 import { serverApiJson } from '@/lib/server-api';
+import { getSession } from '@/lib/session';
 import { EmployeeActions } from './employee-actions';
 
 export const metadata: Metadata = { title: 'Employee' };
 
-const TABS = ['overview', 'personal', 'employment', 'attendance', 'activity'] as const;
+const TABS = ['overview', 'personal', 'employment', 'attendance', 'leave', 'activity'] as const;
 
 /** This month's attendance, or null when the viewer can't see this person's attendance. */
 async function loadAttendance(id: string) {
@@ -35,14 +51,30 @@ async function loadAttendance(id: string) {
   }
 }
 
+/**
+ * This year's balances and recent requests, or null when the viewer can't see this person's leave.
+ * The API filters by scope itself; the permission check here only decides whether to show the tab.
+ */
+async function loadLeave(id: string) {
+  const session = await getSession();
+  if (!session || (session.employeeId !== id && !can(session.permissions, 'leave.view'))) return null;
+  const year = Number(dhakaToday().slice(0, 4));
+  const [balances, requests] = await Promise.all([
+    serverApiJson<DataResponse<LeaveBalanceRow[]>>(`/leave/balances?employeeId=${id}&year=${year}`),
+    serverApiJson<ListResponse<LeaveRequestItem>>(`/leave/requests?employeeId=${id}&limit=10`),
+  ]);
+  return { year, balances: balances.data, requests: requests.data, canAdjust: can(session.permissions, 'leave.manage_balances') };
+}
+
 async function load(id: string) {
   try {
-    const [detail, activity, attendance] = await Promise.all([
+    const [detail, activity, attendance, leave] = await Promise.all([
       serverApiJson<DataResponse<EmployeeDetail>>(`/employees/${encodeURIComponent(id)}`),
       serverApiJson<ListResponse<EmployeeActivityItem>>(`/employees/${encodeURIComponent(id)}/activity?limit=20`),
       loadAttendance(encodeURIComponent(id)),
+      loadLeave(encodeURIComponent(id)),
     ]);
-    return { employee: detail.data, activity: activity.data, attendance };
+    return { employee: detail.data, activity: activity.data, attendance, leave };
   } catch (error) {
     // Out of scope and missing look the same, on purpose
     if (error instanceof ApiRequestError && error.status === 404) notFound();
@@ -59,7 +91,7 @@ export default async function EmployeePage({
 }) {
   const { id } = await params;
   const { tab } = await searchParams;
-  const { employee, activity, attendance } = await load(id);
+  const { employee, activity, attendance, leave } = await load(id);
   const initialTab = (TABS as readonly string[]).includes(tab ?? '') ? tab! : 'overview';
 
   return (
@@ -128,6 +160,7 @@ export default async function EmployeePage({
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="employment">Employment</TabsTrigger>
           {attendance && <TabsTrigger value="attendance">Attendance</TabsTrigger>}
+          {leave && <TabsTrigger value="leave">Leave</TabsTrigger>}
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -218,6 +251,38 @@ export default async function EmployeePage({
                       <span className="ml-auto text-muted-foreground tabular">
                         {formatTime(row.firstInAt)} – {formatTime(row.lastOutAt)}
                       </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          </TabsContent>
+        )}
+
+        {leave && (
+          <TabsContent value="leave" className="mt-4 grid gap-4">
+            <LeaveBalanceCards balances={leave.balances} actions={leave.canAdjust ? (balance) => <BalanceAdjustDialog balance={balance} /> : undefined} />
+            <Panel title="Recent requests">
+              {leave.requests.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No leave requested yet.</p>
+              ) : (
+                <ul className="divide-y">
+                  {leave.requests.map((r) => (
+                    <li key={r.id} className="grid gap-2 py-3 first:pt-0 last:pb-0">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <p className="font-medium">
+                          {r.leaveType.name} · <span className="tabular">{formatLeaveRange(r.startDate, r.endDate)}</span>
+                          <span className="font-normal text-muted-foreground"> · {daysLabel(r.days)}</span>
+                        </p>
+                        <LeaveStatusBadge status={r.status} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">{r.reason}</p>
+                      {r.reviewNote && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">{r.reviewedBy ?? 'Reviewer'}:</span> {r.reviewNote}
+                        </p>
+                      )}
+                      <LeaveRequestActions request={r} compact />
                     </li>
                   ))}
                 </ul>

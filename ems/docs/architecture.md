@@ -100,6 +100,10 @@ Status colors (on time, late, not checked in) always come with an icon and a lab
 | Attendance and leave demo data in Phases 6–8 | Seeded in Phase 5 (`prisma/demo-activity.ts`) | The dashboard needs real numbers to be checked against SQL. It uses the D6 defaults; Phases 6–7 build the flows. |
 | Nightly close at 23:55 (`@nestjs/schedule` cron) | A 10-minute interval plus a run at start-up that closes every closable day of the last week | The time zone is a setting, so a fixed cron time could be wrong; the interval also catches up days missed while the server was down. Closing is idempotent. |
 | Absence and missing check-out notifications | Counted and logged when a day closes | Notifications arrive in Phase 9 and will hook in here. |
+| Yearly allocation job on 1 January | Missing balances created at start-up and every hour, and by `POST /leave/balances/allocate` | The same idempotent step covers a new year, a new paid leave type and a reactivated employee, and catches up after downtime. |
+| `SELECT … FOR UPDATE` on the balance row when submitting leave | A per-employee advisory lock (`pg_advisory_xact_lock`) around the checks and the balance change | The overlap check has to be serialized too, and it reads requests, not the balance. The CHECK constraint stays as the last line of defence. |
+| Leave requests of any length | One calendar year per request | Balances are yearly, so a request that crosses 31 December is split by the requester. |
+| Leave notifications (requested, approved, rejected) | Audited only | Notifications arrive in Phase 9 and will hook in here. |
 | Dashboard cache cleared on relevant writes | Cleared by `AuditService.record` on every non-sign-in change | One place covers every module, including later ones. A read racing an uncommitted transaction could cache old numbers, so the cache is cleared again 2 s later. |
 
 ## Dependencies

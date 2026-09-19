@@ -1,6 +1,7 @@
 import { type AttendanceSettings, DEFAULT_ATTENDANCE_SETTINGS } from '@ems/contracts';
 import { checkInStatus, workedMinutes } from '../src/attendance/attendance-rules';
 import { addDays, dateOnly, workingDaysUpTo, zonedDate, zonedTime } from '../src/calendar/work-calendar';
+import { proratedAllocation } from '../src/leave/leave-rules';
 import type { PrismaClient } from '../src/generated/prisma/client';
 import { DEMO_DOMAIN } from './demo-data';
 
@@ -36,8 +37,8 @@ interface Leave {
  * and absent rates, up to "now" today.
  *
  * Development data only. It replaces the attendance and leave of demo employees (@demo.selorax.test)
- * each time it runs, so the numbers always match the day it was run. The rules that decide "late" and
- * "absent" are the Phase 6 defaults; Phases 6 and 7 build the real flows.
+ * each time it runs, so the numbers always match the day it was run. Status, worked minutes and leave
+ * allowances come from the same rule functions the API uses.
  */
 export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), settings: AttendanceSettings = DEFAULT_ATTENDANCE_SETTINGS) {
   const tz = settings.timeZone;
@@ -100,6 +101,12 @@ export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), s
     }
   });
 
+  // Keep every request inside this year's balance and after the person joined, as the API requires
+  const joinedOn = new Map(active.map((e) => [e.id, e.joiningDate.toISOString().slice(0, 10)]));
+  for (const leave of leaves) {
+    leave.days = leave.days.filter((day) => day.startsWith(`${year}-`) && day >= joinedOn.get(leave.employeeId)!);
+  }
+
   const onLeaveOn = new Map<string, Set<string>>();
   for (const leave of leaves) {
     if (leave.status !== 'APPROVED') continue;
@@ -109,13 +116,15 @@ export async function seedDemoActivity(prisma: PrismaClient, now = new Date(), s
     }
   }
 
-  // Balances: allocation, minus used (approved) and pending days
+  // Balances: the same prorated allowance the leave service gives, raised only if the demo leave
+  // above would otherwise overdraw it (the database refuses that)
   const balanceRows = active.flatMap((employee) =>
     [...leaveTypes.entries()].filter(([, type]) => type.isPaid).map(([code, type]) => {
       const mine = leaves.filter((l) => l.employeeId === employee.id && l.typeCode === code);
       const used = mine.filter((l) => l.status === 'APPROVED').reduce((sum, l) => sum + l.days.length, 0);
       const pending = mine.filter((l) => l.status === 'PENDING').reduce((sum, l) => sum + l.days.length, 0);
-      return { employeeId: employee.id, leaveTypeId: type.id, year, allocated: Math.max(type.allocation, used + pending) };
+      const allocated = proratedAllocation(type.allocation, joinedOn.get(employee.id)!, year);
+      return { employeeId: employee.id, leaveTypeId: type.id, year, allocated: Math.max(allocated, used + pending) };
     }),
   );
   await prisma.leaveBalance.createMany({ data: balanceRows });

@@ -77,15 +77,14 @@ export class LeaveRequestsService {
     const days = workingDays.length;
     const year = Number(input.startDate.slice(0, 4));
 
-    const [overlaps, balance, employee] = await Promise.all([
-      db.leaveRequest.findMany({
-        where: { employeeId, status: { in: ['PENDING', 'APPROVED'] }, startDate: { lte: dateOnly(input.endDate) }, endDate: { gte: dateOnly(input.startDate) } },
-        orderBy: { startDate: 'asc' },
-        select: { id: true, startDate: true, endDate: true, status: true, leaveType: { select: { name: true } } },
-      }),
-      type.isPaid ? db.leaveBalance.findUnique({ where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId: type.id, year } } }) : null,
-      db.employee.findUniqueOrThrow({ where: { id: employeeId }, select: { joiningDate: true, status: true } }),
-    ]);
+    // One after another: inside create() these share a single transaction connection
+    const overlaps = await db.leaveRequest.findMany({
+      where: { employeeId, status: { in: ['PENDING', 'APPROVED'] }, startDate: { lte: dateOnly(input.endDate) }, endDate: { gte: dateOnly(input.startDate) } },
+      orderBy: { startDate: 'asc' },
+      select: { id: true, startDate: true, endDate: true, status: true, leaveType: { select: { name: true } } },
+    });
+    const balance = type.isPaid ? await db.leaveBalance.findUnique({ where: { employeeId_leaveTypeId_year: { employeeId, leaveTypeId: type.id, year } } }) : null;
+    const employee = await db.employee.findUniqueOrThrow({ where: { id: employeeId }, select: { joiningDate: true, status: true } });
 
     const availableDays = type.isPaid
       ? balance

@@ -104,6 +104,18 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `GET /settings/attendance`, `PATCH /settings/attendance` | `settings.manage` | `timeZone`, `weekendDays` (0 = Sunday), `workdayStart` (`HH:mm`), `graceMinutes`. Applies from now on. |
 | `GET /holidays` | session | `?year=` |
 | `POST /holidays`, `DELETE /holidays/:id` | `settings.manage` | Adding a holiday for a closed day turns its absences into HOLIDAY; removing it turns them back. 409 for a date that is already a holiday. |
+| `POST /leave/preview` | `leave.create` | `{ leaveTypeId, startDate, endDate }` (same calendar year) → `days` (working days only), `workingDays`, `excludedDays` with the weekend or holiday name, `available` and `availableAfter` (null for unpaid types), `overlaps`, and `problems`: everything that would stop the request, in plain words. Saves nothing. |
+| `POST /leave/requests` | `leave.create` | 201. The preview plus a required `reason`. 409 with the first problem (past start, before joining, no working days, overlap, not enough balance). Adds the days to `pending`. One request per person at a time (advisory lock), so parallel submits can't overdraw. |
+| `GET /leave/requests` | session | Your own requests plus those in your `leave.view` scope. `page`, `limit`, `status`, `employeeId`, `year`, `mine=true`, and `reviewable=true` (pending requests you may decide, never your own, oldest first). Each item carries `allowedActions` and `balanceAvailable`. |
+| `GET /leave/requests/:id` | session | 404 unless it is yours or in your `leave.view` scope |
+| `PATCH /leave/requests/:id/approve` | `leave.approve` (scoped) | Optional `note`. 403 for your own request, 409 when already decided. Moves the days from `pending` to `used` and turns attendance rows without a check-in in the range into ON_LEAVE, in one transaction. |
+| `PATCH /leave/requests/:id/reject` | `leave.reject` (scoped) | Required `note`, shown to the requester. Releases the pending days. |
+| `PATCH /leave/requests/:id/cancel` | session | Your own request, or anyone's with `leave.approve` at ALL. Pending, or approved and not yet started; 409 once approved leave has started (HR adjusts the balance instead). Returns the days. |
+| `GET /leave/balances` | session | `?employeeId=&year=`. Your own always; someone else's only in your `leave.view` scope (an empty list otherwise). `available = allocated + carriedForward − used − pending`. |
+| `PATCH /leave/balances/:id` | `leave.manage_balances` | `allocated` and/or `carriedForward` with a required `note`; audited as `leave_balance.adjusted`. 400 when the total would drop below the days used or pending. |
+| `POST /leave/balances/allocate` | `leave.manage_balances` ALL | `{ year }`, this year or next → creates missing balances: prorated for that year's joiners, with unused days carried forward up to the type's cap. The server also does this at start-up and every hour (`JOBS_ENABLED`), so 1 January needs nobody. |
+| `GET /leave/types` | session | Active types; `?includeInactive=true` with `leave.manage_types` |
+| `POST /leave/types`, `PATCH /leave/types/:id`, `DELETE /leave/types/:id` | `leave.manage_types` | 409 for a duplicate name or code, and when deactivating or deleting a type that pending requests use. A new paid type gives everyone this year's balance. A changed allowance applies to balances created afterwards. Delete is soft. |
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).
