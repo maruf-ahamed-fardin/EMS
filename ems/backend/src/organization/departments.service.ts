@@ -148,7 +148,10 @@ export class DepartmentsService {
     const changes = Object.fromEntries(
       Object.entries(input).filter(([key, value]) => value !== undefined && current[key as keyof typeof current] !== value),
     ) as UpdateDepartmentInput;
-    if (Object.keys(changes).length === 0) return this.get(auth, id);
+    if (Object.keys(changes).length === 0) {
+      this.audit.skip('Nothing changed');
+      return this.get(auth, id);
+    }
 
     await this.assertUnique({ name: changes.name, code: changes.code }, id);
     if (changes.headEmployeeId) await this.assertHead(changes.headEmployeeId);

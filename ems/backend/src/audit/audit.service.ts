@@ -51,5 +51,16 @@ export class AuditService {
         requestId: context?.requestId ?? 'system',
       },
     });
+    if (context) context.auditWrites = (context.auditWrites ?? 0) + 1;
+  }
+
+  /**
+   * Says that this request changes nothing worth recording (an edit with no real change, a reset
+   * request for an unknown email). Without it, a successful write that records nothing fails the audit
+   * coverage check.
+   */
+  skip(reason: string): void {
+    const context = currentRequest();
+    if (context) context.auditSkipped = reason;
   }
 }

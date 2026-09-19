@@ -17,7 +17,7 @@ export const AUDIT_FIELDS: Record<string, readonly string[]> = {
   setting: ['timeZone', 'weekendDays', 'workdayStart', 'graceMinutes'],
   holiday: ['date', 'name', 'attendanceRowsUpdated'],
   leave_type: ['name', 'code', 'defaultDaysPerYear', 'carryForwardMax', 'isPaid', 'requiresDocument', 'isActive'],
-  leave_balance: ['employeeId', 'leaveTypeId', 'year', 'allocated', 'carriedForward', 'note'],
+  leave_balance: ['employeeId', 'leaveTypeId', 'year', 'allocated', 'carriedForward', 'note', 'created'],
   leave_request: ['employeeId', 'leaveTypeId', 'startDate', 'endDate', 'days', 'status', 'note'],
   document: ['employeeId', 'documentTypeId', 'title', 'mimeType', 'sizeBytes', 'expiresAt', 'deletedAt'],
   document_type: ['name', 'code', 'isSensitive', 'hasExpiry', 'deletedAt'],

@@ -300,7 +300,10 @@ export class EmployeesService {
   async update(auth: AuthContext, id: string, input: UpdateEmployeeInput): Promise<EmployeeDetail> {
     const current = await this.loadForChange(auth, id, 'employee.update');
     const changes = changedFields(current, input);
-    if (Object.keys(changes).length === 0) return this.get(auth, id);
+    if (Object.keys(changes).length === 0) {
+      this.audit.skip('Nothing changed');
+      return this.get(auth, id);
+    }
 
     const departmentId = (changes.departmentId as string | undefined) ?? current.departmentId;
     const positionId = (changes.positionId as string | undefined) ?? current.positionId;
@@ -407,6 +410,8 @@ export class EmployeesService {
           tx,
         );
       });
+    } else {
+      this.audit.skip('Nothing changed');
     }
     return this.get(auth, id);
   }

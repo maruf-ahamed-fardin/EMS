@@ -8,6 +8,10 @@ export interface RequestContext {
   userAgent: string | undefined;
   /** Set by the session guard once authentication exists (Phase 2). */
   userId?: string;
+  /** Audit rows written during this request; the audit coverage check reads it. */
+  auditWrites?: number;
+  /** Why this request deliberately wrote no audit row (see AuditService.skip). */
+  auditSkipped?: string;
 }
 
 const storage = new AsyncLocalStorage<RequestContext>();

@@ -49,6 +49,12 @@ const envSchema = z
       .default('true')
       .transform((value) => value === 'true'),
 
+    /** A successful write that records no audit entry fails with 500 instead of a logged warning (tests). */
+    AUDIT_STRICT: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+
     MAIL_DRIVER: z.enum(['console', 'smtp']).default('console'),
     /** smtp://user:pass@host:port. Required when MAIL_DRIVER=smtp. */
     SMTP_URL: z.string().optional(),

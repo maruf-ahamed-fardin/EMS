@@ -1,5 +1,6 @@
 export * from './api';
 export * from './attendance';
+export * from './audit';
 export * from './auth';
 export * from './dashboard';
 export * from './documents';

@@ -59,6 +59,7 @@ export async function startTestApp(options: { clock?: Clock } = {}): Promise<Tes
     APP_URL: APP_ORIGIN,
     TRUST_PROXY_HOPS: '1',
     JOBS_ENABLED: 'false',
+    AUDIT_STRICT: 'true',
     STORAGE_DRIVER: 'local',
     STORAGE_LOCAL_DIR: storageDir,
   });

@@ -15,6 +15,7 @@ import {
 import type { Request } from 'express';
 import { createZodDto } from 'nestjs-zod';
 import type { AuthContext } from '../auth/auth-context';
+import { NoAudit } from '../audit/audit-coverage';
 import { CurrentAuth, RequirePermission } from '../auth/decorators';
 import { InjectConfig, type AppConfig } from '../config/config.module';
 import { AttendanceIngestService } from './attendance-ingest.service';
@@ -37,6 +38,7 @@ export class AttendanceController {
   }
 
   @RequirePermission('attendance.self')
+  @NoAudit('A check-in is itself a permanent record (attendance_records); corrections are audited')
   @Post('check-in')
   @HttpCode(HttpStatus.OK)
   async checkIn(@CurrentAuth() auth: AuthContext, @Req() req: Request): Promise<DataResponse<MyAttendanceToday>> {
@@ -44,6 +46,7 @@ export class AttendanceController {
   }
 
   @RequirePermission('attendance.self')
+  @NoAudit('A check-out is itself a permanent record (attendance_records); corrections are audited')
   @Post('check-out')
   @HttpCode(HttpStatus.OK)
   async checkOut(@CurrentAuth() auth: AuthContext, @Req() req: Request): Promise<DataResponse<MyAttendanceToday>> {

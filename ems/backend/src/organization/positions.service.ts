@@ -81,7 +81,10 @@ export class PositionsService {
     const changes = Object.fromEntries(
       Object.entries(input).filter(([key, value]) => value !== undefined && current[key as keyof typeof current] !== value),
     ) as UpdatePositionInput;
-    if (Object.keys(changes).length === 0) return this.get(id);
+    if (Object.keys(changes).length === 0) {
+      this.audit.skip('Nothing changed');
+      return this.get(id);
+    }
 
     const holders = await this.prisma.employee.count({ where: { positionId: id, ...ACTIVE_EMPLOYEE } });
     if ('departmentId' in changes) {

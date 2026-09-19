@@ -21,6 +21,8 @@ import {
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import type { AuthContext } from '../auth/auth-context';
+import { AuditService } from '../audit/audit.service';
+import { NoAudit } from '../audit/audit-coverage';
 import { CurrentAuth, RequirePermission } from '../auth/decorators';
 import { InjectConfig, type AppConfig } from '../config/config.module';
 import { LeaveBalancesService } from './leave-balances.service';
@@ -45,11 +47,13 @@ export class LeaveController {
     private readonly requests: LeaveRequestsService,
     private readonly balances: LeaveBalancesService,
     private readonly types: LeaveTypesService,
+    private readonly audit: AuditService,
   ) {}
 
   // ─── Requests ───────────────────────────────────────────────────────────────────────────────
 
   @RequirePermission('leave.create')
+  @NoAudit('Only counts the days; nothing is saved')
   @Post('preview')
   @HttpCode(HttpStatus.OK)
   async preview(@CurrentAuth() auth: AuthContext, @Body() body: LeavePreviewDto): Promise<DataResponse<LeavePreview>> {
@@ -111,7 +115,9 @@ export class LeaveController {
   async allocate(@Body() body: AllocateYearDto): Promise<DataResponse<{ year: number; created: number }>> {
     const current = await this.balances.currentYear();
     if (body.year !== current && body.year !== current + 1) throw new ForbiddenException(`Balances can be created for ${current} or ${current + 1}`);
-    return { data: { year: body.year, created: await this.balances.ensureYear(body.year) } };
+    const created = await this.balances.ensureYear(body.year);
+    await this.audit.record({ action: 'leave_balance.allocated', entityType: 'leave_balance', entityId: null, after: { year: body.year, created } });
+    return { data: { year: body.year, created } };
   }
 
   // ─── Types ──────────────────────────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { type DataResponse, type ListResponse, type NotificationItem, notificati
 import { SkipThrottle } from '@nestjs/throttler';
 import { createZodDto } from 'nestjs-zod';
 import type { AuthContext } from '../auth/auth-context';
+import { NoAudit } from '../audit/audit-coverage';
 import { CurrentAuth, RequirePermission } from '../auth/decorators';
 import { InAppChannel, NOTIFICATION_CHANNELS, NotificationService } from './notifications.service';
 
@@ -28,12 +29,14 @@ export class NotificationsController {
   }
 
   @RequirePermission('notification.view')
+  @NoAudit('Only marks the caller’s own notifications as read')
   @Patch('read-all')
   async readAll(@CurrentAuth() auth: AuthContext): Promise<DataResponse<{ updated: number }>> {
     return { data: { updated: await this.notifications.markAllRead(auth.user.id) } };
   }
 
   @RequirePermission('notification.view')
+  @NoAudit('Only marks the caller’s own notification as read')
   @Patch(':id/read')
   async read(@CurrentAuth() auth: AuthContext, @Param('id') id: string): Promise<DataResponse<NotificationItem>> {
     return { data: await this.notifications.markRead(auth.user.id, id) };

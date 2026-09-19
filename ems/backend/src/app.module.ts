@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { AuditCoverageInterceptor } from './audit/audit-coverage';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CsrfGuard } from './auth/guards/csrf.guard';
@@ -65,6 +66,8 @@ import { RolesModule } from './roles/roles.module';
     { provide: APP_GUARD, useClass: SessionGuard },
     { provide: APP_GUARD, useClass: AppThrottlerGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
+    // Every successful write is audited, or says why not (plan §8)
+    { provide: APP_INTERCEPTOR, useClass: AuditCoverageInterceptor },
   ],
 })
 export class AppModule {}
