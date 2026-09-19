@@ -22,6 +22,14 @@ export const REDACT_PATHS = [
 
 const QUIET_PATHS = new Set(['/api/v1/health', '/api/v1/health/ready']);
 
+/**
+ * A URL fit for the logs: download links carry their authority in the path (/files/<token>, valid for
+ * 60 seconds), and any `token` query value is a credential too.
+ */
+export function safeUrl(url: string | undefined): string | undefined {
+  return url?.replace(/(\/files\/)[^/?#]+/, '$1[redacted]').replace(/([?&]token=)[^&#]*/gi, '$1[redacted]');
+}
+
 export function loggerOptions(config: AppConfig): Params {
   return {
     // nestjs-pino defaults to "*", which Express 5's router warns about and rewrites
@@ -41,7 +49,7 @@ export function loggerOptions(config: AppConfig): Params {
         req: (req: { id: string; method: string; url: string }) => ({
           id: req.id,
           method: req.method,
-          url: req.url,
+          url: safeUrl(req.url),
         }),
         res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       },

@@ -3,6 +3,7 @@ import type { ApiError } from '@ems/contracts';
 import type { Request, Response } from 'express';
 import { ZodValidationException } from 'nestjs-zod';
 import { currentRequest } from '../request-context';
+import { safeUrl } from '../logging/logger.options';
 import { zodIssuesToFieldErrors } from './field-errors';
 
 const GENERIC_MESSAGES: Partial<Record<number, string>> = {
@@ -35,7 +36,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const body = this.toApiError(exception, requestId);
     if (body.statusCode >= 500) {
       this.logger.error(
-        { err: exception, requestId, method: req.method, url: req.originalUrl },
+        { err: exception, requestId, method: req.method, url: safeUrl(req.originalUrl) },
         'Unhandled error',
       );
     }

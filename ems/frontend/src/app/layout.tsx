@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import '@fontsource-variable/plus-jakarta-sans';
 import '@fontsource/geist-mono/400.css';
 import '@fontsource/geist-mono/500.css';
@@ -18,12 +19,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Set by proxy.ts. Reading it also keeps every page dynamic, which a per-request nonce needs.
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     // next-themes sets the class before hydration; browser extensions also edit <body>
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <Providers>{children}</Providers>
+        <Providers nonce={nonce}>{children}</Providers>
       </body>
     </html>
   );

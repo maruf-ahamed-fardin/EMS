@@ -22,7 +22,10 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-  // The full Content-Security-Policy and HSTS are added in Phase 12 (hardening)
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  // Browsers only honour this over https; two years, the length preload lists expect.
+  // The Content-Security-Policy is per request, with a nonce, in src/proxy.ts
+  ...(process.env.NODE_ENV === 'production' ? [{ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' }] : []),
 ];
 
 const nextConfig: NextConfig = {

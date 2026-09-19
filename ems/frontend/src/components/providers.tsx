@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
   // One client per browser session; created in state so a server render never shares it
   const [queryClient] = useState(
     () =>
@@ -18,7 +18,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+    // The theme script runs before the page paints, so it needs the CSP nonce
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange nonce={nonce}>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={300}>
           {children}
