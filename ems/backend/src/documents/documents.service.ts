@@ -62,7 +62,9 @@ export function expiryOf(expiresAt: string | null, today: string): DocumentExpir
 export function downloadName(title: string, mimeType: DocumentMimeType): string {
   const unsafe = (c: string) => c.charCodeAt(0) < 32 || c === '\u007f' || '/\\:*?"<>|'.includes(c);
   const cleaned = Array.from(title, (c) => (unsafe(c) ? '-' : c)).join('');
-  const base = cleaned.replace(/-{2,}/g, '-').replace(/\s+/g, ' ').replace(/^[\s-]+|[\s-]+$/g, '').slice(0, 100) || 'document';
+  const tidy = cleaned.replace(/-{2,}/g, '-').replace(/\s+/g, ' ').replace(/^[\s-]+|[\s-]+$/g, '');
+  // By code point, so an emoji at the cut isn't split into half a surrogate pair
+  const base = Array.from(tidy).slice(0, 100).join('').trim() || 'document';
   return `${base}.${DOCUMENT_MIME_TYPES[mimeType].extension}`;
 }
 
@@ -190,7 +192,8 @@ export class DocumentsService {
     const mimeType = sniffDocumentType(file.buffer);
     if (!mimeType) throw invalidFields({ file: 'Upload a PDF, PNG, JPEG or Word (.docx) file' });
 
-    const storageKey = `employees/${employeeId}/${uuidv7()}`;
+    // Keys are lowercase; the id in the URL may not be
+    const storageKey = `employees/${employeeId.toLowerCase()}/${uuidv7()}`;
     const sha256 = createHash('sha256').update(file.buffer).digest('hex');
     const expiresAt = type.hasExpiry ? fields.expiresAt! : null;
     await this.storage.put(storageKey, file.buffer, mimeType);

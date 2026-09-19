@@ -86,6 +86,14 @@ describeWithDatabase('reports', () => {
       expect(filtered.filters).toEqual([`Department: ${dev.name}`, 'Status: Active']);
     });
 
+    it("never names someone outside the viewer's scope in the filter line", async () => {
+      const outsider = await t.prisma.employee.findFirstOrThrow({ where: { employeeCode: 'SX-001' } });
+      const report = (await as.manager.get(`/reports/attendance?from=${monthAgo}&to=${today}&employeeId=${outsider.id}`).expect(200)).body as ReportResponse;
+      expect(report.meta.total).toBe(0);
+      expect(report.filters).toContain('Employee: Unknown employee');
+      expect(JSON.stringify(report)).not.toContain(outsider.lastName);
+    });
+
     it('builds the attendance, leave and departments reports from the same data the app shows', async () => {
       const attendance = (await as.hr_admin.get(`/reports/attendance?from=${monthAgo}&to=${today}&limit=5`).expect(200)).body as ReportResponse;
       expect(attendance.meta.total).toBe(await t.prisma.attendance.count({ where: { workDate: { gte: dateOnly(monthAgo), lte: dateOnly(today) } } }));

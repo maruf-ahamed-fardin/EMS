@@ -2,6 +2,7 @@
 
 import { ErrorState } from '@/components/shared/error-state';
 
-export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  return <ErrorState reference={error.digest} onRetry={reset} />;
+// `retry` fetches the page again; `reset` would only re-render the same failed result
+export default function AppError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  return <ErrorState reference={error.digest} onRetry={retry} />;
 }

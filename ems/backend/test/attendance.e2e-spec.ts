@@ -115,6 +115,13 @@ describeWithDatabase('attendance', () => {
       expect((await as.hr_admin.post('/attendance/close-day', { date: '2026-09-21' })).status).toBe(200);
     });
 
+    it('closes only the last 7 days by hand, because it marks everyone active today', async () => {
+      const old = await as.hr_admin.post('/attendance/close-day', { date: '2026-09-13' });
+      expect(old.status).toBe(422);
+      expect(old.body.errors.date).toMatch(/last 7 days/);
+      expect((await as.hr_admin.post('/attendance/close-day', { date: '2021-03-01' })).status).toBe(422);
+    });
+
     it('turns absences into holidays when a holiday is added afterwards, and back when it is removed', async () => {
       clock.set(DHAKA('2026-09-22', '10:00'));
       const added = await as.hr_admin.post('/holidays', { date: '2026-09-20', name: 'Office closed' });

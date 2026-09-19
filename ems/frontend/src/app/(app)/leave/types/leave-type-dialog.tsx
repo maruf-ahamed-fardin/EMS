@@ -62,7 +62,7 @@ export function LeaveTypeDialog({ type }: { type?: LeaveTypeItem }) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !isSubmitting && (setOpen(next), !next && (reset(defaults), setFormError(null)))}>
+    <Dialog open={open} onOpenChange={(next) => !isSubmitting && (next ? reset(defaults) : setFormError(null), setOpen(next))}>
       <DialogTrigger asChild>
         {type ? (
           <Button variant="ghost" size="icon" className="size-9" aria-label={`Edit ${type.name}`}>

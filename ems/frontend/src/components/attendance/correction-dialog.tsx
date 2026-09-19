@@ -68,7 +68,6 @@ export function CorrectionDialog({ record, employees }: { record?: AttendanceIte
         toast.success('Attendance record added');
       }
       setOpen(false);
-      reset(defaults);
       router.refresh();
     } catch (error) {
       setFormError(applyApiError(error, setError, ['employeeId', 'workDate', 'firstIn', 'lastOut', 'status', 'note']));
@@ -80,11 +79,10 @@ export function CorrectionDialog({ record, employees }: { record?: AttendanceIte
       open={open}
       onOpenChange={(next) => {
         if (isSubmitting) return;
+        // Filled from the record as it is now: after a save, the refreshed row has the corrected times
+        if (next) reset(defaults);
+        else setFormError(null);
         setOpen(next);
-        if (!next) {
-          reset(defaults);
-          setFormError(null);
-        }
       }}
     >
       <DialogTrigger asChild>

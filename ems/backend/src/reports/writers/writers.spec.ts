@@ -130,6 +130,18 @@ describe('PDF', () => {
     expect(pages).toBeGreaterThanOrEqual(6);
     expect(pages).toBeLessThanOrEqual(9);
   });
+
+  it('stops producing, and never hangs, once the client has gone', async () => {
+    const rows: ReportCell[][] = Array.from({ length: 50 }, (_, i) => [`Person ${i}`, i]);
+    const stream = new PassThrough();
+    stream.resume();
+    const writer = new PdfWriter(new Sink(stream));
+    await writer.start(document);
+    await writer.rows(rows);
+    stream.destroy();
+    await expect(writer.rows(rows)).rejects.toThrow('The client closed the connection');
+    await expect(writer.end()).rejects.toThrow('The client closed the connection');
+  });
 });
 
 it('stamps the time in the organization time zone', () => {

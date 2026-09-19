@@ -1,5 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
+import { pipeline } from 'node:stream/promises';
 import {
   Body,
   type CallHandler,
@@ -208,7 +209,8 @@ export class FilesController {
       // Never run as a page on this origin, even if a browser ignored the attachment disposition
       'Content-Security-Policy': "default-src 'none'; sandbox",
     });
-    createReadStream(file.path).pipe(res);
+    // Closes the file when the client aborts; a read error ends this response instead of the process
+    pipeline(createReadStream(file.path), res).catch(() => res.destroy());
   }
 }
 

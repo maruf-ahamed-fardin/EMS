@@ -67,12 +67,34 @@ describeWithDatabase('leave', () => {
       expect((await as.manager.patch(`/leave/balances/${row.id}`, { allocated: 30, note: 'Mine' })).status).toBe(403);
     });
 
-    it("carries unused days into next year's balance, capped", async () => {
+    it("carries what is left of a year into the next, capped, but only once the year is over", async () => {
+      // A December request still pending at the turn of the year
+      const december = await as.manager.post('/leave/requests', { leaveTypeId: annual.id, startDate: '2026-12-28', endDate: '2026-12-29', reason: 'Year end' });
+      expect(december.status).toBe(201);
+
+      // Made early, next year's balance carries nothing yet: this year isn't over
       const res = await as.hr_admin.post('/leave/balances/allocate', { year: 2027 });
       expect(res.status).toBe(200);
-      expect(Number((await balance(ids.manager, annual.id, 2027)).carriedForward)).toBe(5);
+      expect(await balance(ids.manager, annual.id, 2027)).toMatchObject({ carryForwardSettled: false });
+      expect(Number((await balance(ids.manager, annual.id, 2027)).carriedForward)).toBe(0);
       expect((await as.hr_admin.post('/leave/balances/allocate', { year: 2027 })).body.data.created).toBe(0);
       expect((await as.hr_admin.post('/leave/balances/allocate', { year: 2030 })).status).toBe(403);
+
+      // The rest of 2026 is spent after that: 20 allocated, 16 used, 2 pending leaves 2 to carry
+      await t.prisma.leaveBalance.update({ where: { id: (await balance(ids.manager, annual.id)).id }, data: { used: 16 } });
+      clock.set(DHAKA('2027-01-03', '10:00'));
+      try {
+        expect((await as.hr_admin.post('/leave/balances/allocate', { year: 2027 })).status).toBe(200);
+        expect(await balance(ids.manager, annual.id, 2027)).toMatchObject({ carryForwardSettled: true });
+        expect(Number((await balance(ids.manager, annual.id, 2027)).carriedForward)).toBe(2);
+
+        // Rejecting the December request in January gives its days back to 2027 as well
+        expect((await as.hr_admin.patch(`/leave/requests/${december.body.data.id}/reject`, { note: 'Too late' })).status).toBe(200);
+        expect(Number((await balance(ids.manager, annual.id, 2027)).carriedForward)).toBe(4);
+      } finally {
+        clock.set(DHAKA('2026-09-17', '09:00'));
+        await t.prisma.leaveBalance.update({ where: { id: (await balance(ids.manager, annual.id)).id }, data: { used: 0 } });
+      }
     });
   });
 
@@ -121,6 +143,27 @@ describeWithDatabase('leave', () => {
       expect(results.map((r) => r.status).sort()).toEqual([201, 201, 409]);
       const hrBalance = await balance(ids.hr, annual.id);
       expect(Number(hrBalance.pending)).toBe(8);
+    });
+
+    it('keeps balances right when a type switches between paid and unpaid while requests are open', async () => {
+      const flip = (await as.hr_admin.post('/leave/types', { name: 'Study', code: 'STUDY', defaultDaysPerYear: 5 })).body.data as LeaveTypeItem;
+      const paid = await as.employee.post('/leave/requests', { leaveTypeId: flip.id, startDate: '2026-11-15', endDate: '2026-11-16', reason: 'Exam' });
+      expect(paid.status).toBe(201);
+      expect(Number((await balance(ids.employee, flip.id)).pending)).toBe(2);
+
+      // Now unpaid: the open request still gives its reserved days back
+      expect((await as.hr_admin.patch(`/leave/types/${flip.id}`, { isPaid: false })).status).toBe(200);
+      const unpaidRequest = await as.employee.post('/leave/requests', { leaveTypeId: flip.id, startDate: '2026-11-17', endDate: '2026-11-17', reason: 'Exam' });
+      expect(unpaidRequest.status).toBe(201);
+      expect((await as.hr_admin.patch(`/leave/requests/${paid.body.data.id}/reject`, { note: 'Not this time' })).status).toBe(200);
+      expect(Number((await balance(ids.employee, flip.id)).pending)).toBe(0);
+
+      // Paid again: the request made while unpaid never touched a balance, so deciding it can't break one
+      expect((await as.hr_admin.patch(`/leave/types/${flip.id}`, { isPaid: true })).status).toBe(200);
+      expect((await as.hr_admin.patch(`/leave/requests/${unpaidRequest.body.data.id}/reject`, { note: 'Not this time' })).status).toBe(200);
+      expect(await balance(ids.employee, flip.id)).toMatchObject({ pending: expect.anything() });
+      expect(Number((await balance(ids.employee, flip.id)).pending)).toBe(0);
+      expect((await as.hr_admin.patch(`/leave/types/${flip.id}`, { isActive: false })).status).toBe(200);
     });
 
     it('does not use a balance for unpaid leave', async () => {

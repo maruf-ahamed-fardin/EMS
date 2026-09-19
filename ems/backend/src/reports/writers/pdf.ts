@@ -129,8 +129,12 @@ export class PdfWriter implements ReportWriter {
   }
 
   async end(): Promise<void> {
+    const out = this.sink.stream;
     const finished = new Promise<void>((resolve, reject) => {
-      this.sink.stream.once('finish', resolve);
+      // 'finish' never comes for a response the client closed, so 'close' ends the wait too
+      if (out.destroyed) return reject(new Error('The client closed the connection'));
+      out.once('finish', resolve);
+      out.once('close', () => reject(new Error('The client closed the connection')));
       this.doc.once('error', reject);
     });
     this.doc.end();

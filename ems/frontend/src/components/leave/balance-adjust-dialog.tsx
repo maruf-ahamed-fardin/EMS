@@ -50,7 +50,7 @@ export function BalanceAdjustDialog({ balance }: { balance: LeaveBalanceRow }) {
   });
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !isSubmitting && (setOpen(next), !next && (reset(defaults), setFormError(null)))}>
+    <Dialog open={open} onOpenChange={(next) => !isSubmitting && (next ? reset(defaults) : setFormError(null), setOpen(next))}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="-mt-1 -mr-2 size-9" aria-label={`Adjust ${balance.leaveType.name} balance`}>
           <SlidersHorizontal aria-hidden />

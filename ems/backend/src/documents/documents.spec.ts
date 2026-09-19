@@ -22,6 +22,10 @@ describe('sniffDocumentType', () => {
     // A zip that isn't a Word document, a macro-enabled one, and a truncated one
     expect(sniffDocumentType(zipFile({ 'readme.txt': 'hi' }))).toBeNull();
     expect(sniffDocumentType(zipFile({ '[Content_Types].xml': 'x', 'word/document.xml': 'x', 'word/vbaProject.bin': 'x' }))).toBeNull();
+    // Office finds the macros whatever the part is called or however it is capitalized
+    expect(sniffDocumentType(zipFile({ '[Content_Types].xml': 'x', 'word/document.xml': 'x', 'word/VBAPROJECT.BIN': 'x' }))).toBeNull();
+    expect(sniffDocumentType(zipFile({ '[Content_Types].xml': 'x', 'word/document.xml': 'x', 'word/macros/vbaProject.bin': 'x' }))).toBeNull();
+    expect(sniffDocumentType(zipFile({ '[Content_Types].xml': 'x', 'word/document.xml': 'x', 'word/vbaData.xml': 'x' }))).toBeNull();
     expect(sniffDocumentType(simpleDocx('Contract').subarray(0, 60))).toBeNull();
   });
 });
@@ -81,11 +85,17 @@ describe('document helpers', () => {
   it('builds a download name that is safe on every system', () => {
     expect(downloadName('Passport: Rahim/Ahmed', 'application/pdf')).toBe('Passport- Rahim-Ahmed.pdf');
     expect(downloadName('  \u0000  ', 'image/png')).toBe('document.png');
+    // Cut at 100 characters, never through the middle of an emoji
+    const long = downloadName(`${'a'.repeat(99)}\u{1F4C4} and more`, 'application/pdf');
+    expect(long).toBe(`${'a'.repeat(99)}\u{1F4C4}.pdf`);
+    expect(() => contentDisposition(long)).not.toThrow();
     expect(downloadName('জাতীয় পরিচয়পত্র', 'image/jpeg')).toBe('জাতীয় পরিচয়পত্র.jpg');
   });
 
   it('writes Content-Disposition without letting a name break the header', () => {
     expect(contentDisposition('a"b\\c.pdf')).toBe(`attachment; filename="a_b_c.pdf"; filename*=UTF-8''a%22b%5Cc.pdf`);
+    // Half a surrogate pair would make encodeURIComponent throw
+    expect(contentDisposition('broken\ud83d.pdf')).toContain("filename*=UTF-8''broken%EF%BF%BD.pdf");
     expect(contentDisposition('পাসপোর্ট.pdf')).toMatch(/^attachment; filename="_+\.pdf"; filename\*=UTF-8''%E0/);
   });
 

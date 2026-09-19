@@ -65,15 +65,39 @@ describeWithDatabase('dashboard and search', () => {
         })
       ).length;
 
+      // Someone hired to start next month is on the headcount but isn't expected at work yet
+      const started = await t.prisma.employee.count({ where: { deletedAt: null, status: 'ACTIVE', joiningDate: { lte: day } } });
+
       const a = overview.attendanceToday!;
       expect({ onTime: a.onTime, late: a.late, onLeave: a.onLeave }).toEqual({ onTime, late, onLeave });
       if (overview.isWorkingDay) {
-        expect(a.expected).toBe(overview.headcount!.total - onLeave);
+        expect(a.expected).toBe(started - onLeave);
         expect(a.notCheckedIn).toBe(a.expected - a.present);
         expect(a.presentRate).toBeCloseTo(a.present / a.expected, 3);
       } else {
         expect(a.expected).toBe(0);
       }
+    });
+
+    it('counts someone hired to start later on the headcount, but not as expected at work', async () => {
+      const before = await overviewOf(as.hr_admin);
+      const options = (await as.hr_admin.get('/employees/form-options')).body.data;
+      const start = new Date(`${today}T00:00:00Z`);
+      start.setUTCDate(start.getUTCDate() + 20);
+      const hire = await as.hr_admin.post('/employees', {
+        firstName: 'Future', lastName: 'Starter', dateOfBirth: '1999-01-01', departmentId: options.departments[0].id,
+        positionId: options.positions.find((p: { departmentId: string }) => p.departmentId === options.departments[0].id).id,
+        joiningDate: start.toISOString().slice(0, 10), employmentType: 'FULL_TIME', workLocation: 'Dhaka office',
+        email: 'future.starter@demo.selorax.test', phone: '+8801711000099',
+        address: { line1: 'House 9', city: 'Dhaka', country: 'Bangladesh' }, emergencyContact: { name: 'Kin', relationship: 'Brother', phone: '+8801811000099' },
+      });
+      expect(hire.status).toBe(201);
+      const after = await overviewOf(as.hr_admin);
+      expect(after.headcount!.total).toBe(before.headcount!.total + 1);
+      expect(after.attendanceToday!.expected).toBe(before.attendanceToday!.expected);
+      expect(after.attendanceToday!.notCheckedIn).toBe(before.attendanceToday!.notCheckedIn);
+      // Out of the way of the counts checked below
+      await t.prisma.employee.update({ where: { id: hire.body.data.id }, data: { deletedAt: new Date() } });
     });
 
     it('lists pending leave oldest first and counts all of it', async () => {

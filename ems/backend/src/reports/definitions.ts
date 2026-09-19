@@ -57,9 +57,10 @@ async function departmentName(prisma: PrismaService, id?: string): Promise<strin
   return (await prisma.department.findUnique({ where: { id }, select: { name: true } }))?.name ?? 'Unknown department';
 }
 
-async function employeeName(prisma: PrismaService, id?: string): Promise<string | null> {
+/** Only someone the viewer may report on is named; anyone else reads as unknown, like an empty table. */
+async function employeeName(ctx: ReportContext<unknown>, id?: string): Promise<string | null> {
   if (!id) return null;
-  const e = await prisma.employee.findUnique({ where: { id }, select: { firstName: true, lastName: true, employeeCode: true } });
+  const e = await ctx.prisma.employee.findFirst({ where: ctx.scope.employeeById(ctx.auth, ctx.scopeKey, id), select: { firstName: true, lastName: true, employeeCode: true } });
   return e ? `${e.firstName} ${e.lastName} (${e.employeeCode})` : 'Unknown employee';
 }
 
@@ -163,8 +164,9 @@ export const attendanceReport: ReportDefinition<AttendanceReportQuery> = {
     { key: 'status', label: 'Status', width: 11 },
     { key: 'lateMinutes', label: 'Late (min)', width: 10, numeric: true },
   ],
-  async describe({ prisma, query: q }) {
-    const [department, employee] = await Promise.all([departmentName(prisma, q.departmentId), employeeName(prisma, q.employeeId)]);
+  async describe(ctx) {
+    const { prisma, query: q } = ctx;
+    const [department, employee] = await Promise.all([departmentName(prisma, q.departmentId), employeeName(ctx, q.employeeId)]);
     return [range(q), department && `Department: ${department}`, employee && `Employee: ${employee}`, q.status && `Status: ${ATTENDANCE_STATUS_LABELS[q.status]}`].filter(
       (f): f is string => Boolean(f),
     );
@@ -248,10 +250,11 @@ export const leaveReport: ReportDefinition<LeaveReportQuery> = {
     { key: 'status', label: 'Status', width: 10 },
     { key: 'reviewer', label: 'Reviewed by', width: 20 },
   ],
-  async describe({ prisma, query: q }) {
+  async describe(ctx) {
+    const { prisma, query: q } = ctx;
     const [department, employee, type] = await Promise.all([
       departmentName(prisma, q.departmentId),
-      employeeName(prisma, q.employeeId),
+      employeeName(ctx, q.employeeId),
       q.leaveTypeId ? prisma.leaveType.findUnique({ where: { id: q.leaveTypeId }, select: { name: true } }) : null,
     ]);
     return [

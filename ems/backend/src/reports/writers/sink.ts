@@ -33,8 +33,12 @@ export class Sink {
     if (!this.out.write(chunk)) await this.drained();
   }
 
-  /** Waits until earlier writes are flushed (or the connection ends). */
+  /**
+   * Waits until earlier writes are flushed; rejects once the client has gone. The check comes first
+   * because a destroyed stream reports no pending drain, which would let a writer keep producing.
+   */
   async drained(): Promise<void> {
+    if (this.out.destroyed) throw new Error('The client closed the connection');
     if (!this.out.writableNeedDrain) return;
     await Promise.race([once(this.out, 'drain'), once(this.out, 'close').then(() => Promise.reject(new Error('The client closed the connection')))]);
   }

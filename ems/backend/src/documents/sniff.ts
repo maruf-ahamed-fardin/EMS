@@ -16,7 +16,7 @@ export function sniffDocumentType(bytes: Buffer): DocumentMimeType | null {
   if (bytes.subarray(0, JPEG.length).equals(JPEG)) return 'image/jpeg';
   if (bytes.subarray(0, ZIP.length).equals(ZIP)) {
     const names = zipEntryNames(bytes);
-    if (names && names.has('[Content_Types].xml') && names.has('word/document.xml') && !names.has('word/vbaProject.bin')) {
+    if (names && names.has('[Content_Types].xml') && names.has('word/document.xml') && ![...names].some(isMacroPart)) {
       return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     }
   }
@@ -49,4 +49,12 @@ function zipEntryNames(bytes: Buffer): Set<string> | null {
     offset += 46 + nameLength + extraLength + commentLength;
   }
   return names;
+}
+
+/**
+ * A VBA project or its data, under any name or letter case (zip names are case-sensitive, Office's
+ * aren't). A .docx with one is a renamed .docm.
+ */
+function isMacroPart(name: string): boolean {
+  return /vbaproject\.bin$|vbadata\.xml$/i.test(name);
 }

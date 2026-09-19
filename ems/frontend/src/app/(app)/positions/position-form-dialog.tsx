@@ -73,11 +73,10 @@ export function PositionFormDialog({
       open={open}
       onOpenChange={(next) => {
         if (isSubmitting) return;
+        // Filled from the item as it is now (empty when adding), never from the last form submitted
+        if (next) reset(defaults);
+        else setFormError(null);
         setOpen(next);
-        if (!next) {
-          reset(defaults);
-          setFormError(null);
-        }
       }}
     >
       <DialogTrigger asChild>
