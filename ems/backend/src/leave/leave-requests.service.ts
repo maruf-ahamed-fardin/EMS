@@ -18,6 +18,8 @@ import { conflict, invalidFields } from '../common/errors/http-errors';
 import { DashboardCache } from '../dashboard/dashboard-cache';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notifications/notifications.service';
+import { dateRange, days as dayCount } from '../notifications/wording';
 import { LeaveBalancesService } from './leave-balances.service';
 import { available, countLeaveDays } from './leave-rules';
 
@@ -56,6 +58,7 @@ export class LeaveRequestsService {
     private readonly audit: AuditService,
     private readonly clock: Clock,
     private readonly dashboardCache: DashboardCache,
+    private readonly notifications: NotificationService,
   ) {}
 
   private requireEmployee(auth: AuthContext): string {
@@ -142,9 +145,54 @@ export class LeaveRequestsService {
         { action: 'leave.requested', entityType: 'leave_request', entityId: request.id, after: { employeeId, leaveTypeId: input.leaveTypeId, startDate: input.startDate, endDate: input.endDate, days: preview.days } },
         tx,
       );
+      await this.notifyRequested(tx, request.id, employeeId, auth.user.id, input, preview.days);
       return request.id;
     });
     return this.get(auth, id);
+  }
+
+  /**
+   * Tells whoever can decide (plan §9): the person's manager, when their role can approve, and everyone
+   * who approves leave for the whole organization. Never the requester.
+   */
+  private async notifyRequested(tx: Tx, requestId: string, employeeId: string, requesterUserId: string, input: CreateLeaveRequestInput, days: number) {
+    // One after another: they share the transaction's connection
+    const employee = await tx.employee.findUniqueOrThrow({ where: { id: employeeId }, select: { firstName: true, lastName: true, managerId: true } });
+    const type = await tx.leaveType.findUniqueOrThrow({ where: { id: input.leaveTypeId }, select: { name: true } });
+    const manager = await this.notifications.accountOf(employee.managerId, 'leave.approve', tx);
+    const approvers = await this.notifications.usersWithAll('leave.approve', tx);
+    await this.notifications.notify(
+      {
+        userIds: [...approvers, ...(manager ? [manager] : [])].filter((id) => id !== requesterUserId),
+        type: 'leave.requested',
+        title: `${employee.firstName} ${employee.lastName} asked for ${dayCount(days)} of ${type.name} leave`,
+        body: `${dateRange(input.startDate, input.endDate)}: ${input.reason}`,
+        link: '/leave/requests',
+        entity: { type: 'leave_request', id: requestId },
+        dedupeKey: `leave-requested:${requestId}`,
+      },
+      tx,
+    );
+  }
+
+  /** Tells the employee how their request was decided, with the reviewer's note. */
+  private async notifyDecided(tx: Tx, row: Awaited<ReturnType<LeaveRequestsService['loadForDecision']>>, decision: 'approved' | 'rejected', note?: string) {
+    const account = await this.notifications.accountOf(row.employeeId, null, tx);
+    if (!account) return;
+    const range = dateRange(iso(row.startDate), iso(row.endDate));
+    await this.notifications.notify(
+      {
+        userIds: [account],
+        type: decision === 'approved' ? 'leave.approved' : 'leave.rejected',
+        title: `Your ${row.leaveType.name} leave was ${decision}`,
+        body: `${range}, ${dayCount(Number(row.days))}.${note ? ` ${decision === 'approved' ? 'Note' : 'Reason'}: ${note}` : ''}`,
+        link: '/leave',
+        entity: { type: 'leave_request', id: row.id },
+        // One decision per request
+        dedupeKey: `leave-decided:${row.id}`,
+      },
+      tx,
+    );
   }
 
   private async lockEmployee(tx: Tx, employeeId: string): Promise<void> {
@@ -245,7 +293,7 @@ export class LeaveRequestsService {
     if (!UUID.test(id)) throw new NotFoundException();
     const row = await this.prisma.leaveRequest.findFirst({
       where: { id, OR: [{ employee: this.scope.employeeWhere(auth, 'leave.view') }, ...(auth.user.employeeId ? [{ employeeId: auth.user.employeeId }] : [])] },
-      select: { id: true, employeeId: true, leaveTypeId: true, startDate: true, endDate: true, days: true, status: true, employee: { select: { managerId: true } }, leaveType: { select: { isPaid: true } } },
+      select: { id: true, employeeId: true, leaveTypeId: true, startDate: true, endDate: true, days: true, status: true, employee: { select: { managerId: true } }, leaveType: { select: { isPaid: true, name: true } } },
     });
     if (!row) throw new NotFoundException();
     // Nobody decides their own leave, whatever their role (plan §4)
@@ -277,6 +325,7 @@ export class LeaveRequestsService {
         data: { status: 'ON_LEAVE' },
       });
       await this.audit.record({ action: 'leave.approved', entityType: 'leave_request', entityId: id, before: { status: 'PENDING' }, after: { status: 'APPROVED', note } }, tx);
+      await this.notifyDecided(tx, row, 'approved', note);
     });
     this.dashboardCache.invalidate();
     return this.get(auth, id);
@@ -298,6 +347,7 @@ export class LeaveRequestsService {
         });
       }
       await this.audit.record({ action: 'leave.rejected', entityType: 'leave_request', entityId: id, before: { status: 'PENDING' }, after: { status: 'REJECTED', note } }, tx);
+      await this.notifyDecided(tx, row, 'rejected', note);
     });
     return this.get(auth, id);
   }

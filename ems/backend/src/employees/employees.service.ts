@@ -35,6 +35,8 @@ import {
   toDateOnly,
 } from './employee-query';
 import { proratedAllocation } from '../leave/leave-rules';
+import { NotificationService } from '../notifications/notifications.service';
+import { shortDate } from '../notifications/wording';
 import { EMPLOYEE_DETAIL_SELECT, EMPLOYEE_LIST_SELECT, toDetail, toListItem } from './employee-view';
 
 type Tx = Prisma.TransactionClient;
@@ -52,6 +54,7 @@ export class EmployeesService {
     private readonly audit: AuditService,
     @Inject(MAILER) private readonly mailer: Mailer,
     @InjectConfig() private readonly config: AppConfig,
+    private readonly notifications: NotificationService,
   ) {}
 
   // ─── Read ───────────────────────────────────────────────────────────────────────────────────
@@ -239,6 +242,23 @@ export class EmployeesService {
 
         await this.audit.record(
           { action: 'employee.created', entityType: 'employee', entityId: employee.id, after: { ...input, employeeCode, accountCreated: !!roleId } },
+          tx,
+        );
+
+        // Tells HR (everyone who sees all employees), except whoever just added the person (plan §9)
+        const department = await tx.department.findUniqueOrThrow({ where: { id: input.departmentId }, select: { name: true } });
+        const position = await tx.position.findUniqueOrThrow({ where: { id: input.positionId }, select: { title: true } });
+        const hr = await this.notifications.usersWithAll('employee.view', tx);
+        await this.notifications.notify(
+          {
+            userIds: hr.filter((id) => id !== auth.user.id),
+            type: 'employee.created',
+            title: `${input.firstName} ${input.lastName} joins ${department.name}`,
+            body: `${employeeCode} · ${position.title} · starts ${shortDate(input.joiningDate)}`,
+            link: `/employees/${employee.id}`,
+            entity: { type: 'employee', id: employee.id },
+            dedupeKey: `employee-created:${employee.id}`,
+          },
           tx,
         );
         return employee;

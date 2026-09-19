@@ -34,6 +34,8 @@ const MATRIX: Array<{ method: 'get'; path: string; expect: Expectation }> = [
   { method: 'get', path: '/leave/types', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
   { method: 'get', path: '/documents', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
   { method: 'get', path: '/document-types', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/notifications', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
+  { method: 'get', path: '/notifications/unread-count', expect: { anonymous: 401, super_admin: 200, hr_admin: 200, manager: 200, employee: 200 } },
   // Download tokens are their own authority; a made-up one is simply not found
   { method: 'get', path: '/files/made-up-token', expect: { anonymous: 404, super_admin: 404, hr_admin: 404, manager: 404, employee: 404 } },
 ];

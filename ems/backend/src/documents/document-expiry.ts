@@ -5,7 +5,7 @@ import { CalendarService } from '../calendar/calendar.service';
 import { addDays, dateOnly } from '../calendar/work-calendar';
 import { Clock } from '../common/clock';
 import { InjectConfig, type AppConfig } from '../config/config.module';
-import type { Prisma } from '../generated/prisma/client';
+import { NotificationService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Reminders go out 30, 7 and 0 days before a document expires (plan §7). */
@@ -21,7 +21,8 @@ export function reminderStage(daysLeft: number): (typeof EXPIRY_REMINDER_DAYS)[n
   return daysLeft <= 7 ? 7 : 30;
 }
 
-function when(daysLeft: number): string {
+/** `today`, `tomorrow` or `in 12 days`. */
+export function when(daysLeft: number): string {
   if (daysLeft === 0) return 'today';
   return daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
 }
@@ -29,7 +30,7 @@ function when(daysLeft: number): string {
 /**
  * Tells HR and the employee when a document is about to expire. Runs at start-up and every hour;
  * `dedupe_key` makes each reminder arrive exactly once, however often it runs. The notification bell
- * and the channel interface arrive in Phase 9; this writes the in-app rows they will show.
+ * shows them.
  */
 @Injectable()
 export class DocumentExpiryReminders implements OnApplicationBootstrap {
@@ -37,6 +38,7 @@ export class DocumentExpiryReminders implements OnApplicationBootstrap {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly notifications: NotificationService,
     private readonly calendar: CalendarService,
     private readonly clock: Clock,
     @InjectConfig() private readonly config: AppConfig,
@@ -75,46 +77,37 @@ export class DocumentExpiryReminders implements OnApplicationBootstrap {
     });
     if (documents.length === 0) return { created: 0 };
 
-    // HR: whoever sees every employee's documents, and for sensitive ones every employee's private details too
-    const grantedAll = (key: string) => ({ status: 'ACTIVE' as const, role: { permissions: { some: { scope: 'ALL' as const, permission: { key } } } } });
-    const [hr, hrPrivate] = await Promise.all([
-      this.prisma.user.findMany({ where: grantedAll('document.view'), select: { id: true } }),
-      this.prisma.user.findMany({ where: grantedAll('employee.view_private'), select: { id: true } }),
-    ]);
-    const hrIds = hr.map((u) => u.id);
-    const privateIds = new Set(hrPrivate.map((u) => u.id));
+    // HR: whoever sees every employee's documents, and for private types every employee's private details too
+    const hrIds = await this.notifications.usersWithAll('document.view');
+    const privateIds = new Set(await this.notifications.usersWithAll('employee.view_private'));
 
-    const rows: Prisma.NotificationCreateManyInput[] = [];
+    let count = 0;
     for (const document of documents) {
       const daysLeft = Math.round((document.expiresAt!.getTime() - dateOnly(today).getTime()) / 86_400_000);
       const stage = reminderStage(daysLeft);
       if (stage === null) continue;
       const name = `${document.employee.firstName} ${document.employee.lastName}`;
-      const base = { type: 'document.expiring', entityType: 'document', entityId: document.id, dedupeKey: `document-expiry:${document.id}:${stage}` };
+      const expires = document.expiresAt!.toISOString().slice(0, 10);
+      const base = { type: 'document.expiring' as const, entity: { type: 'document', id: document.id }, dedupeKey: `document-expiry:${document.id}:${stage}` };
       const owner = document.employee.user?.status === 'ACTIVE' ? document.employee.user.id : null;
 
-      for (const userId of hrIds) {
-        if (userId === owner || (document.documentType.isSensitive && !privateIds.has(userId))) continue;
-        rows.push({
-          ...base,
-          userId,
-          title: `${document.documentType.name} for ${name} expires ${when(daysLeft)}`,
-          body: `"${document.title}" expires on ${document.expiresAt!.toISOString().slice(0, 10)}.`,
-          link: `/employees/${document.employeeId}?tab=documents`,
-        });
-      }
+      count += await this.notifications.notify({
+        ...base,
+        userIds: hrIds.filter((id) => id !== owner && (!document.documentType.isSensitive || privateIds.has(id))),
+        title: `${document.documentType.name} for ${name} expires ${when(daysLeft)}`,
+        body: `"${document.title}" expires on ${expires}.`,
+        link: `/employees/${document.employeeId}?tab=documents`,
+      });
       if (owner) {
-        rows.push({
+        count += await this.notifications.notify({
           ...base,
-          userId: owner,
+          userIds: [owner],
           title: `Your ${document.documentType.name} expires ${when(daysLeft)}`,
-          body: `"${document.title}" expires on ${document.expiresAt!.toISOString().slice(0, 10)}. Upload the renewed one when you have it.`,
+          body: `"${document.title}" expires on ${expires}. Upload the renewed one when you have it.`,
           link: '/documents',
         });
       }
     }
-    if (rows.length === 0) return { created: 0 };
-    const { count } = await this.prisma.notification.createMany({ data: rows, skipDuplicates: true });
     if (count > 0) this.logger.log({ created: count }, 'Sent document expiry reminders');
     return { created: count };
   }

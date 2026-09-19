@@ -11,6 +11,7 @@ import { HOME_PATH, SIDEBAR_COOKIE } from '@/lib/auth-paths';
 import { activeItem, visibleNavigation } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 import { CommandSearch } from './command-search';
 import { SidebarNav } from './sidebar-nav';
 import { type ShellUser, UserMenu } from './user-menu';
@@ -107,6 +108,7 @@ export function AppShell({ user, initiallyCollapsed, children }: AppShellProps) 
 
           <div className="ml-auto flex items-center gap-2">
             <CommandSearch />
+            <NotificationBell />
             <UserMenu user={user} />
           </div>
         </header>

@@ -6,6 +6,7 @@ export * from './documents';
 export * from './employees';
 export * from './enums';
 export * from './leave';
+export * from './notifications';
 export * from './organization';
 export * from './permissions';
 export * from './roles';

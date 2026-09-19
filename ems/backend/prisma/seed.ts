@@ -8,6 +8,7 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { seedDemoActivity } from './demo-activity';
 import { DEMO_PEOPLE, seedDemoData } from './demo-data';
 import { seedDemoDocuments } from './demo-documents';
+import { seedDemoNotifications } from './demo-notifications';
 
 /**
  * Development seed (plan §14): the catalogue plus one demo user per role.
@@ -32,9 +33,11 @@ async function main() {
     const activity = await seedDemoActivity(prisma);
     // Files go wherever the API keeps them (STORAGE_DRIVER), so its download links work
     const documents = await seedDemoDocuments(prisma, createDocumentStorage(parseEnv()));
+    const notifications = await seedDemoNotifications(prisma);
     console.error(`Seeded catalogue ${JSON.stringify(catalogue)}, ${employeeCount} employees and demo users:`);
     console.error(`  ${activity.attendanceRows} attendance rows over ${activity.days} working days, ${activity.leaveRequests} leave requests`);
     console.error(`  ${documents.documents} documents (${documents.expiringSoon} expiring within 30 days, ${documents.expired} expired)`);
+    console.error(`  ${notifications.total} notifications (${notifications.unread} unread)`);
     for (const [role, person] of Object.entries(DEMO_PEOPLE)) console.error(`  ${role.padEnd(12)} ${person.email}`);
   } finally {
     await prisma.$disconnect();

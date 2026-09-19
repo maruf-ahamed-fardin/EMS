@@ -18,6 +18,8 @@ import { addDays, dateOnly, isWorkingDay, lateAfter, weekday, zonedTime } from '
 import { Clock } from '../common/clock';
 import { conflict, invalidFields } from '../common/errors/http-errors';
 import type { Prisma } from '../generated/prisma/client';
+import { NotificationService } from '../notifications/notifications.service';
+import { attendanceIssues, shortDate } from '../notifications/wording';
 import { PrismaService } from '../prisma/prisma.service';
 import { AttendanceIngestService } from './attendance-ingest.service';
 import { checkInStatus, closingStatus, isClosable, NO_TIME_STATUSES, workedMinutes } from './attendance-rules';
@@ -73,6 +75,7 @@ export class AttendanceService {
     private readonly ingest: AttendanceIngestService,
     private readonly audit: AuditService,
     private readonly clock: Clock,
+    private readonly notifications: NotificationService,
   ) {}
 
   // ─── Self-service ───────────────────────────────────────────────────────────────────────────
@@ -347,8 +350,27 @@ export class AttendanceService {
       // Another instance closing the same day at the same moment is harmless
       skipDuplicates: true,
     });
-    if (count > 0) this.logger.log({ date, created: count, missingCheckOuts }, 'Closed attendance day');
+    if (count > 0) {
+      this.logger.log({ date, created: count, missingCheckOuts }, 'Closed attendance day');
+      // Only when this run closed the day, so re-runs and days closed before notifications existed stay quiet
+      if (!holiday && !weekend) await this.notifyIssues(date, missingCheckOuts);
+    }
     return { date, created: count, missingCheckOuts };
+  }
+
+  /** One summary per closed working day for whoever manages everyone's attendance (plan §9). */
+  private async notifyIssues(date: string, missingCheckOuts: number): Promise<void> {
+    const absent = await this.prisma.attendance.count({ where: { workDate: dateOnly(date), status: 'ABSENT' } });
+    const issues = attendanceIssues(absent, missingCheckOuts);
+    if (!issues) return;
+    await this.notifications.notify({
+      userIds: await this.notifications.usersWithAll('attendance.manage'),
+      type: 'attendance.issues',
+      title: `${shortDate(date)}: ${issues}`,
+      body: absent > 0 ? 'Check whether any of them had leave or forgot to check in, and correct the records.' : 'Add the missing check-out times so worked hours are right.',
+      link: `/attendance?from=${date}&to=${date}${absent > 0 ? '&status=ABSENT' : ''}`,
+      dedupeKey: `attendance-issues:${date}`,
+    });
   }
 
   /** Closes every closable day in the last week. The scheduler calls this; it catches up after downtime. */

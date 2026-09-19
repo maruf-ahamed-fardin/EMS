@@ -26,8 +26,8 @@ mobile check-in.
 | 6 | Attendance | **Done.** Late, absent and leave rules tested against PostgreSQL, including a check-in just after midnight in Dhaka. |
 | 7 | Leave | **Done.** Types, prorated balances with capped carry-forward, preview, request, approve/reject/cancel, HR balance adjustment, review queue and profile Leave tab. Parallel submits can't overdraw a balance (tested against PostgreSQL). Leave notifications arrive with Phase 9. |
 | 8 | Documents | **Done.** Local and S3 storage, upload checked by bytes, 60-second links, private types, soft delete, document types, expiry list and reminders, Documents tab and `/documents`. Cross-employee access returns 404; no storage key appears in any response (tested against PostgreSQL). Photo upload moves to Phase 12 with the profile screens. |
-| 9 | Notifications | Next |
-| 10 | Reports | |
+| 9 | Notifications | **Done.** Service with a channel interface (in-app), triggers for leave requests and decisions, expiring documents, new employees, attendance issues and password changes, the header bell and `/notifications`. Every trigger creates exactly one row per recipient, and a failed change creates none (tested against PostgreSQL). |
+| 10 | Reports | Next |
 | 11 | Audit log viewer | |
 | 12 | Hardening, users, roles and settings screens | |
 

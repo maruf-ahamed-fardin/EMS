@@ -3,7 +3,9 @@ import type { ChangePasswordInput, LoginInput, MeResponse, ResetPasswordInput } 
 import { AuditService } from '../audit/audit.service';
 import { generateToken, hashToken } from '../common/security/tokens';
 import { InjectConfig, type AppConfig } from '../config/config.module';
+import type { Prisma } from '../generated/prisma/client';
 import { MAILER, type Mailer } from '../mail/mailer';
+import { NotificationService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthContext } from './auth-context';
 import { PasswordService } from './password.service';
@@ -31,6 +33,7 @@ export class AuthService {
     private readonly audit: AuditService,
     @Inject(MAILER) private readonly mailer: Mailer,
     @InjectConfig() private readonly config: AppConfig,
+    private readonly notifications: NotificationService,
   ) {}
 
   /** Returns the new session token and who signed in. Throws 401 with LOGIN_FAILED otherwise. */
@@ -207,6 +210,7 @@ export class AuthService {
         { action: 'auth.password_reset', entityType: 'user', entityId: record.user.id, actorUserId: record.user.id, after: { sessionsRevoked: revoked } },
         tx,
       );
+      await this.notifyPasswordChanged(record.user.id, 'reset with an emailed link', tx);
     });
   }
 
@@ -226,6 +230,22 @@ export class AuthService {
       await tx.user.update({ where: { id: auth.user.id }, data: { passwordHash, passwordChangedAt: new Date() } });
       const revoked = await this.sessions.revokeAllForUser(auth.user.id, { except: auth.sessionId }, tx);
       await this.audit.record({ action: 'auth.password_changed', entityType: 'user', entityId: auth.user.id, after: { sessionsRevoked: revoked } }, tx);
+      await this.notifyPasswordChanged(auth.user.id, 'changed from your security page', tx);
     });
+  }
+
+  /** Tells the account holder, so a change they didn't make stands out (plan §9). Every change is its own event. */
+  private async notifyPasswordChanged(userId: string, how: string, tx: Prisma.TransactionClient): Promise<void> {
+    await this.notifications.notify(
+      {
+        userIds: [userId],
+        type: 'auth.password_changed',
+        title: 'Your password was changed',
+        body: `It was ${how}, and your other sessions were signed out. If this wasn't you, reset your password now and tell HR.`,
+        link: '/profile/security',
+        entity: { type: 'user', id: userId },
+      },
+      tx,
+    );
   }
 }

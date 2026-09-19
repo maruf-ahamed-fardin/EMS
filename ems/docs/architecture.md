@@ -48,6 +48,7 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `attendance/` | `attendance-rules.ts` (late, worked minutes, closing status: pure), `AttendanceIngestService.recordPunch()` (the one path for web and future devices), `AttendanceService` (lists, summary, corrections, closing days) and the scheduler. |
 | `settings/` | Attendance settings and holidays. |
 | `leave/` | Leave types, balances (`leave-rules.ts`: day counting, proration, carry-forward), requests and decisions, and the balance scheduler. |
+| `notifications/` | `NotificationService.notify()` (writes rows, optionally in the caller's transaction, then hands them to each `NotificationChannel`; only the in-app channel exists), recipient helpers (`usersWithAll`, `accountOf`), the API, and `wording.ts`. Global, like audit. |
 | `documents/` | `storage/storage.ts` (`DocumentStorage`: local disk with encrypted 60-second link tokens, or S3 with presigned URLs), `sniff.ts` (type from the bytes), upload, visibility (`documentVisibleWhere`, shared with the dashboard), `GET /files/:token`, document types and the expiry reminders. |
 | `common/clock.ts` | `Clock`, injected wherever "now" matters; tests replace it with `FixedClock`. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
@@ -75,6 +76,7 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | `app/(app)/departments/`, `app/(app)/positions/` | Department cards and detail, positions table; create and edit in dialogs. |
 | `components/shared/delete-button.tsx` | Confirmed delete that stays visible but disabled, with the reason, when a rule blocks it. |
 | `components/dashboard/` | Stat tiles, presence bar, department bars and the attendance trend chart (Recharts). |
+| `components/notifications/` | The header bell (unread count every 60 s and on focus through TanStack Query, latest six in a popover), the shared list (opening one marks it read and follows its link) and "Mark all read". |
 | `components/documents/`, `app/(app)/documents/` | Document list, download and delete actions, upload dialog (multipart through `apiUpload`), `/documents` with expiry views, `/documents/types`. |
 | `components/shell/command-search.tsx` | Ctrl/⌘K search dialog. cmdk's own filtering is off: the API already filtered and scoped the results. |
 
@@ -98,7 +100,10 @@ Status colors (on time, late, not checked in) always come with an icon and a lab
 | Upload streamed to storage | Held in memory up to 10 MB, then stored | The bytes are checked before anything is stored. 10 MB per request is small. |
 | Manager can't open `is_sensitive` types | Private types need `employee.view_private` for that person | The same rule then covers managers (no), HR (yes) and employees (their own), and it matches that permission's description. |
 | Documents step in the create form; `pending/` uploads moved on commit | After creating someone, HR adds documents from the profile's Documents tab | Every upload is its own transaction, so no orphaned files and no cleanup job. Revisit if HR asks for it. |
-| Notifications through `NotificationService` | Expiry reminders write in-app rows directly, with a `dedupe_key` | The service and channels arrive in Phase 9 and will take this over. |
+| "HR" as the recipient of leave, new-employee and attendance notifications | Everyone whose role grants the matching permission at ALL (`leave.approve`, `employee.view`, `attendance.manage`) | Follows roles as they are edited in Roles & permissions instead of a fixed role name. |
+| A notification for every attendance issue | One summary per closed working day, sent only by the run that closed it | Ten absences shouldn't be ten notifications, and re-runs or days closed before the feature existed stay quiet. |
+| Channels deliver after writing | The in-app channel is the row itself; later email/SMS channels must queue (outbox) rather than send | `notify` often runs inside the caller's transaction, which can still roll back. |
+| `/notifications` in the sidebar | Reached from the bell's "See all" | Every page already shows the bell; a sidebar item would repeat it. |
 | Brand `#2E4BDB`, Geist | Violet `#5B4BFF`, Plus Jakarta Sans + Geist Mono | Follows `plan-preview.html`. |
 | Idempotency key on create | Unique indexes on email and employee ID, plus a disabled submit button while saving | A double submit gets a 409 naming the duplicate instead of creating a second record. Revisit for creates without a natural unique key. |
 | DataTable on TanStack Table | A plain table (md+) and cards (phones), with filters, sort and page in the URL | One list so far; add TanStack Table when row selection or column controls are built. |

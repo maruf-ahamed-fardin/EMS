@@ -24,6 +24,7 @@ import { DocumentsModule } from './documents/documents.controller';
 import { EmployeesModule } from './employees/employees.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
+import { NotificationsModule } from './notifications/notifications.controller';
 import { OrganizationModule } from './organization/organization.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
@@ -38,6 +39,7 @@ import { RolesModule } from './roles/roles.module';
     ClockModule,
     PrismaModule,
     AuditModule,
+    NotificationsModule,
     MailModule,
     AuthModule,
     CalendarModule,

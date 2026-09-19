@@ -127,7 +127,28 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 
 Expiry reminders: at start-up and every hour (`JOBS_ENABLED`), a document expiring in 30, 7 or 0 days gets one in-app
 notification for its employee and for everyone with `document.view` at ALL (for private types, also
-`employee.view_private` at ALL). `dedupe_key` makes each reminder arrive once. The bell to read them comes in Phase 9.
+`employee.view_private` at ALL). `dedupe_key` makes each reminder arrive once.
+
+| Method and path | Access | Result |
+|---|---|---|
+| `GET /notifications` | `notification.view` | The caller's own, newest first. `page`, `limit`, `unread=true`. Items: `id`, `type`, `title`, `body`, `link`, `readAt`, `createdAt`. |
+| `GET /notifications/unread-count` | `notification.view` | `{ count }`. Not rate limited: the bell asks every minute from every open tab. |
+| `PATCH /notifications/:id/read` | `notification.view` | The notification, read. 404 for anyone else's. Reading twice keeps the first time. |
+| `PATCH /notifications/read-all` | `notification.view` | `{ updated }` |
+
+**What creates a notification** (each is written in the same transaction as its change, so a failed change sends
+nothing; `dedupe_key` makes repeats impossible where an event can be seen twice):
+
+| Type | When | To |
+|---|---|---|
+| `leave.requested` | A request is submitted | The employee's manager, if their role can approve, and everyone with `leave.approve` at ALL. Never the requester. |
+| `leave.approved`, `leave.rejected` | A request is decided | The employee, with the reviewer's note |
+| `document.expiring` | 30, 7 and 0 days before expiry | The employee and document HR (see above) |
+| `employee.created` | Someone is added | Everyone with `employee.view` at ALL, except whoever added them |
+| `attendance.issues` | A working day is closed with absences or missing check-outs | Everyone with `attendance.manage` at ALL; one summary per day |
+| `auth.password_changed` | A password is changed or reset | The account holder, every time |
+
+Only active accounts receive notifications.
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).
