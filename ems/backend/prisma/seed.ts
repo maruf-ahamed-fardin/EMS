@@ -2,9 +2,12 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import * as argon2 from 'argon2';
 import { checkPassword, PASSWORD_PROBLEM_MESSAGES } from '../src/auth/password-policy';
 import { syncCatalogue } from '../src/catalogue/sync-catalogue';
+import { parseEnv } from '../src/config/env';
+import { createDocumentStorage } from '../src/documents/storage/storage';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { seedDemoActivity } from './demo-activity';
 import { DEMO_PEOPLE, seedDemoData } from './demo-data';
+import { seedDemoDocuments } from './demo-documents';
 
 /**
  * Development seed (plan §14): the catalogue plus one demo user per role.
@@ -27,8 +30,11 @@ async function main() {
     const hash = await argon2.hash(password, { type: argon2.argon2id, memoryCost: 19_456, timeCost: 2, parallelism: 1 });
     const { employeeCount } = await seedDemoData(prisma, hash);
     const activity = await seedDemoActivity(prisma);
+    // Files go wherever the API keeps them (STORAGE_DRIVER), so its download links work
+    const documents = await seedDemoDocuments(prisma, createDocumentStorage(parseEnv()));
     console.error(`Seeded catalogue ${JSON.stringify(catalogue)}, ${employeeCount} employees and demo users:`);
     console.error(`  ${activity.attendanceRows} attendance rows over ${activity.days} working days, ${activity.leaveRequests} leave requests`);
+    console.error(`  ${documents.documents} documents (${documents.expiringSoon} expiring within 30 days, ${documents.expired} expired)`);
     for (const [role, person] of Object.entries(DEMO_PEOPLE)) console.error(`  ${role.padEnd(12)} ${person.email}`);
   } finally {
     await prisma.$disconnect();

@@ -85,7 +85,7 @@ function TeamDashboard({
   const attentionItems = [
     canApprove && { icon: CalendarDays, label: 'Leave requests', detail: attention.oldestPendingDays ? `Oldest waiting ${attention.oldestPendingDays} ${attention.oldestPendingDays === 1 ? 'day' : 'days'}` : 'Waiting for a decision', count: attention.pendingLeaveRequests, href: '/leave/requests' },
     overview.isWorkingDay && { icon: Clock, label: 'Not checked in', detail: `No check-in and no leave today`, count: attention.notCheckedIn, href: '/attendance' },
-    { icon: FileWarning, label: 'Documents expiring', detail: 'Within 30 days', count: attention.documentsExpiringSoon, href: '/documents' },
+    { icon: FileWarning, label: 'Documents expiring', detail: 'Within 30 days', count: attention.documentsExpiringSoon, href: '/documents?expiry=EXPIRING' },
     attention.withoutAccount !== null && { icon: KeyRound, label: 'No sign-in account', detail: 'Active employees who can’t sign in', count: attention.withoutAccount, href: '/employees' },
   ].filter((item): item is { icon: typeof Clock; label: string; detail: string; count: number; href: string } => Boolean(item));
 

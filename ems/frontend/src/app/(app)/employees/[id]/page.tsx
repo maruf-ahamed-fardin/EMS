@@ -3,13 +3,19 @@ import {
   type AttendanceSummary,
   can,
   type DataResponse,
+  type DocumentItem,
+  type DocumentTypeItem,
   type EmployeeActivityItem,
   type EmployeeDetail,
   type LeaveBalanceRow,
   type LeaveRequestItem,
   type ListResponse,
+  type PermissionKey,
+  type PermissionMap,
 } from '@ems/contracts';
 import { AttendanceStatusBadge } from '@/components/attendance/attendance-status-badge';
+import { DocumentList } from '@/components/documents/document-list';
+import { UploadDocumentDialog } from '@/components/documents/upload-document-dialog';
 import { BalanceAdjustDialog } from '@/components/leave/balance-adjust-dialog';
 import { LeaveBalanceCards } from '@/components/leave/leave-balance-cards';
 import { LeaveRequestActions } from '@/components/leave/leave-request-actions';
@@ -33,7 +39,7 @@ import { EmployeeActions } from './employee-actions';
 
 export const metadata: Metadata = { title: 'Employee' };
 
-const TABS = ['overview', 'personal', 'employment', 'attendance', 'leave', 'activity'] as const;
+const TABS = ['overview', 'personal', 'employment', 'attendance', 'leave', 'documents', 'activity'] as const;
 
 /** This month's attendance, or null when the viewer can't see this person's attendance. */
 async function loadAttendance(id: string) {
@@ -66,6 +72,39 @@ async function loadLeave(id: string) {
   return { year, balances: balances.data, requests: requests.data, canAdjust: can(session.permissions, 'leave.manage_balances') };
 }
 
+/** Whether a permission reaches this employee, the way the API's ScopeService decides it. */
+function reaches(permissions: PermissionMap, key: PermissionKey, employee: { id: string; managerId: string | null }, self: string | null): boolean {
+  const scope = permissions[key];
+  if (scope === 'ALL') return true;
+  if (!self) return false;
+  if (scope === 'TEAM') return employee.id === self || employee.managerId === self;
+  return scope === 'OWN' && employee.id === self;
+}
+
+/** The documents the viewer may see for this person, and whether they may add one. */
+async function loadDocuments(id: string, managerId: string | null) {
+  const session = await getSession();
+  if (!session || !can(session.permissions, 'document.view')) return null;
+  try {
+    const [documents, types] = await Promise.all([
+      serverApiJson<DataResponse<DocumentItem[]>>(`/employees/${id}/documents`),
+      serverApiJson<DataResponse<DocumentTypeItem[]>>('/document-types'),
+    ]);
+    const target = { id, managerId };
+    return {
+      documents: documents.data,
+      types: types.data,
+      canUpload: reaches(session.permissions, 'document.upload', target, session.employeeId),
+      canUploadSensitive: reaches(session.permissions, 'employee.view_private', target, session.employeeId),
+      own: session.employeeId === id,
+    };
+  } catch (error) {
+    // Outside the viewer's document scope: no tab rather than an error
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 async function load(id: string) {
   try {
     const [detail, activity, attendance, leave] = await Promise.all([
@@ -92,6 +131,7 @@ export default async function EmployeePage({
   const { id } = await params;
   const { tab } = await searchParams;
   const { employee, activity, attendance, leave } = await load(id);
+  const documents = await loadDocuments(employee.id, employee.manager?.id ?? null);
   const initialTab = (TABS as readonly string[]).includes(tab ?? '') ? tab! : 'overview';
 
   return (
@@ -161,6 +201,7 @@ export default async function EmployeePage({
           <TabsTrigger value="employment">Employment</TabsTrigger>
           {attendance && <TabsTrigger value="attendance">Attendance</TabsTrigger>}
           {leave && <TabsTrigger value="leave">Leave</TabsTrigger>}
+          {documents && <TabsTrigger value="documents">Documents</TabsTrigger>}
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -286,6 +327,25 @@ export default async function EmployeePage({
                     </li>
                   ))}
                 </ul>
+              )}
+            </Panel>
+          </TabsContent>
+        )}
+
+        {documents && (
+          <TabsContent value="documents" className="mt-4">
+            <Panel
+              title={`Documents (${documents.documents.length})`}
+              action={
+                documents.canUpload && (
+                  <UploadDocumentDialog employeeId={employee.id} employeeName={employee.fullName} types={documents.types} canUploadSensitive={documents.canUploadSensitive} own={documents.own} />
+                )
+              }
+            >
+              {documents.documents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No documents yet.</p>
+              ) : (
+                <DocumentList documents={documents.documents} />
               )}
             </Panel>
           </TabsContent>

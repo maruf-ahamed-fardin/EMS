@@ -40,3 +40,18 @@ export async function api<T = void>(path: string, init: { method?: 'GET' | 'POST
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
+
+/**
+ * A multipart upload through the same proxy, with the CSRF token. The browser sets the multipart
+ * boundary itself, so no content-type is given here.
+ */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { accept: 'application/json', [CSRF_HEADER]: await csrfToken() },
+    credentials: 'same-origin',
+    body: form,
+  });
+  if (!response.ok) throw await readApiError(response);
+  return (await response.json()) as T;
+}

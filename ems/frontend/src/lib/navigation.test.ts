@@ -23,7 +23,7 @@ describe('visibleNavigation', () => {
   it('shows a manager their team tools but no administration', () => {
     const hrefs = hrefsFor('manager');
     expect(hrefs).toEqual(expect.arrayContaining(['/employees', '/leave/requests', '/reports']));
-    for (const admin of ['/users', '/roles', '/audit-logs', '/settings', '/leave/types']) {
+    for (const admin of ['/users', '/roles', '/audit-logs', '/settings', '/leave/types', '/documents/types']) {
       expect(hrefs).not.toContain(admin);
     }
   });
