@@ -28,7 +28,7 @@ export function SidebarNav({ groups, active, variant, collapsed = false, onNavig
         <div key={group.label} className="flex flex-col gap-0.5">
           <p
             className={cn(
-              'px-2.5 pt-4 pb-1.5 text-[10.5px] font-semibold tracking-[0.1em] text-muted-foreground/80 uppercase',
+              'px-2.5 pt-4 pb-1.5 text-[10.5px] font-semibold tracking-[0.1em] text-muted-foreground uppercase',
               whenExpandedBlock,
             )}
           >

@@ -88,7 +88,8 @@ export function AttendanceTrendChart({ initial }: { initial: AttendanceTrend }) 
       ) : (
         <div className="h-64 w-full" aria-hidden>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend.points} margin={{ top: 8, right: 64, bottom: 0, left: -16 }}>
+            {/* The picture is decorative for assistive tech (the table view is the accessible one), so it takes no focus */}
+            <LineChart data={trend.points} margin={{ top: 8, right: 64, bottom: 0, left: -16 }} accessibilityLayer={false}>
               <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
               <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} interval="preserveStartEnd" minTickGap={16} />
               <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }} width={48} />

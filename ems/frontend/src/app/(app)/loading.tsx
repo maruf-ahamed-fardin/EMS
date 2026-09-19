@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 /** Page-shaped placeholder while a route's server work runs. Routes with tables add their own. */
 export default function Loading() {
   return (
-    <div aria-busy="true" aria-label="Loading">
+    <div role="status" aria-busy="true" aria-label="Loading">
       <Skeleton className="mb-2 h-8 w-56" />
       <Skeleton className="mb-6 h-4 w-80 max-w-full" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

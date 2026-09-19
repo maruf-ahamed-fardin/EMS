@@ -10,7 +10,7 @@ function watchErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(`page error: ${error.message}`));
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(`console: ${message.text()}`);
+    if (message.type() === 'error') errors.push(`console: ${message.text()} (${message.location().url})`);
   });
   return errors;
 }
@@ -30,12 +30,12 @@ async function signIn(page: Page, email: string) {
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
-/** A working day (not a Friday) far enough ahead to be free, different for each run and project. */
-function freeWorkingDay(projectName: string): string {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() + 60 + (Math.floor(Date.now() / 60_000) % 200) + (projectName === 'phone' ? 0 : 1));
-  if (date.getUTCDay() === 5) date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
+/** The next working day (Friday is the weekend) after `date`. */
+function nextWorkingDay(date: string): string {
+  const next = new Date(`${date}T00:00:00Z`);
+  do next.setUTCDate(next.getUTCDate() + 1);
+  while (next.getUTCDay() === 5);
+  return next.toISOString().slice(0, 10);
 }
 
 test.describe.serial('smoke', () => {
@@ -58,11 +58,17 @@ test.describe.serial('smoke', () => {
     await expectAccessible(page, 'attendance');
 
     await page.goto('/leave');
-    const day = freeWorkingDay(info.project.name);
-    await page.getByLabel('First day').fill(day);
-    await page.getByLabel('Last day').fill(day);
     await page.getByLabel('Reason').fill(reason);
-    await expect(page.getByText('1 day of leave')).toBeVisible();
+    // Two months ahead, then the first day without leave already (earlier runs leave theirs behind)
+    let day = nextWorkingDay(new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10));
+    for (let tries = 0; ; tries++) {
+      await page.getByLabel('First day').fill(day);
+      await page.getByLabel('Last day').fill(day);
+      await expect(page.getByText('1 day of leave')).toBeVisible();
+      if (!(await page.getByText('You already have leave requested or approved on some of these days').isVisible())) break;
+      expect(tries).toBeLessThan(60);
+      day = nextWorkingDay(day);
+    }
     await expectAccessible(page, 'leave form with preview');
     await page.getByRole('button', { name: 'Request leave' }).click();
     await expect(page.getByText('Leave requested. Your manager will be asked to approve it.')).toBeVisible();
