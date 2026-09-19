@@ -122,7 +122,7 @@ describeWithDatabase('reports', () => {
       expect(res.headers['content-disposition']).toBe(`attachment; filename="attendance-${monthAgo}-to-${today}.csv"`);
       expect(res.headers['cache-control']).toBe('private, no-store');
       const text = (res.body as Buffer).toString('utf8');
-      expect(text.startsWith('﻿Date,Employee ID,Employee,Department,In,Out,Hours,Status,Late (min)\r\n')).toBe(true);
+      expect(text.startsWith('\uFEFFDate,Employee ID,Employee,Department,In,Out,Hours,Status,Late (min)\r\n')).toBe(true);
       const total = await t.prisma.attendance.count({ where: { workDate: { gte: dateOnly(monthAgo), lte: dateOnly(today) } } });
       expect(text.trimEnd().split('\r\n')).toHaveLength(total + 1);
 
@@ -196,8 +196,9 @@ describeWithDatabase('reports', () => {
     });
 
     /**
-     * Streams every format over a real socket while sampling the API's memory. A report this size held
-     * in memory would take well over 100 MB; streamed, it stays within a small ceiling.
+     * Streams every format over a real socket while sampling the API's live memory. Just holding these
+     * rows at once takes about 16 MB (measured 2026-09-19); streamed, the peak was 0–5 MB. The 10 MB
+     * ceiling fails any export that loads the whole report before writing it.
      */
     it.each(['csv', 'xlsx', 'pdf'] as const)('streams %s within the memory ceiling', async (format) => {
       const server = t.app.getHttpServer();
@@ -239,8 +240,8 @@ describeWithDatabase('reports', () => {
       if (format === 'csv') expect(lines).toBe(rows + 1);
       expect(bytes).toBeGreaterThan(rows * 20);
       const grownMb = (peak - before) / 1024 / 1024;
-      if (process.env.REPORT_MEMORY_DEBUG) console.log(`${format}: ${rows} rows, ${(bytes / 1024 / 1024).toFixed(1)} MB sent, peak +${grownMb.toFixed(1)} MB`);
-      expect(grownMb).toBeLessThan(80);
+      if (process.env.REPORT_MEMORY_DEBUG) console.error(`${format}: ${rows} rows, ${(bytes / 1024 / 1024).toFixed(1)} MB sent, peak +${grownMb.toFixed(1)} MB`);
+      expect(grownMb).toBeLessThan(10);
     }, 300_000);
   });
 });

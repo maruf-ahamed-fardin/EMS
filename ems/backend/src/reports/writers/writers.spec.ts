@@ -73,7 +73,7 @@ describe('CSV', () => {
 
   it('writes a byte-order mark, the header and CRLF rows', async () => {
     const out = (await produce((s) => new CsvWriter(s), [[['Rahim', 8.5]], [['রহিম', null]]])).toString('utf8');
-    expect(out).toBe('﻿Name,Hours\r\nRahim,8.5\r\nরহিম,\r\n');
+    expect(out).toBe('\uFEFFName,Hours\r\nRahim,8.5\r\nরহিম,\r\n');
   });
 });
 
