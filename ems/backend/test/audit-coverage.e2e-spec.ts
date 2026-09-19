@@ -53,6 +53,12 @@ const WRITE_ROUTES: Record<string, { audits: AuditAction[] } | 'exempt'> = {
   'POST /document-types': { audits: ['document_type.created'] },
   'PATCH /document-types/:id': { audits: ['document_type.updated'] },
   'DELETE /document-types/:id': { audits: ['document_type.deleted'] },
+  'POST /users': { audits: ['user.created'] },
+  'PATCH /users/:id/role': { audits: ['user.role_changed'] },
+  'POST /users/:id/deactivate': { audits: ['user.deactivated'] },
+  'POST /users/:id/activate': { audits: ['user.activated'] },
+  'POST /users/:id/send-reset': { audits: ['user.reset_link_sent'] },
+  'PUT /roles/:id/permissions': { audits: ['role.permissions_changed'] },
   'PATCH /notifications/read-all': 'exempt',
   'PATCH /notifications/:id/read': 'exempt',
 };

@@ -1,5 +1,6 @@
-import type { PermissionScope } from './enums';
-import { PERMISSION_KEYS, type PermissionKey } from './permissions';
+import { z } from 'zod';
+import { PermissionScope } from './enums';
+import { PERMISSION_KEYS, type PermissionKey, type PermissionMap } from './permissions';
 
 export const SYSTEM_ROLES = {
   super_admin: { name: 'Super Admin', description: 'Full access, including roles and security settings' },
@@ -55,3 +56,29 @@ export const DEFAULT_ROLE_GRANTS: Record<SystemRoleKey, Grants> = {
     'notification.view': 'ALL',
   },
 };
+
+// ─── Roles & permissions screen ─────────────────────────────────────────────────────────────────
+
+export interface RoleItem {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  userCount: number;
+  permissions: PermissionMap;
+  /** Super Admin always holds every permission (catalogue sync restores it), so it can't be edited. */
+  editable: boolean;
+}
+
+export interface PermissionItem {
+  key: PermissionKey;
+  module: string;
+  description: string;
+}
+
+/** The complete set of grants for a role; anything left out is taken away. */
+export const updateRolePermissionsInput = z.object({
+  permissions: z.partialRecord(z.enum(PERMISSION_KEYS as [PermissionKey, ...PermissionKey[]]), z.enum(PermissionScope)),
+});
+export type UpdateRolePermissionsInput = z.input<typeof updateRolePermissionsInput>;

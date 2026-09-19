@@ -12,4 +12,5 @@ export * from './notifications';
 export * from './organization';
 export * from './permissions';
 export * from './reports';
+export * from './users';
 export * from './roles';

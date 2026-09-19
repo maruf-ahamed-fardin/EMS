@@ -30,6 +30,7 @@ import { OrganizationModule } from './organization/organization.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.controller';
 import { RolesModule } from './roles/roles.module';
+import { UsersModule } from './users/users.controller';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { RolesModule } from './roles/roles.module';
     DashboardCacheModule,
     HealthModule,
     RolesModule,
+    UsersModule,
     EmployeesModule,
     OrganizationModule,
     DashboardModule,

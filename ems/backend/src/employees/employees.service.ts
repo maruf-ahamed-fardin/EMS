@@ -1,4 +1,4 @@
-import { ForbiddenException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   can,
   type CreateEmployeeData,
@@ -13,17 +13,14 @@ import {
   type UpdateEmployeeInput,
   type UpdateMyProfileInput,
 } from '@ems/contracts';
-import * as argon2 from 'argon2';
 import { AuditService } from '../audit/audit.service';
 import type { AuthContext } from '../auth/auth-context';
 import { ScopeService } from '../auth/scope.service';
-import { INVITE_TOKEN_TTL_MS } from '../auth/session-policy';
+import { InvitationService } from '../auth/invitations.service';
 import { SessionsService } from '../auth/sessions.service';
 import { conflict, invalidFields } from '../common/errors/http-errors';
-import { generateToken, hashToken } from '../common/security/tokens';
 import { InjectConfig, type AppConfig } from '../config/config.module';
 import type { Prisma } from '../generated/prisma/client';
-import { MAILER, type Mailer } from '../mail/mailer';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   createsManagerCycle,
@@ -52,7 +49,7 @@ export class EmployeesService {
     private readonly scope: ScopeService,
     private readonly sessions: SessionsService,
     private readonly audit: AuditService,
-    @Inject(MAILER) private readonly mailer: Mailer,
+    private readonly invitations: InvitationService,
     @InjectConfig() private readonly config: AppConfig,
     private readonly notifications: NotificationService,
   ) {}
@@ -188,8 +185,8 @@ export class EmployeesService {
     await this.assertUnique({ email: input.email, employeeCode: input.employeeCode });
 
     // A random, never-revealed password: the person chooses theirs from the emailed link
-    const unusablePasswordHash = roleId ? await argon2.hash(generateToken(), { type: argon2.argon2id }) : null;
-    const inviteToken = roleId ? generateToken() : null;
+    const unusablePasswordHash = roleId ? await this.invitations.unusablePasswordHash() : null;
+    let inviteToken: string | null = null;
 
     const created = await this.withConflictMapping({ email: input.email, employeeCode: input.employeeCode }, () =>
       this.prisma.$transaction(async (tx) => {
@@ -229,14 +226,12 @@ export class EmployeesService {
           });
         }
 
-        if (roleId && unusablePasswordHash && inviteToken) {
+        if (roleId && unusablePasswordHash) {
           const user = await tx.user.create({
             data: { email: input.email, passwordHash: unusablePasswordHash, roleId, employeeId: employee.id },
             select: { id: true },
           });
-          await tx.passwordResetToken.create({
-            data: { userId: user.id, tokenHash: hashToken(inviteToken), expiresAt: new Date(Date.now() + INVITE_TOKEN_TTL_MS) },
-          });
+          inviteToken = await this.invitations.issue(tx, user.id);
           await this.audit.record({ action: 'user.created', entityType: 'user', entityId: user.id, after: { email: input.email, roleId, employeeId: employee.id } }, tx);
         }
 
@@ -265,27 +260,8 @@ export class EmployeesService {
       }),
     );
 
-    if (inviteToken) this.sendInvite(input.email, input.firstName, inviteToken);
+    if (inviteToken) this.invitations.send(input.email, input.firstName, inviteToken, 'new');
     return this.get(auth, created.id);
-  }
-
-  private sendInvite(email: string, firstName: string, token: string): void {
-    const link = `${this.config.APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
-    this.mailer
-      .send({
-        to: email,
-        subject: 'Your SeloraX People account',
-        text: [
-          `Hi ${firstName},`,
-          '',
-          'An account has been created for you in SeloraX People.',
-          'Choose your password with this link within 3 days:',
-          link,
-          '',
-          'If the link has expired, use "Forgot password?" on the sign-in page.',
-        ].join('\n'),
-      })
-      .catch((error: unknown) => this.logger.error({ err: error }, 'Could not send the account invitation'));
   }
 
   /** The next SX code, taken under an advisory lock so two creates can't pick the same one. */

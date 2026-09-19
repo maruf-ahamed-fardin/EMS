@@ -132,6 +132,16 @@ export class TestBrowser {
       .send(body);
   }
 
+  async put(path: string, body: object) {
+    return this.agent
+      .put(`/api/v1${path}`)
+      .set('x-forwarded-for', this.ip)
+      .set('origin', APP_ORIGIN)
+      .set('sec-fetch-site', 'same-origin')
+      .set('x-csrf-token', await this.token())
+      .send(body);
+  }
+
   async delete(path: string) {
     return this.agent
       .delete(`/api/v1${path}`)

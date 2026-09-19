@@ -1,61 +1,107 @@
-import { Controller, Get } from '@nestjs/common';
-import type { DataResponse, PermissionScope } from '@ems/contracts';
+import { Body, Controller, Get, Injectable, NotFoundException, Param, Put } from '@nestjs/common';
+import { type DataResponse, isPermissionKey, type PermissionItem, type PermissionMap, type RoleItem, updateRolePermissionsInput } from '@ems/contracts';
+import { createZodDto } from 'nestjs-zod';
+import { AuditService } from '../audit/audit.service';
 import { RequirePermission } from '../auth/decorators';
+import { PermissionsService } from '../auth/permissions.service';
+import { conflict } from '../common/errors/http-errors';
 import { PrismaService } from '../prisma/prisma.service';
 
-interface RoleView {
-  id: string;
-  key: string;
-  name: string;
-  description: string | null;
-  isSystem: boolean;
-  userCount: number;
-  permissions: Record<string, PermissionScope>;
+class UpdateRolePermissionsDto extends createZodDto(updateRolePermissionsInput) {}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SUPER_ADMIN = 'super_admin';
+
+const ROLE_SELECT = {
+  id: true,
+  key: true,
+  name: true,
+  description: true,
+  isSystem: true,
+  _count: { select: { users: true } },
+  permissions: { select: { scope: true, permission: { select: { key: true } } } },
+} as const;
+
+@Injectable()
+export class RolesService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+    private readonly permissions: PermissionsService,
+  ) {}
+
+  async list(): Promise<RoleItem[]> {
+    const roles = await this.prisma.role.findMany({ orderBy: [{ isSystem: 'desc' }, { name: 'asc' }], select: ROLE_SELECT });
+    return roles.map(({ _count, permissions, ...role }) => ({
+      ...role,
+      userCount: _count.users,
+      permissions: Object.fromEntries(permissions.filter((g) => isPermissionKey(g.permission.key)).map((g) => [g.permission.key, g.scope])),
+      editable: role.key !== SUPER_ADMIN,
+    }));
+  }
+
+  /**
+   * Replaces a role's grants with exactly the ones given. Applies at once on this instance (the
+   * permission cache is cleared) and within a minute on others.
+   */
+  async replace(id: string, grants: PermissionMap): Promise<RoleItem> {
+    const role = UUID.test(id) ? await this.prisma.role.findUnique({ where: { id }, select: ROLE_SELECT }) : null;
+    if (!role) throw new NotFoundException();
+    if (role.key === SUPER_ADMIN) throw conflict('Super Admin always has every permission, so it can’t be edited');
+
+    const before = Object.fromEntries(role.permissions.map((g) => [g.permission.key, g.scope])) as PermissionMap;
+    const changed = [...new Set([...Object.keys(before), ...Object.keys(grants)])].filter((k) => before[k as keyof PermissionMap] !== grants[k as keyof PermissionMap]);
+    if (changed.length === 0) {
+      this.audit.skip('Nothing changed');
+      return (await this.list()).find((r) => r.id === id)!;
+    }
+
+    const catalogue = new Map((await this.prisma.permission.findMany({ select: { id: true, key: true } })).map((p) => [p.key, p.id]));
+    await this.prisma.$transaction(async (tx) => {
+      await tx.rolePermission.deleteMany({ where: { roleId: id } });
+      await tx.rolePermission.createMany({
+        data: Object.entries(grants).map(([key, scope]) => ({ roleId: id, permissionId: catalogue.get(key)!, scope })),
+      });
+      await this.audit.record(
+        {
+          action: 'role.permissions_changed',
+          entityType: 'role',
+          entityId: id,
+          before: { key: role.key, permissions: Object.fromEntries(changed.map((k) => [k, before[k as keyof PermissionMap] ?? null])) },
+          after: { key: role.key, permissions: Object.fromEntries(changed.map((k) => [k, grants[k as keyof PermissionMap] ?? null])) },
+        },
+        tx,
+      );
+    });
+    this.permissions.invalidate(id);
+    return (await this.list()).find((r) => r.id === id)!;
+  }
 }
 
-interface PermissionView {
-  key: string;
-  module: string;
-  description: string;
-}
-
-/** Read side of Roles & permissions. Editing grants (`PUT /roles/:id/permissions`) arrives in Phase 12. */
+/** Roles & permissions (plan §4). Every role's grants are edited here, except Super Admin's. */
 @Controller()
 export class RolesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly roles: RolesService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @RequirePermission('role.manage')
   @Get('roles')
-  async roles(): Promise<DataResponse<RoleView[]>> {
-    const roles = await this.prisma.role.findMany({
-      orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
-      select: {
-        id: true,
-        key: true,
-        name: true,
-        description: true,
-        isSystem: true,
-        _count: { select: { users: true } },
-        permissions: { select: { scope: true, permission: { select: { key: true } } } },
-      },
-    });
-    return {
-      data: roles.map(({ _count, permissions, ...role }) => ({
-        ...role,
-        userCount: _count.users,
-        permissions: Object.fromEntries(permissions.map((grant) => [grant.permission.key, grant.scope])),
-      })),
-    };
+  async list(): Promise<DataResponse<RoleItem[]>> {
+    return { data: await this.roles.list() };
+  }
+
+  @RequirePermission('role.manage')
+  @Put('roles/:id/permissions')
+  async replace(@Param('id') id: string, @Body() body: UpdateRolePermissionsDto): Promise<DataResponse<RoleItem>> {
+    return { data: await this.roles.replace(id, body.permissions) };
   }
 
   @RequirePermission('role.manage')
   @Get('permissions')
-  async permissions(): Promise<DataResponse<PermissionView[]>> {
-    return {
-      data: await this.prisma.permission.findMany({
-        orderBy: [{ module: 'asc' }, { key: 'asc' }],
-        select: { key: true, module: true, description: true },
-      }),
-    };
+  async permissions(): Promise<DataResponse<PermissionItem[]>> {
+    const rows = await this.prisma.permission.findMany({ orderBy: [{ module: 'asc' }, { key: 'asc' }], select: { key: true, module: true, description: true } });
+    return { data: rows.filter((p): p is PermissionItem => isPermissionKey(p.key)) };
   }
 }

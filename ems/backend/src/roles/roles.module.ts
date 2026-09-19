@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RolesController } from './roles.controller';
+import { RolesController, RolesService } from './roles.controller';
 
-@Module({ controllers: [RolesController] })
+@Module({ controllers: [RolesController], providers: [RolesService] })
 export class RolesModule {}

@@ -15,6 +15,11 @@ export const AUDIT_ACTIONS = {
   'auth.password_reset': 'Reset their password',
   'auth.password_changed': 'Changed their password',
   'user.created': 'Created a sign-in account',
+  'user.role_changed': 'Changed an account’s role',
+  'user.activated': 'Activated an account',
+  'user.deactivated': 'Deactivated an account',
+  'user.reset_link_sent': 'Sent a password link',
+  'role.permissions_changed': 'Changed a role’s permissions',
   'employee.created': 'Added an employee',
   'employee.updated': 'Edited an employee',
   'employee.deactivated': 'Deactivated an employee',
@@ -54,6 +59,7 @@ export const AUDIT_ACTION_KEYS = Object.keys(AUDIT_ACTIONS) as AuditAction[];
 /** What an audit entry is about, in words for the filter. */
 export const AUDIT_ENTITY_TYPES = {
   user: 'Sign-in accounts',
+  role: 'Roles',
   employee: 'Employees',
   department: 'Departments',
   position: 'Positions',
