@@ -2,6 +2,7 @@ export * from './api';
 export * from './attendance';
 export * from './auth';
 export * from './dashboard';
+export * from './documents';
 export * from './employees';
 export * from './enums';
 export * from './leave';

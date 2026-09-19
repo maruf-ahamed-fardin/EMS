@@ -37,6 +37,7 @@ export const PERMISSIONS = {
   'document.view': { module: 'documents', description: 'View employee documents' },
   'document.upload': { module: 'documents', description: 'Upload documents' },
   'document.delete': { module: 'documents', description: 'Delete documents' },
+  'document.manage_types': { module: 'documents', description: 'Manage document types' },
 
   'notification.view': { module: 'notifications', description: 'Receive notifications' },
 

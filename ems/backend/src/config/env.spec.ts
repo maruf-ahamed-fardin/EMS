@@ -41,6 +41,8 @@ describe('parseEnv', () => {
       APP_URL: 'https://ems.selorax.io',
       MAIL_DRIVER: 'smtp',
       SMTP_URL: 'smtps://mailer.example:465',
+      STORAGE_DRIVER: 's3',
+      S3_BUCKET: 'ems-documents',
     };
     expect(problemsOf(production)).toEqual(['DATABASE_URL needs sslmode=verify-full (or require) in production']);
     expect(() => parseEnv({ ...production, DATABASE_URL: `${base.DATABASE_URL}?sslmode=verify-full` })).not.toThrow();
@@ -72,6 +74,7 @@ describe('parseEnv (auth and mail)', () => {
     expect(problemsOf({ ...base, NODE_ENV: 'production', DATABASE_ALLOW_INSECURE: 'true', APP_URL: 'http://ems.example' })).toEqual([
       'APP_URL must be https in production',
       'MAIL_DRIVER must be smtp in production',
+      'STORAGE_DRIVER must be s3 in production',
     ]);
   });
 
@@ -79,5 +82,29 @@ describe('parseEnv (auth and mail)', () => {
     expect(problemsOf({ ...base, MAIL_DRIVER: 'smtp' })).toEqual([
       'SMTP_URL must be an smtp:// or smtps:// URL when MAIL_DRIVER=smtp',
     ]);
+  });
+});
+
+describe('parseEnv (document storage)', () => {
+  it('keeps documents on local disk by default', () => {
+    expect(parseEnv(base)).toMatchObject({ STORAGE_DRIVER: 'local', STORAGE_LOCAL_DIR: './storage' });
+  });
+
+  it('needs a bucket, and both keys or neither, for S3', () => {
+    expect(problemsOf({ ...base, STORAGE_DRIVER: 's3', S3_ACCESS_KEY_ID: 'AKIA' })).toEqual([
+      'S3_BUCKET is required when STORAGE_DRIVER=s3',
+      'S3_SECRET_ACCESS_KEY and S3_ACCESS_KEY_ID must be set together',
+    ]);
+    expect(() => parseEnv({ ...base, STORAGE_DRIVER: 's3', S3_BUCKET: 'docs' })).not.toThrow();
+  });
+
+  it('never shows the S3 secret in an error', () => {
+    try {
+      parseEnv({ ...base, STORAGE_DRIVER: 's3', S3_SECRET_ACCESS_KEY: SECRET, S3_ENDPOINT: SECRET });
+    } catch (error) {
+      expect(String((error as Error).message)).not.toContain(SECRET);
+      return;
+    }
+    throw new Error('expected parseEnv to throw');
   });
 });

@@ -20,6 +20,7 @@ import { SettingsModule } from './settings/settings.controller';
 import { APP_CONFIG, ConfigModule, type AppConfig } from './config/config.module';
 import { DashboardCacheModule } from './dashboard/dashboard-cache';
 import { DashboardModule } from './dashboard/dashboard.controller';
+import { DocumentsModule } from './documents/documents.controller';
 import { EmployeesModule } from './employees/employees.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
@@ -49,6 +50,7 @@ import { RolesModule } from './roles/roles.module';
     AttendanceModule,
     SettingsModule,
     LeaveModule,
+    DocumentsModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs

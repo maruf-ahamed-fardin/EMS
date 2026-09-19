@@ -7,6 +7,7 @@ import {
   can,
   type DashboardOverview,
   type DashboardVariant,
+  DOCUMENT_EXPIRY_WARNING_DAYS,
   type MyDay,
   type PendingLeaveItem,
   type TrendRange,
@@ -25,6 +26,7 @@ import {
   workingDaysUpTo,
   zonedHour,
 } from '../calendar/work-calendar';
+import { documentVisibleWhere } from '../documents/documents.service';
 import { EMPLOYEE_LIST_SELECT, toListItem } from '../employees/employee-view';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -226,11 +228,8 @@ export class DashboardService {
     if (!can(auth.permissions, 'document.view')) return Promise.resolve(0);
     return this.prisma.document.count({
       where: {
-        deletedAt: null,
-        expiresAt: { gte: dateOnly(today), lte: dateOnly(addDays(today, 30)) },
-        employee: this.scope.employeeWhere(auth, 'document.view'),
-        // Managers never see sensitive types (plan §4), so they aren't counted for them either
-        ...(auth.permissions['document.view'] === 'ALL' ? {} : { documentType: { isSensitive: false } }),
+        // Only documents the viewer could open: sensitive ones are never counted for managers
+        AND: [documentVisibleWhere(this.scope, auth), { expiresAt: { gte: dateOnly(today), lte: dateOnly(addDays(today, DOCUMENT_EXPIRY_WARNING_DAYS)) } }],
       },
     });
   }

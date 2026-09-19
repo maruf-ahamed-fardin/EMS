@@ -53,10 +53,36 @@ const envSchema = z
     /** smtp://user:pass@host:port. Required when MAIL_DRIVER=smtp. */
     SMTP_URL: z.string().optional(),
     MAIL_FROM: z.string().min(3).default('SeloraX People <no-reply@selorax.local>'),
+
+    /**
+     * Where documents are kept (decision D4). `local` writes to STORAGE_LOCAL_DIR and serves 60-second
+     * signed links itself; it is for development and tests only. `s3` is any S3-compatible private
+     * bucket (AWS S3, Cloudflare R2, MinIO).
+     */
+    STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+    STORAGE_LOCAL_DIR: z.string().min(1).default('./storage'),
+    S3_BUCKET: z.string().optional(),
+    /** `auto` for Cloudflare R2. */
+    S3_REGION: z.string().min(1).default('us-east-1'),
+    /** Only for providers other than AWS, e.g. https://<account>.r2.cloudflarestorage.com. */
+    S3_ENDPOINT: z.url({ protocol: /^https?$/, message: 'must be an http(s) URL' }).optional(),
+    /** Leave both keys empty to use the platform's credentials (such as an IAM role). */
+    S3_ACCESS_KEY_ID: z.string().optional(),
+    S3_SECRET_ACCESS_KEY: z.string().optional(),
+    S3_FORCE_PATH_STYLE: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
   })
   .superRefine((env, ctx) => {
     if (env.MAIL_DRIVER === 'smtp' && !env.SMTP_URL?.match(/^smtps?:\/\//)) {
       ctx.addIssue({ code: 'custom', path: ['SMTP_URL'], message: 'must be an smtp:// or smtps:// URL when MAIL_DRIVER=smtp' });
+    }
+    if (env.STORAGE_DRIVER === 's3') {
+      if (!env.S3_BUCKET) ctx.addIssue({ code: 'custom', path: ['S3_BUCKET'], message: 'is required when STORAGE_DRIVER=s3' });
+      if (Boolean(env.S3_ACCESS_KEY_ID) !== Boolean(env.S3_SECRET_ACCESS_KEY)) {
+        ctx.addIssue({ code: 'custom', path: ['S3_SECRET_ACCESS_KEY'], message: 'and S3_ACCESS_KEY_ID must be set together' });
+      }
     }
     if (env.NODE_ENV !== 'production') return;
 
@@ -76,6 +102,10 @@ const envSchema = z
     // Console mail would silently drop every password reset
     if (env.MAIL_DRIVER !== 'smtp') {
       ctx.addIssue({ code: 'custom', path: ['MAIL_DRIVER'], message: 'must be smtp in production' });
+    }
+    // A container's disk is lost on redeploy, and several instances wouldn't share it
+    if (env.STORAGE_DRIVER !== 's3') {
+      ctx.addIssue({ code: 'custom', path: ['STORAGE_DRIVER'], message: 'must be s3 in production' });
     }
   });
 
