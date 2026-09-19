@@ -11,8 +11,15 @@ shares nothing with the app at the repository root.
 | `frontend` | The web app | Next.js 16, React 19, Tailwind 4, shadcn/ui |
 
 Start with [`docs/plan.md`](docs/plan.md). It is the source of truth for scope, the order of work and
-the decisions taken. Build status: **Phases 1 (architecture) and 2 (authentication and permissions) are
-built.** Progress per phase is in [`docs/requirements.md`](docs/requirements.md).
+the decisions taken. Progress per phase is in [`docs/requirements.md`](docs/requirements.md).
+
+| Document | What it covers |
+|---|---|
+| [`docs/architecture.md`](docs/architecture.md) | How it is built, and where and why it differs from the plan |
+| [`docs/api.md`](docs/api.md) | Every endpoint, its permission and its rules |
+| [`docs/security.md`](docs/security.md) | Every security control, where it lives and which test proves it |
+| [`docs/performance.md`](docs/performance.md) | The query review at production volume |
+| [`docs/deployment.md`](docs/deployment.md) | Images, configuration, a deploy, the first admin, backups and restore |
 
 ## Run it locally
 

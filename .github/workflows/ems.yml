@@ -68,3 +68,26 @@ jobs:
           if [ $code -eq 2 ]; then echo "::error::schema.prisma has changes with no migration"; exit 1; fi
           if [ $code -ne 0 ] || ! echo "$out" | grep -q "No difference detected"; then echo "::error::drift check did not run"; exit 1; fi
       - run: npm run build
+
+  # The Dockerfiles can't be built on the development PC (no Docker), so CI proves them on every change
+  images:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Hidden payload check
+        run: node scripts/check-payload.mjs
+      - name: Build the API, release and web images
+        run: |
+          docker build -f backend/Dockerfile --target runtime -t ems-api .
+          docker build -f backend/Dockerfile --target migrate -t ems-migrate .
+          docker build -f frontend/Dockerfile --build-arg API_ORIGIN=http://api:4000 -t ems-web .
+      - name: Images run as a non-root user and load their native and generated code
+        run: |
+          test "$(docker run --rm ems-api id -u)" != "0"
+          test "$(docker run --rm ems-web id -u)" != "0"
+          docker run --rm ems-api node -e "require('argon2'); require('./dist/generated/prisma/client'); console.log('api ok')"
+          docker run --rm ems-web test -f frontend/server.js
+          docker run --rm ems-migrate npx prisma --version
