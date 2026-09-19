@@ -11,7 +11,8 @@ import { contentSecurityPolicy, newNonce } from '@/lib/csp';
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const nonce = newNonce();
-  const csp = contentSecurityPolicy(nonce, { dev: process.env.NODE_ENV === 'development' });
+  const https = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  const csp = contentSecurityPolicy(nonce, { dev: process.env.NODE_ENV === 'development', https });
 
   let response: NextResponse;
   if (isPublicPath(pathname) || request.cookies.has(SESSION_COOKIE)) {

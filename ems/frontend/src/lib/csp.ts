@@ -4,7 +4,7 @@
  * inline handler never runs. Styles allow inline because Radix, Recharts and the meters set `style`
  * attributes, which nonces can't cover; injected CSS can't run code.
  */
-export function contentSecurityPolicy(nonce: string, options: { dev: boolean }): string {
+export function contentSecurityPolicy(nonce: string, options: { dev: boolean; https: boolean }): string {
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${options.dev ? " 'unsafe-eval'" : ''}`,
@@ -17,7 +17,8 @@ export function contentSecurityPolicy(nonce: string, options: { dev: boolean }):
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    ...(options.dev ? [] : ['upgrade-insecure-requests']),
+    // Only on https pages: on plain http (local, or before TLS) it would send same-site requests to https
+    ...(options.https ? ['upgrade-insecure-requests'] : []),
   ].join('; ');
 }
 
