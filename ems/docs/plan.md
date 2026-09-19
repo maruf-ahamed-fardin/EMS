@@ -1,6 +1,6 @@
 # Employee Management System (EMS): plan
 
-Status: **decided; Phases 1–11 built and tested against PostgreSQL** (2026-09-19). Phase 12 is next.
+Status: **decided; Phases 1–12 built and tested against PostgreSQL** (2026-09-19). Nothing is deployed yet; see `deployment.md`.
 Date: 2026-09-17
 Source: the "Master prompt: production employee management system" specification.
 

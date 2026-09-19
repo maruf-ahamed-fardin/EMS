@@ -12,3 +12,7 @@ backend/src/generated/
 .env.*
 !.env.example
 backend/storage/
+
+# Playwright output
+frontend/test-results/
+frontend/playwright-report/
