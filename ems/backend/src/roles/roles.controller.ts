@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Injectable, NotFoundException, Param, Put } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Injectable, NotFoundException, Param, Put } from '@nestjs/common';
 import { type DataResponse, isPermissionKey, type PermissionItem, type PermissionMap, type RoleItem, updateRolePermissionsInput } from '@ems/contracts';
 import { createZodDto } from 'nestjs-zod';
 import { AuditService } from '../audit/audit.service';
-import { RequirePermission } from '../auth/decorators';
+import { SUPER_ADMIN } from '../auth/account-protection';
+import type { AuthContext } from '../auth/auth-context';
+import { CurrentAuth, RequirePermission } from '../auth/decorators';
 import { PermissionsService } from '../auth/permissions.service';
 import { conflict } from '../common/errors/http-errors';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 class UpdateRolePermissionsDto extends createZodDto(updateRolePermissionsInput) {}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SUPER_ADMIN = 'super_admin';
+const ADMIN_PERMISSIONS = new Set<string>(['user.manage', 'role.manage']);
 
 const ROLE_SELECT = {
   id: true,
@@ -30,13 +32,13 @@ export class RolesService {
     private readonly permissions: PermissionsService,
   ) {}
 
-  async list(): Promise<RoleItem[]> {
+  async list(auth: AuthContext): Promise<RoleItem[]> {
     const roles = await this.prisma.role.findMany({ orderBy: [{ isSystem: 'desc' }, { name: 'asc' }], select: ROLE_SELECT });
     return roles.map(({ _count, permissions, ...role }) => ({
       ...role,
       userCount: _count.users,
       permissions: Object.fromEntries(permissions.filter((g) => isPermissionKey(g.permission.key)).map((g) => [g.permission.key, g.scope])),
-      editable: role.key !== SUPER_ADMIN,
+      editable: role.key !== SUPER_ADMIN && role.id !== auth.user.role.id,
     }));
   }
 
@@ -44,16 +46,21 @@ export class RolesService {
    * Replaces a role's grants with exactly the ones given. Applies at once on this instance (the
    * permission cache is cleared) and within a minute on others.
    */
-  async replace(id: string, grants: PermissionMap): Promise<RoleItem> {
+  async replace(auth: AuthContext, id: string, grants: PermissionMap): Promise<RoleItem> {
     const role = UUID.test(id) ? await this.prisma.role.findUnique({ where: { id }, select: ROLE_SELECT }) : null;
     if (!role) throw new NotFoundException();
     if (role.key === SUPER_ADMIN) throw conflict('Super Admin always has every permission, so it can’t be edited');
+    if (role.id === auth.user.role.id) throw conflict("You can't change your own role's permissions. Ask another administrator.");
 
     const before = Object.fromEntries(role.permissions.map((g) => [g.permission.key, g.scope])) as PermissionMap;
     const changed = [...new Set([...Object.keys(before), ...Object.keys(grants)])].filter((k) => before[k as keyof PermissionMap] !== grants[k as keyof PermissionMap]);
     if (changed.length === 0) {
       this.audit.skip('Nothing changed');
-      return (await this.list()).find((r) => r.id === id)!;
+      return (await this.list(auth)).find((r) => r.id === id)!;
+    }
+    // Either of these lets the holder reach Super Admin's powers, so only a Super Admin hands them out
+    if (changed.some((k) => ADMIN_PERMISSIONS.has(k)) && auth.user.role.key !== SUPER_ADMIN) {
+      throw new ForbiddenException('Only a Super Admin can grant or remove user and role management');
     }
 
     const catalogue = new Map((await this.prisma.permission.findMany({ select: { id: true, key: true } })).map((p) => [p.key, p.id]));
@@ -74,7 +81,7 @@ export class RolesService {
       );
     });
     this.permissions.invalidate(id);
-    return (await this.list()).find((r) => r.id === id)!;
+    return (await this.list(auth)).find((r) => r.id === id)!;
   }
 }
 
@@ -88,14 +95,14 @@ export class RolesController {
 
   @RequirePermission('role.manage')
   @Get('roles')
-  async list(): Promise<DataResponse<RoleItem[]>> {
-    return { data: await this.roles.list() };
+  async list(@CurrentAuth() auth: AuthContext): Promise<DataResponse<RoleItem[]>> {
+    return { data: await this.roles.list(auth) };
   }
 
   @RequirePermission('role.manage')
   @Put('roles/:id/permissions')
-  async replace(@Param('id') id: string, @Body() body: UpdateRolePermissionsDto): Promise<DataResponse<RoleItem>> {
-    return { data: await this.roles.replace(id, body.permissions) };
+  async replace(@CurrentAuth() auth: AuthContext, @Param('id') id: string, @Body() body: UpdateRolePermissionsDto): Promise<DataResponse<RoleItem>> {
+    return { data: await this.roles.replace(auth, id, body.permissions) };
   }
 
   @RequirePermission('role.manage')

@@ -60,10 +60,10 @@ export function AttendanceSettingsForm({ initial }: { initial: AttendanceSetting
         <CardDescription>Changes apply from now on. Past attendance keeps the status it was given.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} noValidate className="grid gap-5">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-5">
           {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="flex flex-col gap-2">
               <label htmlFor="time-zone" className="text-sm font-medium">
                 Time zone
@@ -153,8 +153,8 @@ export function HolidaysCard({ year, initial }: { year: number; initial: Holiday
         <CardTitle>Holidays {year}</CardTitle>
         <CardDescription>Nobody is expected in on a holiday, and it doesn&rsquo;t count against leave. Adding one for a past day turns that day&rsquo;s absences into holidays.</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-5">
-        <form onSubmit={onSubmit} noValidate className="grid gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end">
+      <CardContent className="grid grid-cols-1 gap-5">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end">
           <TextField label="Date" type="date" required registration={register('date')} error={errors.date} />
           <TextField label="Name" required placeholder="Victory Day" registration={register('name')} error={errors.name} />
           <Button type="submit" className="h-11" disabled={isSubmitting}>

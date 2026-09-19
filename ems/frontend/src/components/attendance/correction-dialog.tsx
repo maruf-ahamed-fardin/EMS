@@ -99,7 +99,7 @@ export function CorrectionDialog({ record, employees }: { record?: AttendanceIte
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>{creating ? 'Add attendance record' : `Correct ${record.employee.name}`}</DialogTitle>
             <DialogDescription>
@@ -111,7 +111,7 @@ export function CorrectionDialog({ record, employees }: { record?: AttendanceIte
           {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
           {creating && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <SelectField
                 control={control}
                 name="employeeId"

@@ -111,7 +111,7 @@ export function CreateEmployeeWizard({ options }: { options: EmployeeFormOptions
 
   return (
     <FormProvider {...form}>
-      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -224,7 +224,7 @@ function AccountStep({ options }: { options: EmployeeFormOptions }) {
   const { control } = useFormContext();
   const createAccount = useWatch({ control, name: 'createAccount' }) as boolean;
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-1 gap-5">
       <Controller
         control={control}
         name="createAccount"
@@ -304,7 +304,7 @@ function Review({ options, onEdit }: { options: EmployeeFormOptions; onEdit: (st
   ];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {sections.map((section) => (
         <div key={section.title} className="rounded-xl border">
           <div className="flex items-center justify-between border-b px-4 py-2.5">
@@ -313,7 +313,7 @@ function Review({ options, onEdit }: { options: EmployeeFormOptions; onEdit: (st
               Edit <span className="sr-only">{section.title.toLowerCase()}</span>
             </Button>
           </div>
-          <dl className="grid gap-x-4 gap-y-2 p-4 text-sm sm:grid-cols-[160px_1fr]">
+          <dl className="grid grid-cols-1 gap-x-4 gap-y-2 p-4 text-sm sm:grid-cols-[160px_1fr]">
             {section.rows.map(([label, value]) => (
               <div key={label} className="contents">
                 <dt className="text-muted-foreground">{label}</dt>

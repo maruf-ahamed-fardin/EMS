@@ -122,7 +122,7 @@ export function UploadDocumentDialog({
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>Upload document</DialogTitle>
             <DialogDescription>

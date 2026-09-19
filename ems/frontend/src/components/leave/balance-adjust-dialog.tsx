@@ -57,7 +57,7 @@ export function BalanceAdjustDialog({ balance }: { balance: LeaveBalanceRow }) {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>Adjust {balance.leaveType.name} balance</DialogTitle>
             <DialogDescription>

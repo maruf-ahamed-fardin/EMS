@@ -92,7 +92,7 @@ export function PositionFormDialog({
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>{editing ? `Edit ${position?.title}` : 'Add position'}</DialogTitle>
             <DialogDescription>A position belongs to one department, or is shared across all of them.</DialogDescription>

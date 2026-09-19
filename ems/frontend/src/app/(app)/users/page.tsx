@@ -51,7 +51,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   ]);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         title="Users"
         description={manage ? 'Who can sign in, and with which role. Passwords are always chosen by their owners.' : 'Who can sign in, and with which role.'}

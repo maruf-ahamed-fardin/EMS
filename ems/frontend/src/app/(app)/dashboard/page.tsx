@@ -47,7 +47,7 @@ export default async function DashboardPage() {
   const firstName = session.name.split(' ')[0] ?? session.name;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <header>
         <p className="text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           {DATE_LINE.format(now)} · {TIME.format(now)}
@@ -92,7 +92,7 @@ function TeamDashboard({
   return (
     <>
       {/* Today */}
-      <section className="grid gap-4 lg:grid-cols-[1.4fr_1fr]" aria-label="Today">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]" aria-label="Today">
         <div className="rounded-2xl border bg-card p-5 shadow-panel md:p-6">
           <p className="text-lg leading-relaxed text-balance md:text-xl">
             {headline(overview).map((part, index) =>
@@ -154,7 +154,7 @@ function TeamDashboard({
               {attentionItems.filter((i) => i.count > 0).length}
             </span>
           </div>
-          <ul className="grid gap-1">
+          <ul className="grid grid-cols-1 gap-1">
             {attentionItems.map((item) => (
               <li key={item.label}>
                 <Link href={item.href} className="flex items-center gap-3 rounded-xl px-2 py-2.5 outline-none hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/50">
@@ -182,7 +182,7 @@ function TeamDashboard({
       </section>
 
       {/* Trend and departments */}
-      <section className={cn('grid gap-4', !team && 'lg:grid-cols-[1.6fr_1fr]')}>
+      <section className={cn('grid grid-cols-1 gap-4', !team && 'lg:grid-cols-[1.6fr_1fr]')}>
         {trend && (
           <div className="rounded-2xl border bg-card p-5 shadow-panel">
             <h2 className="font-semibold">Attendance overview</h2>
@@ -220,13 +220,13 @@ function TeamDashboard({
       </section>
 
       {/* Lists */}
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {canApprove && (
           <Panel title="Leave requests" href="/leave/requests" linkLabel="Open queue">
             {overview.pendingLeave.length === 0 ? (
               <Empty>Nothing waiting for a decision.</Empty>
             ) : (
-              <ul className="grid gap-3">
+              <ul className="grid grid-cols-1 gap-3">
                 {overview.pendingLeave.map((request) => (
                   <li key={request.id} className="flex items-center gap-3">
                     <PersonAvatar name={request.employee.name} />
@@ -247,7 +247,7 @@ function TeamDashboard({
           {overview.newJoiners.length === 0 ? (
             <Empty>No one has joined yet.</Empty>
           ) : (
-            <ul className="grid gap-3">
+            <ul className="grid grid-cols-1 gap-3">
               {overview.newJoiners.map((person) => (
                 <li key={person.id}>
                   <Link href={`/employees/${person.id}`} className="flex items-center gap-3 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
@@ -271,7 +271,7 @@ function TeamDashboard({
           {overview.activity.length === 0 ? (
             <Empty>No recent changes.</Empty>
           ) : (
-            <ol className="grid gap-3">
+            <ol className="grid grid-cols-1 gap-3">
               {overview.activity.map((item) => (
                 <li key={item.id} className="flex items-start gap-3 text-sm">
                   <span className="mt-1.5 size-2 shrink-0 rounded-full bg-chart-1" aria-hidden />
@@ -299,7 +299,7 @@ function PersonalDashboard({ me, isWorkingDay, lateAfter }: { me: MyDay | null; 
   }
   const status = me.attendanceToday;
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.4fr]">
       <Panel title="Today" href="/attendance" linkLabel="Attendance">
         {me.onLeaveToday ? (
           <p className="flex items-center gap-2 text-lg font-semibold">
@@ -332,7 +332,7 @@ function PersonalDashboard({ me, isWorkingDay, lateAfter }: { me: MyDay | null; 
           {me.pendingRequests.length === 0 ? (
             <Empty>No pending or upcoming leave.</Empty>
           ) : (
-            <ul className="grid gap-2">
+            <ul className="grid grid-cols-1 gap-2">
               {me.pendingRequests.map((request) => (
                 <li key={request.id} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm">
                   <span className="flex items-center gap-2">
@@ -358,7 +358,7 @@ function PersonalDashboard({ me, isWorkingDay, lateAfter }: { me: MyDay | null; 
 function MyBalances({ me }: { me: MyDay }) {
   if (me.leaveBalances.length === 0) return <Empty>No leave balances for this year yet.</Empty>;
   return (
-    <ul className="grid gap-4 sm:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {me.leaveBalances.map((balance) => (
         <li key={balance.leaveType}>
           <div className="mb-1.5 flex items-baseline justify-between text-sm">

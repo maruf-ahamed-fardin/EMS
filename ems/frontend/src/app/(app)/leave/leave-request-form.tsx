@@ -76,7 +76,7 @@ export function LeaveRequestForm({ types }: { types: LeaveTypeItem[] }) {
   if (types.length === 0) return <p className="text-sm text-muted-foreground">No leave types are set up yet. Ask HR.</p>;
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-4">
+    <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
       {formError && <FormAlert tone="error">{formError}</FormAlert>}
       <SelectField
         control={control}
@@ -97,7 +97,7 @@ export function LeaveRequestForm({ types }: { types: LeaveTypeItem[] }) {
               <LoaderCircle className="size-4 animate-spin" aria-hidden /> Counting working days…
             </p>
           ) : current.data ? (
-            <div className="grid gap-1.5">
+            <div className="grid grid-cols-1 gap-1.5">
               <p className="flex items-center gap-2 font-medium">
                 {blocked ? <CircleAlert className="size-4 text-danger-text" aria-hidden /> : <CircleCheck className="size-4 text-success-text" aria-hidden />}
                 {daysLabel(current.data.days)} of leave

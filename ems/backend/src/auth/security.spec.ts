@@ -3,7 +3,7 @@ import { auditView } from '../audit/redaction';
 import { generateToken, hashToken, safeEqual } from '../common/security/tokens';
 import type { AuthContext } from './auth-context';
 import { checkCsrf, type CsrfRequest } from './guards/csrf.guard';
-import { throttleTracker } from './guards/throttler.guard';
+import { accountTracker, throttleTracker } from './guards/throttler.guard';
 import { checkPassword } from './password-policy';
 import { ScopeService } from './scope.service';
 import { SESSION_IDLE_MS, sessionState, shouldTouch } from './session-policy';
@@ -99,15 +99,21 @@ describe('checkCsrf', () => {
 });
 
 describe('throttleTracker', () => {
-  it('counts sign-in attempts per IP and email', () => {
-    expect(throttleTracker({ ip: '10.0.0.1', body: { email: ' Rahim@Demo.SeloraX.test ' } } as never)).toBe(
-      'ip:10.0.0.1|email:rahim@demo.selorax.test',
-    );
+  it('counts signed-in requests per session, others per IP', () => {
+    expect(throttleTracker({ ip: '10.0.0.1', auth: { sessionId: 's1' } } as never)).toBe('session:s1');
+    expect(throttleTracker({ ip: '10.0.0.1' } as never)).toBe('ip:10.0.0.1');
   });
 
-  it('counts signed-in requests per session, others per IP', () => {
-    expect(throttleTracker({ ip: '10.0.0.1', body: {}, auth: { sessionId: 's1' } } as never)).toBe('session:s1');
-    expect(throttleTracker({ ip: '10.0.0.1', body: undefined } as never)).toBe('ip:10.0.0.1');
+  it('ignores the body, so a client cannot choose its own bucket', () => {
+    expect(throttleTracker({ ip: '10.0.0.1', body: { email: 'anyone@example.com' } } as never)).toBe('ip:10.0.0.1');
+    expect(throttleTracker({ ip: '10.0.0.1', body: { email: 'x@example.com' }, auth: { sessionId: 's1' } } as never)).toBe('session:s1');
+  });
+});
+
+describe('accountTracker', () => {
+  it('counts per IP and normalized email', () => {
+    expect(accountTracker({ ip: '10.0.0.1', body: { email: ' Rahim@Demo.SeloraX.test ' } } as never)).toBe('ip:10.0.0.1|email:rahim@demo.selorax.test');
+    expect(accountTracker({ ip: '10.0.0.1', body: {} } as never)).toBe('ip:10.0.0.1|email:');
   });
 });
 

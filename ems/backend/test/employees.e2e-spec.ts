@@ -95,6 +95,8 @@ describeWithDatabase('employees', () => {
     it('offers actions that match the viewer', async () => {
       expect((await as.hr_admin.get(`/employees/${ids.employee}`)).body.data.allowedActions).toEqual({
         update: true,
+        // Rahim has a sign-in account, and HR doesn't manage accounts
+        changeEmail: false,
         deactivate: true,
         reactivate: false,
         delete: false,

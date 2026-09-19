@@ -209,7 +209,8 @@ export interface EmployeeDetail extends EmployeeListItem {
   /** Present only when the viewer holds `user.view`. */
   account: { id: string; email: string; status: string; role: { key: string; name: string }; lastLoginAt: string | null } | null;
   /** What the viewer may do with this record, so the page doesn't have to recompute scope. */
-  allowedActions: { update: boolean; deactivate: boolean; reactivate: boolean; delete: boolean };
+  /** `changeEmail`: the work email is also the sign-in email, so changing it on an account needs `user.manage`. */
+  allowedActions: { update: boolean; changeEmail: boolean; deactivate: boolean; reactivate: boolean; delete: boolean };
 }
 
 export interface EmployeeActivityItem {

@@ -90,6 +90,16 @@ describeWithDatabase('authentication', () => {
       expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);
     });
 
+    it('rate limits one IP to 30 sign-ins a minute however many emails it tries', async () => {
+      const browser = new TestBrowser(t.app, freshIp());
+      const statuses: number[] = [];
+      for (let attempt = 0; attempt < 31; attempt++) {
+        statuses.push((await browser.login(`spray-${attempt}@demo.selorax.test`, 'wrong-password-x')).status);
+      }
+      expect(statuses.slice(0, 30).every((status) => status === 401)).toBe(true);
+      expect(statuses[30]).toBe(429);
+    });
+
     it('audits sign-ins without secrets', async () => {
       await new TestBrowser(t.app, freshIp()).login(manager);
       const rows = await t.prisma.auditLog.findMany({ where: { action: { startsWith: 'auth.' } } });
@@ -213,6 +223,18 @@ describeWithDatabase('authentication', () => {
       const res = await browser.post('/auth/change-password', { currentPassword: 'wrong-current-1', newPassword: 'orchard-violet-maple-3' });
       expect(res.status).toBe(422);
       expect(res.body.errors).toEqual({ currentPassword: 'Your current password is incorrect' });
+    });
+
+    it('limits guesses to 10 an hour per session, even with a made-up email in the body', async () => {
+      const browser = new TestBrowser(t.app, freshIp());
+      await browser.login(manager);
+      const statuses: number[] = [];
+      for (let attempt = 0; attempt < 11; attempt++) {
+        const res = await browser.post('/auth/change-password', { currentPassword: 'wrong-current-1', newPassword: 'orchard-violet-maple-3', email: `bucket-${attempt}@example.com` });
+        statuses.push(res.status);
+      }
+      expect(statuses.slice(0, 10)).not.toContain(429);
+      expect(statuses[10]).toBe(429);
     });
 
     it('changes it and signs out other sessions only', async () => {

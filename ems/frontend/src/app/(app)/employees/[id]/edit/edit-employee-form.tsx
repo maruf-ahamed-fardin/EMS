@@ -84,7 +84,7 @@ export function EditEmployeeForm({ employee, options }: { employee: EmployeeDeta
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={onSubmit} noValidate className="grid max-w-4xl gap-6">
+      <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 max-w-4xl gap-6">
         {formError && <FormAlert tone="error">{formError}</FormAlert>}
         <Section title="Personal">
           <PersonalFields />
@@ -93,7 +93,7 @@ export function EditEmployeeForm({ employee, options }: { employee: EmployeeDeta
           <EmploymentFields options={options} excludeEmployeeId={employee.id} />
         </Section>
         <Section title="Contact">
-          <ContactFields excludeEmployeeId={employee.id} />
+          <ContactFields excludeEmployeeId={employee.id} emailLocked={!employee.allowedActions.changeEmail} />
         </Section>
 
         <div className="sticky bottom-0 z-10 -mx-4 flex justify-end gap-3 border-t bg-background/90 px-4 py-3 backdrop-blur-md md:static md:mx-0 md:border-0 md:bg-transparent md:px-0">

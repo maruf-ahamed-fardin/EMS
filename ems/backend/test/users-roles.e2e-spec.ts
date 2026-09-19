@@ -109,6 +109,88 @@ describeWithDatabase('users and roles', () => {
     });
   });
 
+  describe('account protection', () => {
+    const employeeOf = async (role: Role) => (await t.prisma.user.findUniqueOrThrow({ where: { id: users[role] }, select: { employeeId: true } })).employeeId!;
+
+    it('keeps Super Admin accounts, and the Super Admin role, out of reach of anyone who is not one', async () => {
+      // A custom role holding everything HR has plus user and role management
+      const hrGrants = await t.prisma.rolePermission.findMany({ where: { roleId: roles.hr_admin } });
+      const admin = await t.prisma.permission.findMany({ where: { key: { in: ['user.manage', 'role.manage'] } } });
+      const delegate = await t.prisma.role.create({ data: { key: 'delegate', name: 'Delegate', description: 'Test', isSystem: false } });
+      await t.prisma.rolePermission.createMany({
+        data: [...hrGrants.map((g) => ({ roleId: delegate.id, permissionId: g.permissionId, scope: g.scope })), ...admin.map((p) => ({ roleId: delegate.id, permissionId: p.id, scope: 'ALL' as const }))],
+      });
+      await t.prisma.user.update({ where: { id: users.hr_admin }, data: { roleId: delegate.id } });
+      const hr = as.hr_admin;
+
+      try {
+        const options = (await hr.get('/users/form-options').expect(200)).body.data as UserFormOptions;
+        expect(options.roles.map((r) => r.key)).not.toContain('super_admin');
+        const list = (await hr.get('/users?q=superadmin').expect(200)).body.data as UserListItem[];
+        expect(list[0]!.allowedActions).toEqual({ changeRole: false, deactivate: false, activate: false, sendReset: false });
+
+        expect((await hr.patch(`/users/${users.super_admin}/role`, { roleId: roles.employee })).status).toBe(403);
+        expect((await hr.patch(`/users/${users.employee}/role`, { roleId: roles.super_admin })).status).toBe(403);
+        expect((await hr.post(`/users/${users.super_admin}/deactivate`, {})).status).toBe(403);
+        expect((await hr.post(`/users/${users.super_admin}/send-reset`, {})).status).toBe(403);
+        expect((await hr.post(`/employees/${await employeeOf('super_admin')}/deactivate`, {})).status).toBe(403);
+        expect((await hr.patch(`/employees/${await employeeOf('super_admin')}`, { email: 'taken-over@example.com' })).status).toBe(403);
+
+        // Roles: never its own, and never the two administration permissions
+        expect((await hr.put(`/roles/${delegate.id}/permissions`, { permissions: {} })).status).toBe(409);
+        const manager = ((await hr.get('/roles')).body.data as RoleItem[]).find((r) => r.key === 'manager')!;
+        expect((await hr.put(`/roles/${roles.manager}/permissions`, { permissions: { ...manager.permissions, 'user.manage': 'ALL' } })).status).toBe(403);
+        expect((await hr.put(`/roles/${roles.manager}/permissions`, { permissions: { ...manager.permissions, 'report.view': 'TEAM' } })).status).toBe(200);
+        await hr.put(`/roles/${roles.manager}/permissions`, { permissions: manager.permissions });
+        expect(((await hr.get('/roles')).body.data as RoleItem[]).find((r) => r.id === delegate.id)).toMatchObject({ editable: false });
+
+        expect((await t.prisma.user.findUniqueOrThrow({ where: { id: users.super_admin } })).status).toBe('ACTIVE');
+      } finally {
+        await t.prisma.user.update({ where: { id: users.hr_admin }, data: { roleId: roles.hr_admin } });
+        await t.prisma.rolePermission.deleteMany({ where: { roleId: delegate.id } });
+        await t.prisma.role.delete({ where: { id: delegate.id } });
+      }
+    });
+
+    it('only lets someone who manages accounts change a sign-in email, and tells the old address', async () => {
+      const employee = await employeeOf('employee');
+      const hrTry = await as.hr_admin.patch(`/employees/${employee}`, { email: 'rahim.new@demo.selorax.test' });
+      expect(hrTry.status).toBe(403);
+      expect(((await as.hr_admin.get(`/employees/${employee}`)).body.data as { allowedActions: { changeEmail: boolean } }).allowedActions.changeEmail).toBe(false);
+
+      await as.super_admin.post(`/users/${users.employee}/send-reset`, {});
+      const pendingLinks = () => t.prisma.passwordResetToken.count({ where: { userId: users.employee, usedAt: null } });
+      expect(await pendingLinks()).toBe(1);
+      const res = await as.super_admin.patch(`/employees/${employee}`, { email: 'rahim.new@demo.selorax.test' });
+      expect(res.status).toBe(200);
+      expect(await pendingLinks()).toBe(0);
+      expect((await as.employee.get('/auth/me')).status).toBe(401);
+      expect(t.mailer.sent.at(-1)).toMatchObject({ to: DEMO_PEOPLE.employee.email, subject: 'Your SeloraX People sign-in email changed' });
+
+      await as.super_admin.patch(`/employees/${employee}`, { email: DEMO_PEOPLE.employee.email });
+      as.employee = new TestBrowser(t.app, nextIp());
+      expect((await as.employee.login(DEMO_PEOPLE.employee.email)).status).toBe(200);
+    });
+
+    it('leaves one Super Admin when two try to remove each other at the same moment', async () => {
+      await t.prisma.user.update({ where: { id: users.hr_admin }, data: { roleId: roles.super_admin } });
+      const second = new TestBrowser(t.app, nextIp());
+      await second.login(DEMO_PEOPLE.hr_admin.email);
+
+      const results = await Promise.all([as.super_admin.post(`/users/${users.hr_admin}/deactivate`, {}), second.post(`/users/${users.super_admin}/deactivate`, {})]);
+      expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+      expect(await t.prisma.user.count({ where: { status: 'ACTIVE', role: { key: 'super_admin' } } })).toBe(1);
+
+      // Put things back, and sign the demo browsers in again
+      await t.prisma.user.updateMany({ where: { id: { in: [users.super_admin, users.hr_admin] } }, data: { status: 'ACTIVE' } });
+      await t.prisma.user.update({ where: { id: users.hr_admin }, data: { roleId: roles.hr_admin } });
+      for (const role of ['super_admin', 'hr_admin'] as const) {
+        as[role] = new TestBrowser(t.app, nextIp());
+        expect((await as[role].login(DEMO_PEOPLE[role].email)).status).toBe(200);
+      }
+    });
+  });
+
   describe('roles', () => {
     it('shows every role and the catalogue, only to role.manage', async () => {
       const list = (await as.super_admin.get('/roles').expect(200)).body.data as RoleItem[];

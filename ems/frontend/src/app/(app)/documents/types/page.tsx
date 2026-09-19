@@ -18,7 +18,7 @@ export default async function DocumentTypesPage() {
   const { data: types } = await serverApiJson<DataResponse<DocumentTypeItem[]>>('/document-types');
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Document types" description="What can be uploaded to a profile, which types are private, and which expire." actions={<DocumentTypeDialog />} />
       {types.length === 0 ? (
         <StatePanel icon={Tags} title="No document types yet" description="Add National ID, Passport and Employment contract to get started." />

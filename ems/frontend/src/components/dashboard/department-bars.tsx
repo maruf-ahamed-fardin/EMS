@@ -9,7 +9,7 @@ export function DepartmentBars({ departments }: { departments: Array<{ departmen
   if (departments.length === 0) return <p className="text-sm text-muted-foreground">No active employees yet.</p>;
 
   return (
-    <ul className="grid gap-3">
+    <ul className="grid grid-cols-1 gap-3">
       {departments.map((d) => (
         <li key={d.departmentId}>
           <Link href={`/departments/${d.departmentId}`} className="group block rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">

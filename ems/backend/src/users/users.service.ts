@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { can, type CreateUserInput, type ListResponse, pageMeta, type UserFormOptions, type UserListItem, type UserListQuery } from '@ems/contracts';
 import { AuditService } from '../audit/audit.service';
 import type { AuthContext } from '../auth/auth-context';
+import { assertMayChangeAccount, assertSuperAdminRemains, mayChangeAccount, revokePasswordLinks, SUPER_ADMIN } from '../auth/account-protection';
 import { InvitationService } from '../auth/invitations.service';
 import { displayName, SessionsService } from '../auth/sessions.service';
 import { conflict, invalidFields } from '../common/errors/http-errors';
@@ -9,7 +10,6 @@ import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SUPER_ADMIN = 'super_admin';
 
 const USER_SELECT = {
   id: true,
@@ -26,7 +26,8 @@ type UserRow = Prisma.UserGetPayload<{ select: typeof USER_SELECT }>;
 /**
  * Sign-in accounts (plan §6). Accounts belong to employees and get their password through an emailed
  * link, never from an administrator. Two rules keep the organization from locking itself out: nobody
- * changes their own role or deactivates themselves, and the last active Super Admin stays one.
+ * changes their own role or deactivates themselves, and the last usable Super Admin stays one. Only a
+ * Super Admin changes a Super Admin's account or makes someone Super Admin (`account-protection.ts`).
  */
 @Injectable()
 export class UsersService {
@@ -53,9 +54,11 @@ export class UsersService {
     return { data: rows.map((row) => this.toItem(auth, row)), meta: pageMeta(query.page, query.limit, total) };
   }
 
-  async options(): Promise<UserFormOptions> {
+  async options(auth: AuthContext): Promise<UserFormOptions> {
     const [roles, employees] = await Promise.all([
-      this.prisma.role.findMany({ orderBy: [{ isSystem: 'desc' }, { name: 'asc' }], select: { id: true, key: true, name: true, description: true } }),
+      this.prisma.role.findMany({
+        where: mayChangeAccount(auth, SUPER_ADMIN) ? {} : { key: { not: SUPER_ADMIN } },
+        orderBy: [{ isSystem: 'desc' }, { name: 'asc' }], select: { id: true, key: true, name: true, description: true } }),
       this.prisma.employee.findMany({
         where: { deletedAt: null, status: 'ACTIVE', user: null },
         orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
@@ -69,7 +72,7 @@ export class UsersService {
   }
 
   private toItem(auth: AuthContext, row: UserRow): UserListItem {
-    const manage = can(auth.permissions, 'user.manage');
+    const manage = can(auth.permissions, 'user.manage') && mayChangeAccount(auth, row.role.key);
     const self = row.id === auth.user.id;
     const locked = row.lockedUntil !== null && row.lockedUntil > new Date();
     const employeeActive = !row.employee || row.employee.status === 'ACTIVE';
@@ -101,13 +104,6 @@ export class UsersService {
     return row;
   }
 
-  /** Refuses a change that would leave no active Super Admin. */
-  private async assertAnotherSuperAdmin(user: UserRow, message: string): Promise<void> {
-    if (user.role.key !== SUPER_ADMIN) return;
-    const others = await this.prisma.user.count({ where: { id: { not: user.id }, status: 'ACTIVE', role: { key: SUPER_ADMIN } } });
-    if (others === 0) throw conflict(message);
-  }
-
   // ─── Changes ────────────────────────────────────────────────────────────────────────────────
 
   /** An account for an employee without one. They get a 3-day link to choose their password. */
@@ -119,7 +115,9 @@ export class UsersService {
     if (!employee) throw invalidFields({ employeeId: 'Choose an employee' });
     if (employee.status !== 'ACTIVE') throw invalidFields({ employeeId: 'Reactivate the employee before giving them an account' });
     if (employee.user) throw conflict('This employee already has an account', { employeeId: 'This employee already has an account' });
-    if (!(await this.prisma.role.count({ where: { id: input.roleId } }))) throw invalidFields({ roleId: 'Choose a role' });
+    const role = await this.prisma.role.findUnique({ where: { id: input.roleId }, select: { key: true } });
+    if (!role) throw invalidFields({ roleId: 'Choose a role' });
+    assertMayChangeAccount(auth, role.key);
     if (await this.prisma.user.count({ where: { email: employee.email } })) {
       throw conflict(`Another account already signs in with ${employee.email}`, { employeeId: 'Their work email is already used by another account' });
     }
@@ -138,15 +136,17 @@ export class UsersService {
   async changeRole(auth: AuthContext, id: string, roleId: string): Promise<UserListItem> {
     const user = await this.load(id);
     if (user.id === auth.user.id) throw conflict("You can't change your own role. Ask another administrator.");
+    assertMayChangeAccount(auth, user.role.key);
     const role = await this.prisma.role.findUnique({ where: { id: roleId }, select: { id: true, key: true } });
     if (!role) throw invalidFields({ roleId: 'Choose a role' });
+    assertMayChangeAccount(auth, role.key);
     if (role.id === user.role.id) {
       this.audit.skip('Nothing changed');
       return this.get(auth, id);
     }
-    if (role.key !== SUPER_ADMIN) await this.assertAnotherSuperAdmin(user, 'This is the only active Super Admin. Make someone else Super Admin first.');
 
     await this.prisma.$transaction(async (tx) => {
+      if (user.role.key === SUPER_ADMIN) await assertSuperAdminRemains(tx, id, 'This is the only active Super Admin. Make someone else Super Admin first.');
       await tx.user.update({ where: { id }, data: { roleId } });
       await this.audit.record({ action: 'user.role_changed', entityType: 'user', entityId: id, before: { roleId: user.role.id }, after: { roleId } }, tx);
     });
@@ -159,11 +159,13 @@ export class UsersService {
     const user = await this.load(id);
     if (user.id === auth.user.id) throw conflict("You can't deactivate your own account.");
     if (user.status === 'INACTIVE') throw conflict('This account is already inactive');
-    await this.assertAnotherSuperAdmin(user, 'This is the only active Super Admin, so it stays active.');
+    assertMayChangeAccount(auth, user.role.key);
 
     await this.prisma.$transaction(async (tx) => {
+      if (user.role.key === SUPER_ADMIN) await assertSuperAdminRemains(tx, id, 'This is the only active Super Admin, so it stays active.');
       await tx.user.update({ where: { id }, data: { status: 'INACTIVE' } });
       const sessionsRevoked = await this.sessions.revokeAllForUser(id, {}, tx);
+      await revokePasswordLinks(tx, id);
       await this.audit.record({ action: 'user.deactivated', entityType: 'user', entityId: id, before: { status: user.status }, after: { status: 'INACTIVE', sessionsRevoked } }, tx);
     });
     return this.get(auth, id);
@@ -172,6 +174,7 @@ export class UsersService {
   /** Lets the person sign in again, and lifts a lockout from wrong passwords. */
   async activate(auth: AuthContext, id: string): Promise<UserListItem> {
     const user = await this.load(id);
+    assertMayChangeAccount(auth, user.role.key);
     if (user.employee && user.employee.status !== 'ACTIVE') throw conflict('Reactivate the employee first; their account follows their employment.');
     const locked = user.lockedUntil !== null && user.lockedUntil > new Date();
     if (user.status === 'ACTIVE' && !locked) throw conflict('This account is already active');
@@ -189,6 +192,7 @@ export class UsersService {
   /** A new 3-day link to choose a password, for someone who never set one or has forgotten it. */
   async sendReset(auth: AuthContext, id: string): Promise<UserListItem> {
     const user = await this.load(id);
+    assertMayChangeAccount(auth, user.role.key);
     if (user.status !== 'ACTIVE') throw conflict('Activate the account before sending a password link');
     const token = await this.prisma.$transaction(async (tx) => {
       const issued = await this.invitations.issue(tx, id);

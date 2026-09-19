@@ -39,14 +39,14 @@ export default async function LeavePage() {
   const upcomingHolidays = holidays.filter((h) => h.date >= today).slice(0, 5);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Leave" description={`Your balances and requests for ${year}`} />
 
       <section aria-label="Balances">
         <LeaveBalanceCards balances={balances} />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <section className="h-fit rounded-2xl border bg-card p-5 shadow-panel" aria-labelledby="request-title">
           <h2 id="request-title" className="mb-4 font-semibold">
             Request leave
@@ -57,7 +57,7 @@ export default async function LeavePage() {
               <p className="mb-2 flex items-center gap-2 text-sm font-medium">
                 <Sun className="size-4 text-muted-foreground" aria-hidden /> Upcoming holidays
               </p>
-              <ul className="grid gap-1 text-sm">
+              <ul className="grid grid-cols-1 gap-1 text-sm">
                 {upcomingHolidays.map((h) => (
                   <li key={h.id} className="flex justify-between gap-3 text-muted-foreground">
                     <span>{h.name}</span>
@@ -78,7 +78,7 @@ export default async function LeavePage() {
           ) : (
             <ul className="divide-y">
               {requests.data.map((r) => (
-                <li key={r.id} className="grid gap-2 px-5 py-4">
+                <li key={r.id} className="grid grid-cols-1 gap-2 px-5 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium">
                       {r.leaveType.name} · <span className="tabular">{formatLeaveRange(r.startDate, r.endDate)}</span>

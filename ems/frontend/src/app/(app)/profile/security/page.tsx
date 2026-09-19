@@ -8,7 +8,7 @@ export default function SecurityPage() {
   return (
     <>
       <PageHeader title="Password & sign-in" description="Change your password and manage where you're signed in." />
-      <div className="grid max-w-2xl gap-6">
+      <div className="grid grid-cols-1 max-w-2xl gap-6">
         <ChangePasswordCard />
         <SignOutOthersCard />
       </div>

@@ -207,7 +207,7 @@ export default async function EmployeePage({
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-4 grid gap-4 lg:grid-cols-2">
+        <TabsContent value="overview" className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Panel title="Contact">
             <Rows
               rows={[
@@ -234,7 +234,7 @@ export default async function EmployeePage({
           </Panel>
         </TabsContent>
 
-        <TabsContent value="personal" className="mt-4 grid gap-4 lg:grid-cols-2">
+        <TabsContent value="personal" className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <PrivatePanel employee={employee} />
           <Panel title="Identity">
             <Rows
@@ -246,7 +246,7 @@ export default async function EmployeePage({
           </Panel>
         </TabsContent>
 
-        <TabsContent value="employment" className="mt-4 grid gap-4 lg:grid-cols-2">
+        <TabsContent value="employment" className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Panel title="Role">
             <Rows
               rows={[
@@ -270,7 +270,7 @@ export default async function EmployeePage({
         </TabsContent>
 
         {attendance && (
-          <TabsContent value="attendance" className="mt-4 grid gap-4 lg:grid-cols-[1fr_2fr]">
+          <TabsContent value="attendance" className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_2fr]">
             <Panel title="This month">
               <Rows
                 rows={[
@@ -303,7 +303,7 @@ export default async function EmployeePage({
         )}
 
         {leave && (
-          <TabsContent value="leave" className="mt-4 grid gap-4">
+          <TabsContent value="leave" className="mt-4 grid grid-cols-1 gap-4">
             <LeaveBalanceCards balances={leave.balances} actions={leave.canAdjust ? (balance) => <BalanceAdjustDialog balance={balance} /> : undefined} />
             <Panel title="Recent requests">
               {leave.requests.length === 0 ? (
@@ -311,7 +311,7 @@ export default async function EmployeePage({
               ) : (
                 <ul className="divide-y">
                   {leave.requests.map((r) => (
-                    <li key={r.id} className="grid gap-2 py-3 first:pt-0 last:pb-0">
+                    <li key={r.id} className="grid grid-cols-1 gap-2 py-3 first:pt-0 last:pb-0">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <p className="font-medium">
                           {r.leaveType.name} · <span className="tabular">{formatLeaveRange(r.startDate, r.endDate)}</span>
@@ -395,7 +395,7 @@ function Panel({ title, action, children }: { title: string; action?: React.Reac
 
 function Rows({ rows }: { rows: Array<[string, React.ReactNode]> }) {
   return (
-    <dl className="grid gap-x-4 gap-y-2.5 text-sm sm:grid-cols-[140px_1fr]">
+    <dl className="grid grid-cols-1 gap-x-4 gap-y-2.5 text-sm sm:grid-cols-[140px_1fr]">
       {rows.map(([label, value]) => (
         <div key={label} className="contents">
           <dt className="text-muted-foreground">{label}</dt>
@@ -444,7 +444,7 @@ function ActivityList({ items }: { items: EmployeeActivityItem[] }) {
     );
   }
   return (
-    <ol className="grid gap-3">
+    <ol className="grid grid-cols-1 gap-3">
       {items.map((item) => (
         <li key={item.id} className="flex items-start gap-3 text-sm">
           <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary/60" aria-hidden />

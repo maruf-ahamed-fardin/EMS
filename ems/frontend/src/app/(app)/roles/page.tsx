@@ -22,7 +22,7 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
   const role = roles.find((r) => r.key === requested) ?? roles.find((r) => r.editable) ?? roles[0]!;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Roles & permissions" description="What each role can see and do. Own means their own record, Team their direct reports, Everyone the whole organization." />
       <nav aria-label="Roles" className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
         {roles.map((r) => (
@@ -42,7 +42,7 @@ export default async function RolesPage({ searchParams }: { searchParams: Promis
       </nav>
       {role.description && <p className="-mt-2 text-sm text-muted-foreground">{role.description}</p>}
       {/* Keyed by role, so switching roles starts from that role's saved grants */}
-      <RoleEditor key={role.id} role={role} catalogue={catalogue} />
+      <RoleEditor key={role.id} role={role} catalogue={catalogue} canGrantAdmin={session.role.key === 'super_admin'} />
     </div>
   );
 }

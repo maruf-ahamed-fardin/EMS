@@ -18,7 +18,7 @@ export default async function LeaveTypesPage() {
   const { data: types } = await serverApiJson<DataResponse<LeaveTypeItem[]>>('/leave/types?includeInactive=true');
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Leave types" description="What people can take, and how much each year. New paid types give everyone this year's balance straight away." actions={<LeaveTypeDialog />} />
       {types.length === 0 ? (
         <StatePanel icon={Tags} title="No leave types yet" description="Add Annual, Sick and Casual leave to get started." />

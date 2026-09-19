@@ -84,7 +84,7 @@ export default async function ReportsPage({
   const tooMany = report !== null && report.meta.total > MAX_EXPORT_ROWS;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Reports" description={REPORT_DESCRIPTIONS[key]} />
 
       <nav
@@ -170,7 +170,7 @@ export default async function ReportsPage({
           <>
             <section
               aria-label="Summary"
-              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
             >
               {report.summary.figures.map((f) => (
                 <div
@@ -190,7 +190,7 @@ export default async function ReportsPage({
             {report.summary.sections.some((s) => s.rows.length > 0) && (
               <section
                 aria-label="Breakdown"
-                className="grid gap-3 md:grid-cols-2 lg:grid-cols-3"
+                className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3"
               >
                 {report.summary.sections
                   .filter((s) => s.rows.length > 0)
@@ -200,7 +200,7 @@ export default async function ReportsPage({
                       className="rounded-2xl border bg-card p-4 shadow-panel"
                     >
                       <h2 className="mb-2 text-sm font-semibold">{s.title}</h2>
-                      <dl className="grid gap-1 text-sm">
+                      <dl className="grid grid-cols-1 gap-1 text-sm">
                         {s.rows.map((r) => (
                           <div
                             key={r.label}

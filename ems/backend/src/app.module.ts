@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { LoggerModule } from 'nestjs-pino';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuditCoverageInterceptor } from './audit/audit-coverage';
@@ -9,7 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { CsrfGuard } from './auth/guards/csrf.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
 import { SessionGuard } from './auth/guards/session.guard';
-import { AppThrottlerGuard } from './auth/guards/throttler.guard';
+import { accountTracker, AppThrottlerGuard, skipAccountThrottle } from './auth/guards/throttler.guard';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { loggerOptions } from './common/logging/logger.options';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -37,7 +38,11 @@ import { UsersModule } from './users/users.controller';
     ConfigModule,
     LoggerModule.forRootAsync({ inject: [APP_CONFIG], useFactory: (config: AppConfig) => loggerOptions(config) }),
     // In-memory counters: correct for one instance. Use the Redis storage when running several (plan §12).
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 300 },
+      // Inert except on routes marked @ThrottlePerAccount, which set their own limits
+      { name: 'account', ttl: 60_000, limit: 300, getTracker: (req) => accountTracker(req as Request), skipIf: skipAccountThrottle },
+    ]),
     ScheduleModule.forRoot(),
     ClockModule,
     PrismaModule,

@@ -26,7 +26,7 @@ export function PersonalFields() {
   const { register, control, formState } = useFormContext<Values>();
   const errors = formState.errors;
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <TextField label="First name" required autoComplete="off" registration={register('firstName')} error={errors.firstName} />
       <TextField label="Last name" required autoComplete="off" registration={register('lastName')} error={errors.lastName} />
       <TextField label="Date of birth" type="date" required registration={register('dateOfBirth')} error={errors.dateOfBirth} />
@@ -60,7 +60,7 @@ export function EmploymentFields({ options, excludeEmployeeId }: { options: Empl
   }, [departmentId, positions, getValues, setValue]);
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <SelectField
         control={control}
         name="departmentId"
@@ -143,22 +143,32 @@ export function EmploymentFields({ options, excludeEmployeeId }: { options: Empl
   );
 }
 
-export function ContactFields({ excludeEmployeeId }: { excludeEmployeeId?: string }) {
+/** `emailLocked`: the work email is their sign-in email, and the viewer doesn't manage accounts. */
+export function ContactFields({ excludeEmployeeId, emailLocked = false }: { excludeEmployeeId?: string; emailLocked?: boolean }) {
   const { register, control, formState } = useFormContext<Values>();
   const errors = formState.errors;
   const email = useWatch({ control, name: 'email' });
 
   return (
-    <div className="grid gap-6">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <TextField label="Work email" type="email" required autoComplete="off" registration={register('email')} error={errors.email} />
-          <Availability field="email" value={email ?? ''} excludeId={excludeEmployeeId} valid={EMAIL_SHAPE} />
+          <TextField
+            label="Work email"
+            type="email"
+            required
+            autoComplete="off"
+            readOnly={emailLocked}
+            hint={emailLocked ? 'Also their sign-in email. Someone who manages user accounts can change it.' : undefined}
+            registration={register('email')}
+            error={errors.email}
+          />
+          {!emailLocked && <Availability field="email" value={email ?? ''} excludeId={excludeEmployeeId} valid={EMAIL_SHAPE} />}
         </div>
         <TextField label="Phone" type="tel" required placeholder="+880 1711-204318" registration={register('phone')} error={errors.phone} />
       </div>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-semibold">Address</legend>
         <TextField className="sm:col-span-2" label="Street address" required registration={register('address.line1')} error={errors.address?.line1} />
         <TextField className="sm:col-span-2" label="Apartment, floor (optional)" registration={register('address.line2')} error={errors.address?.line2} />
@@ -167,7 +177,7 @@ export function ContactFields({ excludeEmployeeId }: { excludeEmployeeId?: strin
         <TextField label="Country" required registration={register('address.country')} error={errors.address?.country} />
       </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-3">
+      <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <legend className="mb-3 text-sm font-semibold">Emergency contact</legend>
         <TextField label="Name" required registration={register('emergencyContact.name')} error={errors.emergencyContact?.name} />
         <TextField label="Relationship" required placeholder="Sister" registration={register('emergencyContact.relationship')} error={errors.emergencyContact?.relationship} />

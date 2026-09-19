@@ -39,7 +39,7 @@ describe('RoleEditor', () => {
   });
 
   it('groups permissions by module and saves nothing until something changes', () => {
-    render(<RoleEditor role={role({})} catalogue={catalogue} />);
+    render(<RoleEditor role={role({})} catalogue={catalogue} canGrantAdmin />);
     expect(screen.getByRole('heading', { name: 'employees' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'View employee profiles for Manager' })).toHaveTextContent('Team');
     expect(screen.getByRole('combobox', { name: 'View reports for Manager' })).toHaveTextContent('No access');
@@ -48,7 +48,7 @@ describe('RoleEditor', () => {
   });
 
   it('shows Super Admin read-only, without a save bar', () => {
-    render(<RoleEditor role={role({ key: 'super_admin', name: 'Super Admin', editable: false })} catalogue={catalogue} />);
+    render(<RoleEditor role={role({ key: 'super_admin', name: 'Super Admin', editable: false })} catalogue={catalogue} canGrantAdmin />);
     expect(screen.getByText(/Super Admin always has every permission/)).toBeInTheDocument();
     for (const select of screen.getAllByRole('combobox')) expect(select).toBeDisabled();
     expect(screen.queryByRole('button', { name: /Save/ })).not.toBeInTheDocument();

@@ -35,7 +35,7 @@ export default async function LeaveRequestsPage({ searchParams }: { searchParams
   const list = await serverApiJson<ListResponse<LeaveRequestItem>>(`/leave/requests?limit=20&page=${page}${view.query ? `&${view.query}` : ''}`);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Leave requests" description={view.key === 'waiting' ? `${list.meta.total} waiting for a decision, oldest first` : `${list.meta.total} requests`} />
 
       <nav aria-label="Views" className="-mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
@@ -57,7 +57,7 @@ export default async function LeaveRequestsPage({ searchParams }: { searchParams
       {list.data.length === 0 ? (
         <StatePanel icon={Inbox} title={view.key === 'waiting' ? 'Nothing waiting for you' : 'No requests here'} description={view.key === 'waiting' ? 'New requests from your team will appear here.' : undefined} />
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {list.data.map((r) => (
             <article key={r.id} className="rounded-2xl border bg-card p-4 shadow-panel md:p-5">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

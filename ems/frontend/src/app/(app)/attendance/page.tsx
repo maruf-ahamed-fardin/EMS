@@ -77,7 +77,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const expected = summary ? present + summary.byStatus.ABSENT : 0;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         title="Attendance"
         description={wide ? `${formatDate(from)} – ${formatDate(to)}` : 'Your check-ins and attendance history'}

@@ -35,7 +35,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   const entityLabel = query.entityId ? (list.data.find((l) => l.entityId === query.entityId)?.entityLabel ?? null) : null;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Audit log" description="Every change, who made it and when. Entries can't be edited or deleted." />
       <section className="overflow-hidden rounded-2xl border bg-card shadow-panel">
         <AuditFilters params={params} actorName={actorName} entityLabel={entityLabel} />

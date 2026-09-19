@@ -77,7 +77,7 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
           )}
         </div>
 
-        <div className="mt-6 grid gap-4 border-t pt-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-1 gap-4 border-t pt-5 sm:grid-cols-2 lg:grid-cols-4">
           <Stat icon={Users} label="Active employees" value={department.activeEmployeeCount} />
           <Stat icon={UserRoundX} label="Inactive employees" value={department.inactiveEmployeeCount} />
           <Stat icon={Briefcase} label="Positions" value={department.positionCount} />

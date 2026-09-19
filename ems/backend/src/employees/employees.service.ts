@@ -16,6 +16,7 @@ import {
 import { AuditService } from '../audit/audit.service';
 import type { AuthContext } from '../auth/auth-context';
 import { ScopeService } from '../auth/scope.service';
+import { assertMayChangeAccount, assertSuperAdminRemains, mayChangeAccount, revokePasswordLinks, SUPER_ADMIN } from '../auth/account-protection';
 import { InvitationService } from '../auth/invitations.service';
 import { SessionsService } from '../auth/sessions.service';
 import { conflict, invalidFields } from '../common/errors/http-errors';
@@ -88,6 +89,7 @@ export class EmployeesService {
       showAccount: can(auth.permissions, 'user.view'),
       allowedActions: {
         update: canUpdate,
+        changeEmail: canUpdate && (!row.user || this.mayChangeSignInEmail(auth, row.user.role.key)),
         deactivate: canUpdate && !isSelf && row.status === 'ACTIVE',
         reactivate: canUpdate && row.status === 'INACTIVE',
         delete: this.scope.reaches(auth, 'employee.delete', target) && !isSelf && row.status === 'INACTIVE',
@@ -145,7 +147,7 @@ export class EmployeesService {
       departments,
       positions,
       managers: managers.map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}`, employeeCode: m.employeeCode, positionTitle: m.position.title })),
-      roles: can(auth.permissions, 'user.manage') ? roles : roles.filter((role) => role.key === 'employee'),
+      roles: can(auth.permissions, 'user.manage') ? roles.filter((role) => mayChangeAccount(auth, role.key)) : roles.filter((role) => role.key === 'employee'),
       nextEmployeeCode: nextEmployeeCode(codes.map((c) => c.employeeCode)),
     };
   }
@@ -175,6 +177,7 @@ export class EmployeesService {
       if (input.roleKey !== 'employee' && !can(auth.permissions, 'user.manage')) {
         throw invalidFields({ roleKey: 'You can only give new accounts the Employee role' });
       }
+      assertMayChangeAccount(auth, input.roleKey);
       const role = await this.prisma.role.findUnique({ where: { key: input.roleKey }, select: { id: true } });
       if (!role) throw invalidFields({ roleKey: 'Choose a role' });
       roleId = role.id;
@@ -290,6 +293,10 @@ export class EmployeesService {
 
     const email = changes.email as string | undefined;
     const employeeCode = changes.employeeCode as string | undefined;
+    // Changing the sign-in email is taking over the account's password resets, so it is an account change
+    if (email && current.user && !this.mayChangeSignInEmail(auth, current.user.role.key)) {
+      throw new ForbiddenException('This work email is also their sign-in email. Ask someone who manages user accounts to change it.');
+    }
     await this.assertUnique({ email, employeeCode }, id);
     if (email && current.user && (await this.prisma.user.count({ where: { email, id: { not: current.user.id } } }))) {
       throw conflict('That email already has a sign-in account', { email: 'A sign-in account already uses this email' });
@@ -298,14 +305,19 @@ export class EmployeesService {
     await this.withConflictMapping({ email, employeeCode }, () =>
       this.prisma.$transaction(async (tx) => {
         await tx.employee.update({ where: { id }, data: toUpdateData(changes) });
-        // The work email is also the sign-in email
-        if (email && current.user) await tx.user.update({ where: { id: current.user.id }, data: { email } });
+        // The work email is also the sign-in email. Sessions and links made for the old address end.
+        if (email && current.user) {
+          await tx.user.update({ where: { id: current.user.id }, data: { email } });
+          await this.sessions.revokeAllForUser(current.user.id, {}, tx);
+          await revokePasswordLinks(tx, current.user.id);
+        }
         await this.audit.record(
           { action: 'employee.updated', entityType: 'employee', entityId: id, before: pick(snapshot(current), Object.keys(changes)), after: changes },
           tx,
         );
       }),
     );
+    if (email && current.user) this.invitations.sendSignInEmailChanged(current.email, current.firstName, email);
     return this.get(auth, id);
   }
 
@@ -313,11 +325,14 @@ export class EmployeesService {
     const current = await this.loadForChange(auth, id, 'employee.update');
     if (auth.user.employeeId === id) throw conflict("You can't deactivate your own record");
     if (current.status !== 'ACTIVE') throw conflict('This employee is already inactive');
+    if (current.user) assertMayChangeAccount(auth, current.user.role.key);
 
     await this.prisma.$transaction(async (tx) => {
+      if (current.user?.role.key === SUPER_ADMIN) await assertSuperAdminRemains(tx, current.user.id, 'This is the only active Super Admin. Make someone else Super Admin first.');
       const now = new Date();
       await tx.employee.update({ where: { id }, data: { status: 'INACTIVE', deactivatedAt: now } });
       const sessionsRevoked = current.user ? await this.sessions.revokeAllForUser(current.user.id, {}, tx) : 0;
+      if (current.user) await revokePasswordLinks(tx, current.user.id);
       const leaveRequestsCancelled = await cancelPendingLeave(tx, id, 'Cancelled automatically: the employee was deactivated');
       await this.audit.record(
         {
@@ -336,6 +351,14 @@ export class EmployeesService {
   async reactivate(auth: AuthContext, id: string): Promise<EmployeeDetail> {
     const current = await this.loadForChange(auth, id, 'employee.update');
     if (current.status !== 'INACTIVE') throw conflict('This employee is already active');
+    // Their department or position may have been deleted or turned off while they were away
+    const [department, position] = await Promise.all([
+      this.prisma.department.count({ where: { id: current.departmentId, deletedAt: null, isActive: true } }),
+      this.prisma.position.count({ where: { id: current.positionId, deletedAt: null, isActive: true } }),
+    ]);
+    if (!department || !position) {
+      throw conflict('Their department or position no longer exists. Edit the record to choose current ones, then reactivate.');
+    }
 
     await this.prisma.$transaction(async (tx) => {
       await tx.employee.update({ where: { id }, data: { status: 'ACTIVE', deactivatedAt: null } });
@@ -349,6 +372,7 @@ export class EmployeesService {
     const current = await this.loadForChange(auth, id, 'employee.delete');
     if (auth.user.employeeId === id) throw conflict("You can't delete your own record");
     if (current.status !== 'INACTIVE') throw conflict('Deactivate this employee before deleting the record');
+    if (current.user) assertMayChangeAccount(auth, current.user.role.key);
 
     await this.prisma.$transaction(async (tx) => {
       const now = new Date();
@@ -356,6 +380,7 @@ export class EmployeesService {
       if (current.user) {
         await tx.user.update({ where: { id: current.user.id }, data: { status: 'INACTIVE' } });
         await this.sessions.revokeAllForUser(current.user.id, {}, tx);
+        await revokePasswordLinks(tx, current.user.id);
       }
       // Nobody keeps reporting to, or being headed by, a deleted record
       await tx.employee.updateMany({ where: { managerId: id }, data: { managerId: null } });
@@ -393,6 +418,10 @@ export class EmployeesService {
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────────────────────
+
+  private mayChangeSignInEmail(auth: AuthContext, roleKey: string): boolean {
+    return can(auth.permissions, 'user.manage') && mayChangeAccount(auth, roleKey);
+  }
 
   private assertCanEdit(auth: AuthContext): void {
     if (!can(auth.permissions, 'employee.create') && !can(auth.permissions, 'employee.update')) throw new ForbiddenException();
@@ -493,7 +522,7 @@ const CHANGE_SELECT = {
   employmentType: true,
   workLocation: true,
   status: true,
-  user: { select: { id: true } },
+  user: { select: { id: true, role: { select: { key: true } } } },
 } satisfies Prisma.EmployeeSelect;
 
 type ChangeRow = Prisma.EmployeeGetPayload<{ select: typeof CHANGE_SELECT }>;

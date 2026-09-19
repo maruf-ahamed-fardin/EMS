@@ -52,4 +52,20 @@ export class InvitationService {
       })
       .catch((error: unknown) => this.logger.error({ err: error }, 'Could not send the password link'));
   }
+
+  /** Tells the old address, so the owner notices if someone else moved their account. */
+  sendSignInEmailChanged(oldEmail: string, firstName: string, newEmail: string): void {
+    this.mailer
+      .send({
+        to: oldEmail,
+        subject: 'Your SeloraX People sign-in email changed',
+        text: [
+          `Hi ${firstName},`,
+          '',
+          `Your SeloraX People account now signs in with ${newEmail}, and you have been signed out everywhere.`,
+          'If you did not expect this, tell HR or your administrator right away.',
+        ].join('\n'),
+      })
+      .catch((error: unknown) => this.logger.error({ err: error }, 'Could not send the email-changed notice'));
+  }
 }

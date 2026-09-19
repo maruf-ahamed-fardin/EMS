@@ -75,7 +75,7 @@ export function LeaveTypeDialog({ type }: { type?: LeaveTypeItem }) {
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>{type ? `Edit ${type.name}` : 'Add leave type'}</DialogTitle>
             <DialogDescription>{type ? 'A new yearly allowance applies to balances created from now on.' : 'Paid types give every active employee this year’s balance, prorated for this year’s joiners.'}</DialogDescription>

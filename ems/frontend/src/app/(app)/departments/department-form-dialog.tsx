@@ -103,7 +103,7 @@ export function DepartmentFormDialog({ department }: { department?: DepartmentDe
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>{editing ? `Edit ${department?.name}` : 'Add department'}</DialogTitle>
             <DialogDescription>
@@ -113,7 +113,7 @@ export function DepartmentFormDialog({ department }: { department?: DepartmentDe
 
           {formError && <FormAlert tone="error">{formError}</FormAlert>}
 
-          <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_140px]">
             <TextField label="Name" required autoFocus registration={register('name')} error={errors.name} />
             <TextField label="Code" required placeholder="DEV" autoCapitalize="characters" registration={register('code')} error={errors.code} />
           </div>

@@ -75,7 +75,7 @@ export function DocumentTypeDialog({ type }: { type?: DocumentTypeItem }) {
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={onSubmit} noValidate className="grid gap-4">
+        <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-4">
           <DialogHeader>
             <DialogTitle>{type ? `Edit ${type.name}` : 'Add document type'}</DialogTitle>
             <DialogDescription>{type ? 'Making a type private hides its existing documents from managers straight away.' : 'What people can upload, such as a passport or a contract.'}</DialogDescription>

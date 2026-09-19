@@ -23,7 +23,7 @@ export default async function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" description="The working calendar that attendance and leave are counted against." />
-      <div className="grid max-w-3xl gap-6">
+      <div className="grid grid-cols-1 max-w-3xl gap-6">
         <AttendanceSettingsForm initial={attendance} />
         <HolidaysCard year={year} initial={holidays} />
       </div>

@@ -49,7 +49,7 @@ export function MyContactForm({ phone, details }: { phone: string; details: Empl
   });
 
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-6 rounded-2xl border bg-card p-5 shadow-panel md:p-7">
+    <form onSubmit={onSubmit} noValidate className="grid grid-cols-1 gap-6 rounded-2xl border bg-card p-5 shadow-panel md:p-7">
       <div>
         <h2 className="text-lg font-semibold">Contact details</h2>
         <p className="text-sm text-muted-foreground">Only you and HR can see these.</p>
@@ -58,7 +58,7 @@ export function MyContactForm({ phone, details }: { phone: string; details: Empl
 
       <TextField label="Phone" type="tel" required registration={register('phone')} error={errors.phone} className="sm:max-w-xs" />
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <legend className="mb-3 text-sm font-semibold">Address</legend>
         <TextField className="sm:col-span-2" label="Street address" required registration={register('address.line1')} error={errors.address?.line1} />
         <TextField className="sm:col-span-2" label="Apartment, floor (optional)" registration={register('address.line2')} error={errors.address?.line2} />
@@ -67,7 +67,7 @@ export function MyContactForm({ phone, details }: { phone: string; details: Empl
         <TextField label="Country" required registration={register('address.country')} error={errors.address?.country} />
       </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-3">
+      <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <legend className="mb-3 text-sm font-semibold">Emergency contact</legend>
         <TextField label="Name" required registration={register('emergencyContact.name')} error={errors.emergencyContact?.name} />
         <TextField label="Relationship" required registration={register('emergencyContact.relationship')} error={errors.emergencyContact?.relationship} />

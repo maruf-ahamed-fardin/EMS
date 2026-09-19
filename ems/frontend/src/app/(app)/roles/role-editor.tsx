@@ -23,7 +23,10 @@ export function changedKeys(a: PermissionMap, b: PermissionMap): PermissionKey[]
  * One role's grants as a list per module, each with its reach. Changes are saved together, so a role
  * is never left half-edited.
  */
-export function RoleEditor({ role, catalogue }: { role: RoleItem; catalogue: PermissionItem[] }) {
+/** Only a Super Admin grants or removes user and role management (the API refuses anyone else). */
+const ADMIN_PERMISSIONS = new Set(['user.manage', 'role.manage']);
+
+export function RoleEditor({ role, catalogue, canGrantAdmin }: { role: RoleItem; catalogue: PermissionItem[]; canGrantAdmin: boolean }) {
   const router = useRouter();
   const [grants, setGrants] = useState<PermissionMap>(role.permissions);
   const [pending, setPending] = useState(false);
@@ -48,10 +51,13 @@ export function RoleEditor({ role, catalogue }: { role: RoleItem; catalogue: Per
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       {!role.editable && (
         <p className="flex items-center gap-2 rounded-xl border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
-          <Lock className="size-4" aria-hidden /> Super Admin always has every permission, so nobody can be locked out of administration.
+          <Lock className="size-4" aria-hidden />
+          {role.key === 'super_admin'
+            ? 'Super Admin always has every permission, so nobody can be locked out of administration.'
+            : 'This is your own role. Another administrator changes it, so nobody raises their own permissions.'}
         </p>
       )}
       {modules.map(([module, permissions]) => (
@@ -71,7 +77,7 @@ export function RoleEditor({ role, catalogue }: { role: RoleItem; catalogue: Per
                   </div>
                   <Select
                     value={value}
-                    disabled={!role.editable || pending}
+                    disabled={!role.editable || pending || (ADMIN_PERMISSIONS.has(p.key) && !canGrantAdmin)}
                     onValueChange={(v) =>
                       setGrants((current) => {
                         const next = { ...current };

@@ -51,7 +51,7 @@ export default async function AuditEntryPage({
   const recordHref = entityHref(entry.entityType, entry.entityId);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <nav
         aria-label="Breadcrumb"
         className="flex items-center gap-1.5 text-sm text-muted-foreground"
@@ -78,7 +78,7 @@ export default async function AuditEntryPage({
             {formatDateTime(entry.createdAt)}
           </time>
         </p>
-        <dl className="mt-5 grid gap-x-6 gap-y-3 border-t pt-4 text-sm sm:grid-cols-[160px_1fr]">
+        <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 border-t pt-4 text-sm sm:grid-cols-[160px_1fr]">
           <dt className="text-muted-foreground">Record</dt>
           <dd className="font-medium">
             {entityTypeLabel(entry.entityType)}

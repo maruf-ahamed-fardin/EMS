@@ -54,7 +54,7 @@ export default async function MyProfilePage() {
           </Button>
         }
       />
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
         <aside className="h-fit rounded-2xl border bg-card p-5 shadow-panel">
           <div className="flex items-center gap-3">
             <PersonAvatar name={me.fullName} size="md" />
@@ -63,7 +63,7 @@ export default async function MyProfilePage() {
               <p className="truncate text-sm text-muted-foreground">{me.position.title}</p>
             </div>
           </div>
-          <dl className="mt-5 grid gap-3 text-sm">
+          <dl className="mt-5 grid grid-cols-1 gap-3 text-sm">
             {[
               ['Employee ID', me.employeeCode],
               ['Department', <Tag key="d">{me.department.name}</Tag>],

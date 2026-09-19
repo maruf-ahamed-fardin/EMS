@@ -9,6 +9,7 @@ import { ChangePasswordDto, ForgotPasswordDto, LoginDto, ResetPasswordDto } from
 import { AuthService } from './auth.service';
 import { clearAuthCookies, setCsrfCookie, setSessionCookie } from './cookies';
 import { CurrentAuth, Public } from './decorators';
+import { ThrottlePerAccount } from './guards/throttler.guard';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -33,7 +34,8 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: MINUTE } })
+  @Throttle({ default: { limit: 30, ttl: MINUTE } })
+  @ThrottlePerAccount(5, MINUTE)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -71,7 +73,8 @@ export class AuthController {
    * its timing shows whether an account exists.
    */
   @Public()
-  @Throttle({ default: { limit: 3, ttl: HOUR } })
+  @Throttle({ default: { limit: 20, ttl: HOUR } })
+  @ThrottlePerAccount(3, HOUR)
   @NoAudit('Answered before the lookup, so neither the answer nor its timing reveals an account; auth.password_reset_requested is recorded afterwards when the account exists')
   @Post('forgot-password')
   @HttpCode(HttpStatus.ACCEPTED)

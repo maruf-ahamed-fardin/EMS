@@ -67,8 +67,8 @@ export function CreateUserDialog({ options }: { options: UserFormOptions }) {
           <DialogDescription>For an employee who can&rsquo;t sign in yet. They choose their own password from an emailed link that works for 3 days.</DialogDescription>
         </DialogHeader>
         {error && <FormAlert tone="error">{error}</FormAlert>}
-        <div className="grid gap-4">
-          <div className="grid gap-2">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-2">
             <Label id="create-user-employee">Employee</Label>
             <Select value={employeeId} onValueChange={setEmployeeId}>
               <SelectTrigger className="h-10 w-full" aria-labelledby="create-user-employee">
@@ -102,7 +102,7 @@ export function CreateUserDialog({ options }: { options: UserFormOptions }) {
 function RoleSelect({ id, roles, value, onChange }: { id: string; roles: UserFormOptions['roles']; value: string; onChange: (id: string) => void }) {
   const chosen = roles.find((r) => r.id === value);
   return (
-    <div className="grid gap-2">
+    <div className="grid grid-cols-1 gap-2">
       <Label id={id}>Role</Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="h-10 w-full" aria-labelledby={id}>

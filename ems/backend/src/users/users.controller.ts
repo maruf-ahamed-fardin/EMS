@@ -22,8 +22,8 @@ export class UsersController {
 
   @RequirePermission('user.manage')
   @Get('form-options')
-  async options(): Promise<DataResponse<UserFormOptions>> {
-    return { data: await this.users.options() };
+  async options(@CurrentAuth() auth: AuthContext): Promise<DataResponse<UserFormOptions>> {
+    return { data: await this.users.options(auth) };
   }
 
   @RequirePermission('user.manage')

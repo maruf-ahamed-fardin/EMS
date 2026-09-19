@@ -88,7 +88,7 @@ export function LeaveRequestActions({ request, compact = false }: { request: Lea
               </AlertDialogDescription>
             </AlertDialogHeader>
             {open !== 'cancel' && (
-              <div className="grid gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 <Label htmlFor="leave-note">{open === 'reject' ? 'Reason (shown to them)' : 'Note (optional)'}</Label>
                 <Textarea id="leave-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} aria-invalid={error ? true : undefined} />
                 {error && <p className="text-sm text-danger-text">{error}</p>}

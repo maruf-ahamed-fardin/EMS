@@ -40,7 +40,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
   const filtered = Boolean(query.q || query.documentTypeId);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         title={ownOnly ? 'My documents' : 'Documents'}
         description={ownOnly ? 'Your contracts, IDs and certificates. Links to download them work for one minute.' : 'Employee documents and what is about to expire.'}

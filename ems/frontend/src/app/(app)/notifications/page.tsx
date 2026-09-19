@@ -33,7 +33,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   ]);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <PageHeader
         title="Notifications"
         description={unread.data.count > 0 ? `${unread.data.count} unread` : 'You’re all caught up.'}

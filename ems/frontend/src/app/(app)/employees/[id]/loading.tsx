@@ -20,7 +20,7 @@ export default function EmployeeLoading() {
         </div>
       </div>
       <Skeleton className="mt-6 h-9 w-80 max-w-full" />
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Skeleton className="h-44 rounded-2xl" />
         <Skeleton className="h-44 rounded-2xl" />
       </div>
