@@ -100,8 +100,10 @@ export class DashboardService {
       employee: inScope,
     };
 
-    const [total, joinedThisMonth, byDepartment, attendanceGroups, onLeaveRows, newJoiners] = await Promise.all([
+    // People hired but not started yet are on the headcount, but nobody expects them at work
+    const [total, started, joinedThisMonth, byDepartment, attendanceGroups, onLeaveRows, newJoiners] = await Promise.all([
       this.prisma.employee.count({ where: inScope }),
+      this.prisma.employee.count({ where: { AND: [inScope, { joiningDate: { lte: dateOnly(today) } }] } }),
       this.prisma.employee.count({ where: { AND: [inScope, { joiningDate: { gte: dateOnly(monthStart(today)), lte: dateOnly(today) } }] } }),
       this.prisma.employee.groupBy({ by: ['departmentId'], where: inScope, _count: { _all: true } }),
       this.prisma.attendance.groupBy({ by: ['status'], where: { workDate: dateOnly(today), employee: inScope }, _count: { _all: true } }),
@@ -129,7 +131,7 @@ export class DashboardService {
     const onTime = countOf('PRESENT');
     const late = countOf('LATE');
     const onLeave = onLeaveRows.length;
-    const expected = workingDay ? Math.max(total - onLeave, 0) : 0;
+    const expected = workingDay ? Math.max(started - onLeave, 0) : 0;
     const present = onTime + late;
     const attendanceToday: AttendanceToday = {
       expected,
@@ -339,7 +341,7 @@ export class DashboardService {
     const employees = this.scope.employeeWhere(auth, 'attendance.view');
 
     if (range === 'today') {
-      const total = await this.prisma.employee.count({ where: { AND: [employees, { status: 'ACTIVE' }] } });
+      const total = await this.prisma.employee.count({ where: { AND: [employees, { status: 'ACTIVE' }, { joiningDate: { lte: dateOnly(today) } }] } });
       const onLeave = await this.prisma.leaveRequest.findMany({
         where: { status: 'APPROVED', startDate: { lte: dateOnly(today) }, endDate: { gte: dateOnly(today) }, employee: employees },
         distinct: ['employeeId'],

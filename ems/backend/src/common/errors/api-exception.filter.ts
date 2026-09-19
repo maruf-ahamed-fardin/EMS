@@ -13,6 +13,9 @@ const GENERIC_MESSAGES: Partial<Record<number, string>> = {
   [HttpStatus.TOO_MANY_REQUESTS]: 'Too many requests. Try again shortly.',
 };
 
+/** PostgreSQL's code for a violated CHECK constraint, which Prisma passes through from the driver. */
+const CHECK_VIOLATION = '23514';
+
 /** Prisma error codes that describe the request rather than a server fault. */
 const PRISMA_CLIENT_ERRORS: Record<string, { status: number; message: string }> = {
   P2002: { status: HttpStatus.CONFLICT, message: 'A record with these details already exists' },
@@ -98,7 +101,11 @@ function httpExceptionMessage(exception: HttpException, statusCode: number): str
 
 function prismaClientError(exception: unknown): { status: number; message: string } | undefined {
   if (typeof exception !== 'object' || exception === null) return undefined;
-  const { name, code } = exception as { name?: unknown; code?: unknown };
+  const { name, code, meta } = exception as { name?: unknown; code?: unknown; meta?: { driverAdapterError?: { cause?: { originalCode?: unknown } } } };
   if (name !== 'PrismaClientKnownRequestError' || typeof code !== 'string') return undefined;
+  // A CHECK constraint (a balance going negative, say) means the record changed under the request
+  if (meta?.driverAdapterError?.cause?.originalCode === CHECK_VIOLATION) {
+    return { status: HttpStatus.CONFLICT, message: 'This conflicts with a change made just now. Reload and try again.' };
+  }
   return PRISMA_CLIENT_ERRORS[code];
 }

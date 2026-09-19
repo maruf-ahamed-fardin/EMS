@@ -22,6 +22,7 @@ import { NotificationService } from '../notifications/notifications.service';
 import { dateRange, days as dayCount } from '../notifications/wording';
 import { LeaveBalancesService } from './leave-balances.service';
 import { available, countLeaveDays } from './leave-rules';
+import { consumePending, lockEmployeeLeave, releaseDays } from './leave-ledger';
 
 type Tx = Prisma.TransactionClient;
 
@@ -39,6 +40,7 @@ const REQUEST_SELECT = {
   reviewNote: true,
   employeeId: true,
   leaveTypeId: true,
+  countsAgainstBalance: true,
   employee: { select: { id: true, firstName: true, lastName: true, employeeCode: true, managerId: true, department: { select: { name: true } } } },
   leaveType: { select: { id: true, name: true, isPaid: true } },
   reviewedBy: { select: { email: true, employee: { select: { firstName: true, lastName: true } } } },
@@ -138,7 +140,15 @@ export class LeaveRequestsService {
         });
       }
       const request = await tx.leaveRequest.create({
-        data: { employeeId, leaveTypeId: input.leaveTypeId, startDate: dateOnly(input.startDate), endDate: dateOnly(input.endDate), days: preview.days, reason: input.reason },
+        data: {
+          employeeId,
+          leaveTypeId: input.leaveTypeId,
+          startDate: dateOnly(input.startDate),
+          endDate: dateOnly(input.endDate),
+          days: preview.days,
+          countsAgainstBalance: preview.isPaid,
+          reason: input.reason,
+        },
         select: { id: true },
       });
       await this.audit.record(
@@ -195,8 +205,8 @@ export class LeaveRequestsService {
     );
   }
 
-  private async lockEmployee(tx: Tx, employeeId: string): Promise<void> {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`leave:${employeeId}`}))`;
+  private lockEmployee(tx: Tx, employeeId: string): Promise<void> {
+    return lockEmployeeLeave(tx, employeeId);
   }
 
   // ─── Reading ────────────────────────────────────────────────────────────────────────────────
@@ -251,7 +261,7 @@ export class LeaveRequestsService {
   private async toItems(auth: AuthContext, rows: RequestRow[]): Promise<LeaveRequestItem[]> {
     const today = await this.calendar.today(this.clock.now());
     const balances = await this.prisma.leaveBalance.findMany({
-      where: { OR: rows.filter((r) => r.leaveType.isPaid).map((r) => ({ employeeId: r.employeeId, leaveTypeId: r.leaveTypeId, year: r.startDate.getUTCFullYear() })) },
+      where: { OR: rows.filter((r) => r.countsAgainstBalance).map((r) => ({ employeeId: r.employeeId, leaveTypeId: r.leaveTypeId, year: r.startDate.getUTCFullYear() })) },
     });
     const balanceOf = (r: RequestRow) => balances.find((b) => b.employeeId === r.employeeId && b.leaveTypeId === r.leaveTypeId && b.year === r.startDate.getUTCFullYear());
 
@@ -293,7 +303,7 @@ export class LeaveRequestsService {
     if (!UUID.test(id)) throw new NotFoundException();
     const row = await this.prisma.leaveRequest.findFirst({
       where: { id, OR: [{ employee: this.scope.employeeWhere(auth, 'leave.view') }, ...(auth.user.employeeId ? [{ employeeId: auth.user.employeeId }] : [])] },
-      select: { id: true, employeeId: true, leaveTypeId: true, startDate: true, endDate: true, days: true, status: true, employee: { select: { managerId: true } }, leaveType: { select: { isPaid: true, name: true } } },
+      select: { id: true, employeeId: true, leaveTypeId: true, startDate: true, endDate: true, days: true, countsAgainstBalance: true, status: true, employee: { select: { managerId: true } }, leaveType: { select: { name: true } } },
     });
     if (!row) throw new NotFoundException();
     // Nobody decides their own leave, whatever their role (plan §4)
@@ -313,12 +323,7 @@ export class LeaveRequestsService {
       });
       if (claimed.count !== 1) throw conflict('This request has already been decided');
 
-      if (row.leaveType.isPaid) {
-        await tx.leaveBalance.update({
-          where: { employeeId_leaveTypeId_year: { employeeId: row.employeeId, leaveTypeId: row.leaveTypeId, year: row.startDate.getUTCFullYear() } },
-          data: { pending: { decrement: row.days }, used: { increment: row.days } },
-        });
-      }
+      await consumePending(tx, row);
       // Days already recorded without a check-in become leave (plan §7)
       await tx.attendance.updateMany({
         where: { employeeId: row.employeeId, workDate: { gte: row.startDate, lte: row.endDate }, firstInAt: null, status: { notIn: ['HOLIDAY', 'WEEKEND'] } },
@@ -333,6 +338,7 @@ export class LeaveRequestsService {
 
   async reject(auth: AuthContext, id: string, note: string): Promise<LeaveRequestItem> {
     const row = await this.loadForDecision(auth, id, 'leave.reject');
+    const currentYear = await this.balances.currentYear();
     await this.prisma.$transaction(async (tx) => {
       await this.lockEmployee(tx, row.employeeId);
       const claimed = await tx.leaveRequest.updateMany({
@@ -340,12 +346,7 @@ export class LeaveRequestsService {
         data: { status: 'REJECTED', reviewedById: auth.user.id, reviewedAt: new Date(), reviewNote: note },
       });
       if (claimed.count !== 1) throw conflict('This request has already been decided');
-      if (row.leaveType.isPaid) {
-        await tx.leaveBalance.update({
-          where: { employeeId_leaveTypeId_year: { employeeId: row.employeeId, leaveTypeId: row.leaveTypeId, year: row.startDate.getUTCFullYear() } },
-          data: { pending: { decrement: row.days } },
-        });
-      }
+      await releaseDays(tx, row, 'pending', currentYear);
       await this.audit.record({ action: 'leave.rejected', entityType: 'leave_request', entityId: id, before: { status: 'PENDING' }, after: { status: 'REJECTED', note } }, tx);
       await this.notifyDecided(tx, row, 'rejected', note);
     });
@@ -360,7 +361,7 @@ export class LeaveRequestsService {
     if (!UUID.test(id)) throw new NotFoundException();
     const row = await this.prisma.leaveRequest.findFirst({
       where: { id, OR: [{ employee: this.scope.employeeWhere(auth, 'leave.view') }, ...(auth.user.employeeId ? [{ employeeId: auth.user.employeeId }] : [])] },
-      select: { id: true, employeeId: true, leaveTypeId: true, startDate: true, endDate: true, days: true, status: true, leaveType: { select: { isPaid: true } } },
+      select: { id: true, employeeId: true, leaveTypeId: true, startDate: true, endDate: true, days: true, countsAgainstBalance: true, status: true },
     });
     if (!row) throw new NotFoundException();
     if (row.employeeId !== auth.user.employeeId && auth.permissions['leave.approve'] !== 'ALL') throw new ForbiddenException();
@@ -371,16 +372,12 @@ export class LeaveRequestsService {
     }
     if (row.status !== 'PENDING' && row.status !== 'APPROVED') throw conflict('Only pending or upcoming approved leave can be cancelled');
 
+    const currentYear = await this.balances.currentYear();
     await this.prisma.$transaction(async (tx) => {
       await this.lockEmployee(tx, row.employeeId);
       const claimed = await tx.leaveRequest.updateMany({ where: { id, status: row.status }, data: { status: 'CANCELLED', reviewedAt: new Date() } });
       if (claimed.count !== 1) throw conflict('This request has changed. Reload and try again.');
-      if (row.leaveType.isPaid) {
-        await tx.leaveBalance.update({
-          where: { employeeId_leaveTypeId_year: { employeeId: row.employeeId, leaveTypeId: row.leaveTypeId, year: row.startDate.getUTCFullYear() } },
-          data: row.status === 'PENDING' ? { pending: { decrement: row.days } } : { used: { decrement: row.days } },
-        });
-      }
+      await releaseDays(tx, row, row.status === 'PENDING' ? 'pending' : 'used', currentYear);
       await this.audit.record({ action: 'leave.cancelled', entityType: 'leave_request', entityId: id, before: { status: row.status }, after: { status: 'CANCELLED' } }, tx);
     });
     this.dashboardCache.invalidate();

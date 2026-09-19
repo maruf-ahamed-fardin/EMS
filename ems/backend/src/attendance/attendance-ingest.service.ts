@@ -6,6 +6,7 @@ import { conflict } from '../common/errors/http-errors';
 import { DashboardCache } from '../dashboard/dashboard-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { checkInStatus, workedMinutes } from './attendance-rules';
+import { lockEmployeeLeave } from '../leave/leave-ledger';
 
 export interface PunchResult {
   attendanceId: string;
@@ -45,16 +46,18 @@ export class AttendanceIngestService {
   }
 
   private async checkIn(punch: PunchInput & { createdById?: string | null }, workDate: string, day: Date, settings: Awaited<ReturnType<CalendarService['settings']>>) {
-    const onLeave = await this.prisma.leaveRequest.count({
-      where: { employeeId: punch.employeeId, status: 'APPROVED', startDate: { lte: day }, endDate: { gte: day } },
-    });
-    if (onLeave > 0) throw conflict("You're on approved leave today, so you can't check in");
-
     const holidays = await this.calendar.holidaysBetween(workDate, workDate);
     const { status, lateMinutes } = checkInStatus(punch.occurredAt, workDate, settings, isWorkingDay(workDate, settings, holidays));
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        // Under the same lock as leave approval, so a check-in and an approval for today can't both land
+        await lockEmployeeLeave(tx, punch.employeeId);
+        const onLeave = await tx.leaveRequest.count({
+          where: { employeeId: punch.employeeId, status: 'APPROVED', startDate: { lte: day }, endDate: { gte: day } },
+        });
+        if (onLeave > 0) throw conflict("You're on approved leave today, so you can't check in");
+
         const existing = await tx.attendance.findUnique({
           where: { employeeId_workDate: { employeeId: punch.employeeId, workDate: day } },
           select: { id: true, firstInAt: true },

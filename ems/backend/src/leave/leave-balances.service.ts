@@ -10,6 +10,7 @@ import { invalidFields } from '../common/errors/http-errors';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { available, carryForward, proratedAllocation } from './leave-rules';
+import { lockEmployeeLeave } from './leave-ledger';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -61,6 +62,10 @@ export class LeaveBalancesService {
    */
   async ensureYear(year: number, options: { employeeIds?: string[]; db?: Db } = {}): Promise<number> {
     const db = options.db ?? this.prisma;
+    // Carry-forward comes from a finished year only. A balance made early (leave booked for next year)
+    // starts with none, and gets it here once the year has begun.
+    const previousYearOver = year <= (await this.currentYear());
+    if (previousYearOver) await this.settleCarryForward(db, year, options.employeeIds);
     const [employees, types] = await Promise.all([
       db.employee.findMany({
         where: {
@@ -92,12 +97,8 @@ export class LeaveBalancesService {
           leaveTypeId: type.id,
           year,
           allocated: proratedAllocation(Number(type.defaultDaysPerYear), employee.joiningDate.toISOString().slice(0, 10), year),
-          carriedForward: carryForward(
-            previous
-              ? { allocated: Number(previous.allocated), carriedForward: Number(previous.carriedForward), used: Number(previous.used), pending: Number(previous.pending) }
-              : null,
-            Number(type.carryForwardMax),
-          ),
+          carriedForward: previousYearOver ? carryForward(previous ? ledgerOf(previous) : null, Number(type.carryForwardMax)) : 0,
+          carryForwardSettled: previousYearOver,
         });
       }
     }
@@ -105,6 +106,24 @@ export class LeaveBalancesService {
     const { count } = await db.leaveBalance.createMany({ data, skipDuplicates: true });
     if (count > 0) this.logger.log({ year, created: count }, 'Created leave balances');
     return count;
+  }
+
+  /** Works out the carry-forward of balances made before `year` began. Raising it never breaks a balance. */
+  private async settleCarryForward(db: Db, year: number, employeeIds?: string[]): Promise<void> {
+    const unsettled = await db.leaveBalance.findMany({
+      where: { year, carryForwardSettled: false, ...(employeeIds ? { employeeId: { in: employeeIds } } : {}) },
+      select: { id: true, employeeId: true, leaveTypeId: true, leaveType: { select: { carryForwardMax: true } } },
+    });
+    for (const balance of unsettled) {
+      const previous = await db.leaveBalance.findUnique({
+        where: { employeeId_leaveTypeId_year: { employeeId: balance.employeeId, leaveTypeId: balance.leaveTypeId, year: year - 1 } },
+        select: { allocated: true, carriedForward: true, used: true, pending: true },
+      });
+      const carry = carryForward(previous ? ledgerOf(previous) : null, Number(balance.leaveType.carryForwardMax));
+      // Only the first run settles it, so a later HR adjustment is never overwritten
+      await db.leaveBalance.updateMany({ where: { id: balance.id, carryForwardSettled: false }, data: { carriedForward: carry, carryForwardSettled: true } });
+    }
+    if (unsettled.length > 0) this.logger.log({ year, settled: unsettled.length }, 'Settled leave carry-forward');
   }
 
   async list(auth: AuthContext, query: { employeeId?: string; year?: number }): Promise<LeaveBalanceRow[]> {
@@ -133,13 +152,17 @@ export class LeaveBalancesService {
 
     const allocated = Number(input.allocated ?? current.allocated);
     const carriedForward = Number(input.carriedForward ?? current.carriedForward);
-    const committed = Number(current.used) + Number(current.pending);
-    if (allocated + carriedForward < committed) {
-      throw invalidFields({ allocated: `At least ${committed} days are already used or pending, so the balance can't go below that` });
-    }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.leaveBalance.update({ where: { id }, data: { allocated, carriedForward } });
+      // Under the person's leave lock, so a request made at the same moment can't slip past this check
+      await lockEmployeeLeave(tx, current.employee.id);
+      const fresh = await tx.leaveBalance.findUniqueOrThrow({ where: { id }, select: { used: true, pending: true } });
+      const committed = Number(fresh.used) + Number(fresh.pending);
+      if (allocated + carriedForward < committed) {
+        throw invalidFields({ allocated: `At least ${committed} days are already used or pending, so the balance can't go below that` });
+      }
+      // A carry-forward set by hand is final; settling it at the start of the year won't replace it
+      await tx.leaveBalance.update({ where: { id }, data: { allocated, carriedForward, ...(input.carriedForward !== undefined ? { carryForwardSettled: true } : {}) } });
       await this.audit.record(
         {
           action: 'leave_balance.adjusted',
@@ -154,3 +177,10 @@ export class LeaveBalancesService {
     return toBalanceRow(await this.prisma.leaveBalance.findUniqueOrThrow({ where: { id }, select: BALANCE_SELECT }));
   }
 }
+
+const ledgerOf = (b: { allocated: Prisma.Decimal; carriedForward: Prisma.Decimal; used: Prisma.Decimal; pending: Prisma.Decimal }) => ({
+  allocated: Number(b.allocated),
+  carriedForward: Number(b.carriedForward),
+  used: Number(b.used),
+  pending: Number(b.pending),
+});

@@ -33,6 +33,7 @@ import {
   toDateOnly,
 } from './employee-query';
 import { proratedAllocation } from '../leave/leave-rules';
+import { cancelPendingLeave } from '../leave/leave-ledger';
 import { NotificationService } from '../notifications/notifications.service';
 import { shortDate } from '../notifications/wording';
 import { EMPLOYEE_DETAIL_SELECT, EMPLOYEE_LIST_SELECT, toDetail, toListItem } from './employee-view';
@@ -333,7 +334,7 @@ export class EmployeesService {
       await tx.employee.update({ where: { id }, data: { status: 'INACTIVE', deactivatedAt: now } });
       const sessionsRevoked = current.user ? await this.sessions.revokeAllForUser(current.user.id, {}, tx) : 0;
       if (current.user) await revokePasswordLinks(tx, current.user.id);
-      const leaveRequestsCancelled = await cancelPendingLeave(tx, id, 'Cancelled automatically: the employee was deactivated');
+      const leaveRequestsCancelled = await cancelPendingLeave(tx, id, 'Cancelled automatically: the employee was deactivated', organizationYear());
       await this.audit.record(
         {
           action: 'employee.deactivated',
@@ -586,18 +587,3 @@ function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
-/** Cancels pending leave and gives the reserved days back to the balances. Returns how many. */
-async function cancelPendingLeave(tx: Tx, employeeId: string, note: string): Promise<number> {
-  const pending = await tx.leaveRequest.findMany({
-    where: { employeeId, status: 'PENDING' },
-    select: { id: true, leaveTypeId: true, startDate: true, days: true },
-  });
-  for (const request of pending) {
-    await tx.leaveRequest.update({ where: { id: request.id }, data: { status: 'CANCELLED', reviewNote: note, reviewedAt: new Date() } });
-    await tx.leaveBalance.updateMany({
-      where: { employeeId, leaveTypeId: request.leaveTypeId, year: request.startDate.getUTCFullYear() },
-      data: { pending: { decrement: request.days } },
-    });
-  }
-  return pending.length;
-}

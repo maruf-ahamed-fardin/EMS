@@ -41,6 +41,18 @@ describe('ApiExceptionFilter', () => {
     expect(convert(unique)).toMatchObject({ statusCode: 409, message: 'A record with these details already exists' });
   });
 
+  it('maps a violated CHECK constraint to 409, without its details', () => {
+    // The shape Prisma 7 throws through the pg driver adapter
+    const check = Object.assign(new Error('violates check constraint "leave_balances_amounts_non_negative"'), {
+      name: 'PrismaClientKnownRequestError',
+      code: 'P2039',
+      meta: { driverAdapterError: { cause: { originalCode: '23514', originalMessage: 'new row for relation "leave_balances" violates check constraint' } } },
+    });
+    const body = convert(check);
+    expect(body).toMatchObject({ statusCode: 409, message: 'This conflicts with a change made just now. Reload and try again.' });
+    expect(JSON.stringify(body)).not.toContain('leave_balances');
+  });
+
   it('hides the details of unexpected errors', () => {
     const body = convert(new Error('connect ECONNREFUSED postgresql://ems:secret@db/ems'));
     expect(body).toEqual({ statusCode: 500, message: 'Something went wrong', requestId: 'req-12345678' });

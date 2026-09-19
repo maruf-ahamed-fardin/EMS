@@ -388,8 +388,14 @@ export class AttendanceService {
 
   async closeDayManually(date: string): Promise<{ date: string; created: number; missingCheckOuts: number }> {
     const settings = await this.calendar.settings();
-    if (!isClosable(date, this.clock.now(), settings.timeZone)) {
+    const now = this.clock.now();
+    if (!isClosable(date, now, settings.timeZone)) {
       throw invalidFields({ date: 'A day can only be closed from 23:55 that evening' });
+    }
+    // Everyone active *today* is marked for that day, which is only right for recent days. Older
+    // records are corrected one by one instead.
+    if (date < addDays(await this.calendar.today(now), -CLOSE_LOOKBACK_DAYS)) {
+      throw invalidFields({ date: `Only the last ${CLOSE_LOOKBACK_DAYS} days can be closed. Correct older records one by one.` });
     }
     const result = await this.closeDay(date);
     await this.audit.record({ action: 'attendance.day_closed', entityType: 'attendance', entityId: null, after: { workDate: date, created: result.created } });
