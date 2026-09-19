@@ -113,7 +113,9 @@ describeWithDatabase('documents', () => {
       expect(noExpiry.body.errors).toEqual({ expiresAt: 'Certificate documents need an expiry date' });
 
       const big = Buffer.concat([simplePdf(['Big']), Buffer.alloc(MAX_DOCUMENT_BYTES)]);
-      expect((await as.employee.upload(`/employees/${ids.employee}/documents`, { documentTypeId: types.contract.id, title: 'Big' }, { content: big, filename: 'big.pdf' })).status).toBe(413);
+      const tooBig = await as.employee.upload(`/employees/${ids.employee}/documents`, { documentTypeId: types.contract.id, title: 'Big' }, { content: big, filename: 'big.pdf' });
+      expect(tooBig.status).toBe(413);
+      expect(tooBig.body.message).toBe('Files can be up to 10 MB');
       // Clearly too big from its declared size: refused before any of it is read
       const huge = Buffer.concat([simplePdf(['Huge']), Buffer.alloc(MAX_DOCUMENT_BYTES + 512 * 1024)]);
       const early = await as.employee.upload(`/employees/${ids.employee}/documents`, { documentTypeId: types.contract.id, title: 'Huge' }, { content: huge, filename: 'huge.pdf' });

@@ -50,6 +50,7 @@ import { contentDisposition, createDocumentStorage, DOCUMENT_STORAGE, type Docum
 
 /** Room for the text fields and multipart boundaries around a file at the limit. */
 const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+const TOO_LARGE = () => new PayloadTooLargeException('Files can be up to 10 MB');
 /** How much of a refused body is read and thrown away, so the client gets the 413 instead of a reset. */
 const DRAIN_LIMIT = { bytes: 50 * 1024 * 1024, ms: 2000 };
 
@@ -77,15 +78,25 @@ function drain(req: Request): Promise<void> {
  * the Next.js proxy in front) is still sending makes the server close the socket, and the caller sees
  * a reset or a 500 instead of a 413. So: a declared size that is already too big is refused without
  * parsing, and any failure before the body has been read (multer's own 10 MB limit, for one) first
- * reads and discards the rest.
+ * reads and discards the rest, closing the connection if it can't.
  */
 @Injectable()
 class UploadErrorsAfterBody implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request>();
-    const afterDrain = (error: unknown) => from(req.readableEnded ? Promise.resolve() : drain(req)).pipe(mergeMap(() => throwError(() => error)));
+    const res = context.switchToHttp().getResponse<Response>();
+    const afterDrain = (error: unknown) =>
+      from(req.readableEnded ? Promise.resolve() : drain(req)).pipe(
+        mergeMap(() => {
+          // Still unread (a proxy that cut the body off, or a client sending too much): this connection
+          // can't carry another request, or the next one would be read as the rest of this body
+          if (!req.readableEnded) res.setHeader('Connection', 'close');
+          // multer's own limit error says only "File too large"
+          return throwError(() => (error instanceof PayloadTooLargeException ? TOO_LARGE() : error));
+        }),
+      );
     if (Number(req.headers['content-length']) > MAX_DOCUMENT_BYTES + MULTIPART_OVERHEAD_BYTES) {
-      return afterDrain(new PayloadTooLargeException('Files can be up to 10 MB'));
+      return afterDrain(TOO_LARGE());
     }
     return next.handle().pipe(catchError(afterDrain));
   }
