@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -19,7 +20,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { api } from '@/lib/api-client';
 import { initials } from '@/lib/utils';
-import { useQueryClient } from '@tanstack/react-query';
 
 export interface ShellUser {
   name: string;

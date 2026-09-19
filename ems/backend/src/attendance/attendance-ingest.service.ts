@@ -4,9 +4,9 @@ import { CalendarService } from '../calendar/calendar.service';
 import { dateOnly, isWorkingDay, zonedDate } from '../calendar/work-calendar';
 import { conflict } from '../common/errors/http-errors';
 import { DashboardCache } from '../dashboard/dashboard-cache';
+import { lockEmployeeLeave } from '../leave/leave-ledger';
 import { PrismaService } from '../prisma/prisma.service';
 import { checkInStatus, workedMinutes } from './attendance-rules';
-import { lockEmployeeLeave } from '../leave/leave-ledger';
 
 export interface PunchResult {
   attendanceId: string;

@@ -31,6 +31,7 @@ async function main() {
       // Only when nobody can sign in as Super Admin; the lock stops two runs both creating one
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('users.super_admin'))`;
       if (await tx.user.count({ where: USABLE_SUPER_ADMIN })) throw new Error('A Super Admin already exists. Add more accounts in Users.');
+      if (await tx.user.count({ where: { email: email.data } })) throw new Error(`An account already signs in with ${email.data}. Use another email.`);
       const user = await tx.user.create({ data: { email: email.data, passwordHash, roleId: role.id }, select: { id: true } });
       await tx.auditLog.create({
         data: { action: 'user.created', entityType: 'user', entityId: user.id, after: { email: email.data, roleId: role.id, via: 'create-admin-cli' }, requestId: 'cli' },

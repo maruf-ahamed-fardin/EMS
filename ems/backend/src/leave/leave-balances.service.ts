@@ -9,8 +9,8 @@ import { Clock } from '../common/clock';
 import { invalidFields } from '../common/errors/http-errors';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { available, carryForward, proratedAllocation } from './leave-rules';
 import { lockEmployeeLeave } from './leave-ledger';
+import { available, carryForward, proratedAllocation } from './leave-rules';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -115,13 +115,18 @@ export class LeaveBalancesService {
       select: { id: true, employeeId: true, leaveTypeId: true, leaveType: { select: { carryForwardMax: true } } },
     });
     for (const balance of unsettled) {
-      const previous = await db.leaveBalance.findUnique({
-        where: { employeeId_leaveTypeId_year: { employeeId: balance.employeeId, leaveTypeId: balance.leaveTypeId, year: year - 1 } },
-        select: { allocated: true, carriedForward: true, used: true, pending: true },
+      // Under the person's leave lock like every other balance change, reading last year inside it so a
+      // release committing meanwhile is counted. Only the first run settles it, so a later HR
+      // adjustment is never overwritten.
+      await this.prisma.$transaction(async (tx) => {
+        await lockEmployeeLeave(tx, balance.employeeId);
+        const previous = await tx.leaveBalance.findUnique({
+          where: { employeeId_leaveTypeId_year: { employeeId: balance.employeeId, leaveTypeId: balance.leaveTypeId, year: year - 1 } },
+          select: { allocated: true, carriedForward: true, used: true, pending: true },
+        });
+        const carry = carryForward(previous ? ledgerOf(previous) : null, Number(balance.leaveType.carryForwardMax));
+        await tx.leaveBalance.updateMany({ where: { id: balance.id, carryForwardSettled: false }, data: { carriedForward: carry, carryForwardSettled: true } });
       });
-      const carry = carryForward(previous ? ledgerOf(previous) : null, Number(balance.leaveType.carryForwardMax));
-      // Only the first run settles it, so a later HR adjustment is never overwritten
-      await db.leaveBalance.updateMany({ where: { id: balance.id, carryForwardSettled: false }, data: { carriedForward: carry, carryForwardSettled: true } });
     }
     if (unsettled.length > 0) this.logger.log({ year, settled: unsettled.length }, 'Settled leave carry-forward');
   }
@@ -150,25 +155,31 @@ export class LeaveBalancesService {
       .catch(() => null);
     if (!current) throw new NotFoundException();
 
-    const allocated = Number(input.allocated ?? current.allocated);
-    const carriedForward = Number(input.carriedForward ?? current.carriedForward);
-
     await this.prisma.$transaction(async (tx) => {
-      // Under the person's leave lock, so a request made at the same moment can't slip past this check
+      // Under the person's leave lock and from a fresh read, so neither a request made at the same
+      // moment nor a carry-forward raised meanwhile is lost
       await lockEmployeeLeave(tx, current.employee.id);
-      const fresh = await tx.leaveBalance.findUniqueOrThrow({ where: { id }, select: { used: true, pending: true } });
+      const fresh = await tx.leaveBalance.findUniqueOrThrow({ where: { id }, select: { allocated: true, carriedForward: true, used: true, pending: true } });
+      const allocated = Number(input.allocated ?? fresh.allocated);
+      const carriedForward = Number(input.carriedForward ?? fresh.carriedForward);
       const committed = Number(fresh.used) + Number(fresh.pending);
       if (allocated + carriedForward < committed) {
         throw invalidFields({ allocated: `At least ${committed} days are already used or pending, so the balance can't go below that` });
       }
-      // A carry-forward set by hand is final; settling it at the start of the year won't replace it
-      await tx.leaveBalance.update({ where: { id }, data: { allocated, carriedForward, ...(input.carriedForward !== undefined ? { carryForwardSettled: true } : {}) } });
+      // Only what HR changed is written. A carry-forward set by hand is final: settling won't replace it.
+      await tx.leaveBalance.update({
+        where: { id },
+        data: {
+          ...(input.allocated !== undefined ? { allocated } : {}),
+          ...(input.carriedForward !== undefined ? { carriedForward, carryForwardSettled: true } : {}),
+        },
+      });
       await this.audit.record(
         {
           action: 'leave_balance.adjusted',
           entityType: 'leave_balance',
           entityId: id,
-          before: { employeeId: current.employee.id, leaveTypeId: current.leaveType.id, year: current.year, allocated: Number(current.allocated), carriedForward: Number(current.carriedForward) },
+          before: { employeeId: current.employee.id, leaveTypeId: current.leaveType.id, year: current.year, allocated: Number(fresh.allocated), carriedForward: Number(fresh.carriedForward) },
           after: { employeeId: current.employee.id, leaveTypeId: current.leaveType.id, year: current.year, allocated, carriedForward, note: input.note },
         },
         tx,

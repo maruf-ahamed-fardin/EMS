@@ -19,9 +19,11 @@ import { ScopeService } from '../auth/scope.service';
 import { assertMayChangeAccount, assertSuperAdminRemains, mayChangeAccount, revokePasswordLinks, SUPER_ADMIN } from '../auth/account-protection';
 import { InvitationService } from '../auth/invitations.service';
 import { SessionsService } from '../auth/sessions.service';
+import { Clock } from '../common/clock';
 import { conflict, invalidFields } from '../common/errors/http-errors';
 import { InjectConfig, type AppConfig } from '../config/config.module';
 import type { Prisma } from '../generated/prisma/client';
+import { cancelPendingLeave } from '../leave/leave-ledger';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   createsManagerCycle,
@@ -33,7 +35,6 @@ import {
   toDateOnly,
 } from './employee-query';
 import { proratedAllocation } from '../leave/leave-rules';
-import { cancelPendingLeave } from '../leave/leave-ledger';
 import { NotificationService } from '../notifications/notifications.service';
 import { shortDate } from '../notifications/wording';
 import { EMPLOYEE_DETAIL_SELECT, EMPLOYEE_LIST_SELECT, toDetail, toListItem } from './employee-view';
@@ -54,13 +55,14 @@ export class EmployeesService {
     private readonly invitations: InvitationService,
     @InjectConfig() private readonly config: AppConfig,
     private readonly notifications: NotificationService,
+    private readonly clock: Clock,
   ) {}
 
   // ─── Read ───────────────────────────────────────────────────────────────────────────────────
 
   async list(auth: AuthContext, query: EmployeeListQuery): Promise<ListResponse<EmployeeListItem>> {
     const where: Prisma.EmployeeWhereInput = { AND: [this.scope.employeeWhere(auth, 'employee.view'), employeeFilters(query)] };
-    const [rows, total] = await this.prisma.$transaction([
+    const [rows, total] = await Promise.all([
       this.prisma.employee.findMany({
         where,
         select: EMPLOYEE_LIST_SELECT,
@@ -84,6 +86,8 @@ export class EmployeesService {
 
     const target = { id: row.id, managerId: row.managerId };
     const isSelf = auth.user.employeeId === row.id;
+    // The record's status decides whether their account can sign in, so it follows the account rules too
+    const accountOk = !row.user || mayChangeAccount(auth, row.user.role.key);
     const canUpdate = this.scope.reaches(auth, 'employee.update', target);
     return toDetail(row, {
       showPrivate: this.scope.reaches(auth, 'employee.view_private', target),
@@ -91,9 +95,9 @@ export class EmployeesService {
       allowedActions: {
         update: canUpdate,
         changeEmail: canUpdate && (!row.user || this.mayChangeSignInEmail(auth, row.user.role.key)),
-        deactivate: canUpdate && !isSelf && row.status === 'ACTIVE',
-        reactivate: canUpdate && row.status === 'INACTIVE',
-        delete: this.scope.reaches(auth, 'employee.delete', target) && !isSelf && row.status === 'INACTIVE',
+        deactivate: canUpdate && accountOk && !isSelf && row.status === 'ACTIVE',
+        reactivate: canUpdate && accountOk && row.status === 'INACTIVE',
+        delete: this.scope.reaches(auth, 'employee.delete', target) && accountOk && !isSelf && row.status === 'INACTIVE',
       },
     });
   }
@@ -101,7 +105,7 @@ export class EmployeesService {
   async activity(auth: AuthContext, id: string, page: number, limit: number): Promise<ListResponse<EmployeeActivityItem>> {
     await this.assertVisible(auth, id);
     const where: Prisma.AuditLogWhereInput = { entityType: 'employee', entityId: id };
-    const [rows, total] = await this.prisma.$transaction([
+    const [rows, total] = await Promise.all([
       this.prisma.auditLog.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -217,7 +221,7 @@ export class EmployeesService {
         });
 
         // This year's balances for every active paid leave type, prorated from the joining date (plan §7)
-        const year = organizationYear();
+        const year = organizationYear(this.clock.now());
         const leaveTypes = await tx.leaveType.findMany({ where: { deletedAt: null, isActive: true, isPaid: true }, select: { id: true, defaultDaysPerYear: true } });
         if (leaveTypes.length > 0 && input.joiningDate <= `${year}-12-31`) {
           await tx.leaveBalance.createMany({
@@ -334,7 +338,7 @@ export class EmployeesService {
       await tx.employee.update({ where: { id }, data: { status: 'INACTIVE', deactivatedAt: now } });
       const sessionsRevoked = current.user ? await this.sessions.revokeAllForUser(current.user.id, {}, tx) : 0;
       if (current.user) await revokePasswordLinks(tx, current.user.id);
-      const leaveRequestsCancelled = await cancelPendingLeave(tx, id, 'Cancelled automatically: the employee was deactivated', organizationYear());
+      const leaveRequestsCancelled = await cancelPendingLeave(tx, id, 'Cancelled automatically: the employee was deactivated', organizationYear(this.clock.now()));
       await this.audit.record(
         {
           action: 'employee.deactivated',
@@ -352,6 +356,8 @@ export class EmployeesService {
   async reactivate(auth: AuthContext, id: string): Promise<EmployeeDetail> {
     const current = await this.loadForChange(auth, id, 'employee.update');
     if (current.status !== 'INACTIVE') throw conflict('This employee is already active');
+    // Reactivating the record lets their account sign in again
+    if (current.user) assertMayChangeAccount(auth, current.user.role.key);
     // Their department or position may have been deleted or turned off while they were away
     const [department, position] = await Promise.all([
       this.prisma.department.count({ where: { id: current.departmentId, deletedAt: null, isActive: true } }),

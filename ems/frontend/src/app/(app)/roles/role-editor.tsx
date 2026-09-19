@@ -19,13 +19,13 @@ export function changedKeys(a: PermissionMap, b: PermissionMap): PermissionKey[]
   return [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => a[k as PermissionKey] !== b[k as PermissionKey]) as PermissionKey[];
 }
 
+/** Only a Super Admin grants or removes user and role management (the API refuses anyone else). */
+const ADMIN_PERMISSIONS = new Set(['user.manage', 'role.manage']);
+
 /**
  * One role's grants as a list per module, each with its reach. Changes are saved together, so a role
  * is never left half-edited.
  */
-/** Only a Super Admin grants or removes user and role management (the API refuses anyone else). */
-const ADMIN_PERMISSIONS = new Set(['user.manage', 'role.manage']);
-
 export function RoleEditor({ role, catalogue, canGrantAdmin }: { role: RoleItem; catalogue: PermissionItem[]; canGrantAdmin: boolean }) {
   const router = useRouter();
   const [grants, setGrants] = useState<PermissionMap>(role.permissions);

@@ -169,7 +169,7 @@ export class AttendanceService {
 
   async list(auth: AuthContext, query: AttendanceListQuery): Promise<ListResponse<AttendanceItem>> {
     const where = this.listWhere(auth, query);
-    const [rows, total] = await this.prisma.$transaction([
+    const [rows, total] = await Promise.all([
       this.prisma.attendance.findMany({
         where,
         orderBy: [{ workDate: 'desc' }, { employee: { firstName: 'asc' } }, { id: 'asc' }],

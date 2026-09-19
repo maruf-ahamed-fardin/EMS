@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type LoginInput, loginInput } from '@ems/contracts';
+import { useQueryClient } from '@tanstack/react-query';
 import { LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,7 +13,6 @@ import { TextField } from '@/components/forms/text-field';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api-client';
 import { applyApiError } from '@/lib/form-errors';
-import { useQueryClient } from '@tanstack/react-query';
 
 export function LoginForm({ next, passwordWasReset }: { next: string; passwordWasReset: boolean }) {
   const router = useRouter();

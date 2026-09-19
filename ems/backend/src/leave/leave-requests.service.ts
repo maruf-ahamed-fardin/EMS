@@ -21,8 +21,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notifications.service';
 import { dateRange, days as dayCount } from '../notifications/wording';
 import { LeaveBalancesService } from './leave-balances.service';
-import { available, countLeaveDays } from './leave-rules';
 import { consumePending, lockEmployeeLeave, releaseDays } from './leave-ledger';
+import { available, countLeaveDays } from './leave-rules';
 
 type Tx = Prisma.TransactionClient;
 
@@ -234,7 +234,7 @@ export class LeaveRequestsService {
         query.year ? { startDate: { gte: dateOnly(`${query.year}-01-01`), lte: dateOnly(`${query.year}-12-31`) } } : {},
       ],
     };
-    const [rows, total] = await this.prisma.$transaction([
+    const [rows, total] = await Promise.all([
       this.prisma.leaveRequest.findMany({
         where,
         // The review queue shows the longest waiting first; other lists the most recent first

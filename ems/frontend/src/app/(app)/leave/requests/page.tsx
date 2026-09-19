@@ -12,11 +12,11 @@ import { StatePanel } from '@/components/shared/state-panel';
 import { Tag } from '@/components/shared/status-badge';
 import { relativeTime } from '@/lib/dashboard';
 import { daysLabel, formatLeaveRange } from '@/lib/leave';
+import { redirectPastLastPage } from '@/lib/pagination';
+import { parseSearchParams } from '@/lib/search-params';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
-import { parseSearchParams } from '@/lib/search-params';
-import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Leave requests' };
 

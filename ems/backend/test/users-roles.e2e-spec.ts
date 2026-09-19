@@ -135,6 +135,15 @@ describeWithDatabase('users and roles', () => {
         expect((await hr.post(`/users/${users.super_admin}/send-reset`, {})).status).toBe(403);
         expect((await hr.post(`/employees/${await employeeOf('super_admin')}/deactivate`, {})).status).toBe(403);
         expect((await hr.patch(`/employees/${await employeeOf('super_admin')}`, { email: 'taken-over@example.com' })).status).toBe(403);
+        // Reactivating the record would let the account sign in again, so it is guarded too
+        const superEmployee = await employeeOf('super_admin');
+        await t.prisma.employee.update({ where: { id: superEmployee }, data: { status: 'INACTIVE' } });
+        try {
+          expect((await hr.get(`/employees/${superEmployee}`)).body.data.allowedActions).toMatchObject({ reactivate: false, delete: false });
+          expect((await hr.post(`/employees/${superEmployee}/reactivate`, {})).status).toBe(403);
+        } finally {
+          await t.prisma.employee.update({ where: { id: superEmployee }, data: { status: 'ACTIVE' } });
+        }
 
         // Roles: never its own, and never the two administration permissions
         expect((await hr.put(`/roles/${delegate.id}/permissions`, { permissions: {} })).status).toBe(409);

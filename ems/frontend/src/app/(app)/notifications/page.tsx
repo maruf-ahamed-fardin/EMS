@@ -8,11 +8,11 @@ import { Forbidden } from '@/components/shared/module-page';
 import { PageHeader } from '@/components/shared/page-header';
 import { Pagination } from '@/components/shared/pagination';
 import { StatePanel } from '@/components/shared/state-panel';
+import { redirectPastLastPage } from '@/lib/pagination';
+import { parseSearchParams } from '@/lib/search-params';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
-import { parseSearchParams } from '@/lib/search-params';
-import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Notifications' };
 

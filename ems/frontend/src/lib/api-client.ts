@@ -21,11 +21,12 @@ async function csrfToken(): Promise<string> {
 
 /**
  * The session has ended (expired, revoked, or signed out in another tab): go to sign-in and come back
- * here afterwards. A full navigation, so nothing cached for this user survives. Sign-in itself answers
- * 401 for a wrong password, which the form shows instead.
+ * here afterwards. A full navigation, so nothing cached for this user survives. Sign-in answers 401 for
+ * a wrong password, which the form shows; signing out handles an ended session itself, and must not
+ * send the next person back to this page.
  */
 function onUnauthorized(path: string): void {
-  if (path === '/auth/login' || typeof window === 'undefined') return;
+  if (path === '/auth/login' || path === '/auth/logout' || typeof window === 'undefined') return;
   const here = `${window.location.pathname}${window.location.search}`;
   // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full load on purpose: it drops every cached query of the ended session
   window.location.assign(`/login?next=${encodeURIComponent(here)}`);

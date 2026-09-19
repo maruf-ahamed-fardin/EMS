@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type AttendanceSettings, createHolidayInput, type CreateHolidayInput, type DataResponse, type HolidayItem } from '@ems/contracts';
 import { CalendarPlus, LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -42,9 +42,15 @@ export function AttendanceSettingsForm({ initial }: { initial: AttendanceSetting
     control,
     handleSubmit,
     setError,
+    setValue,
     reset,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<SettingsValues, unknown, z.output<typeof settingsSchema>>({ resolver: zodResolver(settingsSchema), defaultValues: { ...initial, timeZone: TIME_ZONE } });
+  } = useForm<SettingsValues, unknown, z.output<typeof settingsSchema>>({ resolver: zodResolver(settingsSchema), defaultValues: initial });
+  // A zone stored earlier that the screens don't use: saving switches it, and the form says so
+  const zoneMismatch = initial.timeZone !== TIME_ZONE;
+  useEffect(() => {
+    if (zoneMismatch) setValue('timeZone', TIME_ZONE, { shouldDirty: true });
+  }, [zoneMismatch, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -74,8 +80,8 @@ export function AttendanceSettingsForm({ initial }: { initial: AttendanceSetting
                 Time zone
               </label>
               <input id="time-zone" readOnly value={`${TIME_ZONE} (Bangladesh)`} className="h-11 rounded-md border bg-muted/50 px-3 text-sm text-muted-foreground" aria-describedby="time-zone-hint" />
-              <p id="time-zone-hint" className="text-xs text-muted-foreground">
-                Dates and times across the app use Bangladesh time.
+              <p id="time-zone-hint" className={cn('text-xs', zoneMismatch ? 'text-danger-text' : 'text-muted-foreground')}>
+                {zoneMismatch ? `Saved as ${initial.timeZone}, but the app shows Bangladesh time. Save to switch.` : 'Dates and times across the app use Bangladesh time.'}
               </p>
             </div>
             <TextField label="Workday starts" type="time" required registration={register('workdayStart')} error={errors.workdayStart} />

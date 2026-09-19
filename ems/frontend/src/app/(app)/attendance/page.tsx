@@ -25,11 +25,11 @@ import { ApiRequestError } from '@/lib/api-error';
 import { attendanceHref, dhakaToday, formatDuration, formatTime, monthStartOf } from '@/lib/attendance';
 import { percent } from '@/lib/dashboard';
 import { formatDate } from '@/lib/employees';
+import { redirectPastLastPage } from '@/lib/pagination';
+import { parseSearchParams } from '@/lib/search-params';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { AttendanceFilters } from './attendance-filters';
-import { parseSearchParams } from '@/lib/search-params';
-import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Attendance' };
 
