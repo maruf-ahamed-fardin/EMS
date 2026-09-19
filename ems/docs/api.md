@@ -159,5 +159,18 @@ Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, 
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).
 Emails are recorded; passwords and tokens never are.
 
+| Method and path | Access | Result |
+|---|---|---|
+| `GET /audit-logs` | `audit.view` ALL | Newest first. `page`, `limit`, `action`, `entityType`, `entityId`, `actorUserId`, `from`, `to` (days in the organization's time zone). Items: action, record type, id and name (`entityLabel`), actor, and the **names** of changed fields. |
+| `GET /audit-logs/:id` | `audit.view` ALL | The entry with `changes: [{ field, before, after }]`, IP, user agent and request id. An employee's private fields show `hidden: true` without values unless the viewer has `employee.view_private` at ALL. |
+
+**Every write is audited.** A successful POST, PUT, PATCH or DELETE records at least one audit entry in its own
+transaction, calls `AuditService.skip(reason)` when there is deliberately nothing to record (an edit that changes
+nothing), or is marked `@NoAudit(reason)`. The exempt endpoints are check-in and check-out (their records are the
+log), the leave preview (saves nothing), forgot-password (answered before the lookup; the reset request is audited
+afterwards when the account exists) and marking your own notifications read. In tests (`AUDIT_STRICT=true`) a write
+that breaks this rule fails with 500; in production it is logged. `test/audit-coverage.e2e-spec.ts` lists every write
+endpoint with the actions it records, and fails when a new one isn't listed.
+
 `test/authorization-matrix.e2e-spec.ts` checks every protected route above for every role. Add each new
 route to its table.

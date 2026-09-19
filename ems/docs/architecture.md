@@ -37,7 +37,7 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `common/logging/` | pino options, redaction list. |
 | `prisma/` | `PrismaService`, global. |
 | `auth/` | Login, sessions, password reset and change; the CSRF, session, throttle and permission guards (applied globally in that order); `ScopeService`; `@Public()`, `@RequirePermission()`, `@CurrentAuth()`. |
-| `audit/` | `AuditService.record()`, with per-entity allow-lists in `redaction.ts`. |
+| `audit/` | `AuditService.record()` and `skip()`, per-entity allow-lists in `redaction.ts`, the coverage interceptor and `@NoAudit` (`audit-coverage.ts`), and the viewer API (`AuditLogService`: filters, record names, before/after with private fields hidden). |
 | `mail/` | The `Mailer` interface: console (development), SMTP (production), memory (tests). |
 | `catalogue/` | `syncCatalogue()`: permissions and system roles from contracts. `sync-cli.ts` is the release step. |
 | `roles/` | `GET /roles`, `GET /permissions`. |
@@ -78,6 +78,7 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | `components/shared/delete-button.tsx` | Confirmed delete that stays visible but disabled, with the reason, when a rule blocks it. |
 | `components/dashboard/` | Stat tiles, presence bar, department bars and the attendance trend chart (Recharts). |
 | `app/(app)/reports/` | Report tabs, filters in the URL (defaults: attendance this month, leave and departments this year), totals, a paginated preview and download links; exports over 50 000 rows are disabled with the reason. Status and type words come from `@ems/contracts` labels, shared with the exports. |
+| `app/(app)/audit-logs/` | The audit log: filters in the URL (action, record type, dates; person and record by clicking), and an entry page with what changed field by field. The employee Activity tab links to the record's full history. |
 | `components/notifications/` | The header bell (unread count every 60 s and on focus through TanStack Query, latest six in a popover), the shared list (opening one marks it read and follows its link) and "Mark all read". |
 | `components/documents/`, `app/(app)/documents/` | Document list, download and delete actions, upload dialog (multipart through `apiUpload`), `/documents` with expiry views, `/documents/types`. |
 | `components/shell/command-search.tsx` | Ctrl/⌘K search dialog. cmdk's own filtering is off: the API already filtered and scoped the results. |
@@ -107,6 +108,8 @@ Status colors (on time, late, not checked in) always come with an icon and a lab
 | "HR" as the recipient of leave, new-employee and attendance notifications | Everyone whose role grants the matching permission at ALL (`leave.approve`, `employee.view`, `attendance.manage`) | Follows roles as they are edited in Roles & permissions instead of a fixed role name. |
 | A notification for every attendance issue | One summary per closed working day, sent only by the run that closed it | Ten absences shouldn't be ten notifications, and re-runs or days closed before the feature existed stay quiet. |
 | Channels deliver after writing | The in-app channel is the row itself; later email/SMS channels must queue (outbox) rather than send | `notify` often runs inside the caller's transaction, which can still roll back. |
+| A test that fails if a mutating endpoint writes no audit row | An interceptor that checks every successful write in every e2e test (`AUDIT_STRICT`), plus a route inventory test and a catalogue test | Every existing HTTP test becomes an audit test, so coverage grows with the suite instead of depending on a separate list of requests. |
+| Audit history in the demo seed | Not seeded; the log fills with real use | Fabricated audit entries would look like real ones in a viewer whose purpose is trust. |
 | `/notifications` in the sidebar | Reached from the bell's "See all" | Every page already shows the bell; a sidebar item would repeat it. |
 | Brand `#2E4BDB`, Geist | Violet `#5B4BFF`, Plus Jakarta Sans + Geist Mono | Follows `plan-preview.html`. |
 | Idempotency key on create | Unique indexes on email and employee ID, plus a disabled submit button while saving | A double submit gets a 409 naming the duplicate instead of creating a second record. Revisit for creates without a natural unique key. |

@@ -132,6 +132,8 @@ export default async function EmployeePage({
   const { tab } = await searchParams;
   const { employee, activity, attendance, leave } = await load(id);
   const documents = await loadDocuments(employee.id, employee.manager?.id ?? null);
+  const session = await getSession();
+  const canAudit = Boolean(session && can(session.permissions, 'audit.view', 'ALL'));
   const initialTab = (TABS as readonly string[]).includes(tab ?? '') ? tab! : 'overview';
 
   return (
@@ -352,7 +354,16 @@ export default async function EmployeePage({
         )}
 
         <TabsContent value="activity" className="mt-4">
-          <Panel title="Activity">
+          <Panel
+            title="Activity"
+            action={
+              canAudit && (
+                <Link href={`/audit-logs?entityType=employee&entityId=${employee.id}`} className="text-sm font-medium text-primary hover:underline">
+                  Full history
+                </Link>
+              )
+            }
+          >
             <ActivityList items={activity} />
           </Panel>
         </TabsContent>
