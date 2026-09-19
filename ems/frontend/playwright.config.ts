@@ -8,6 +8,7 @@ import { defineConfig } from "@playwright/test";
  *
  * They use the Chrome installed on the machine (`channel: 'chrome'`), so no browser is downloaded.
  * The flows change data (a check-in, a leave request and its approval), so run them on a demo database.
+ * CI runs them on a freshly seeded database with a random demo password (`.github/workflows/ems.yml`).
  */
 export default defineConfig({
   testDir: "./e2e",

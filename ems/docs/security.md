@@ -23,7 +23,7 @@ page when adding a module.
 | Logs | JSON with request id; cookies, tokens, hashes, storage keys and `DATABASE_URL` redacted; download tokens and `token=` values masked in URLs; config errors never print values | `common/logging/`, `config/env.ts` | `logger.options.spec.ts`, `env.spec.ts` |
 | Configuration | Validated at start; production refuses console mail, local storage, http `APP_URL` and a database without TLS | `config/env.ts` | `env.spec.ts` |
 | SQL | Prisma queries; the few raw statements are tagged templates (parameterized); no `*Unsafe` calls | `grep RawUnsafe src` finds only generated code | review |
-| Accessibility | WCAG 2 A/AA: labels on every input, visible focus, AA contrast, scrollable tables reachable by keyboard, status as icon and text | `frontend/src/components/` | axe in `e2e/smoke.spec.ts` on every page the smoke visits, at 375 and 1280 px, with no serious or critical findings |
+| Accessibility | WCAG 2 A/AA: labels on every input, visible focus, AA contrast, scrollable tables reachable by keyboard, status as icon and text | `frontend/src/components/` | axe in `e2e/smoke.spec.ts` on every page the smoke visits, at 375 and 1280 px, with no serious or critical findings; runs in CI on every change |
 | Supply chain | `min-release-age=7`, `ignore-scripts`, exact versions, `npm audit` in CI, new packages scanned for the PolinRider pattern, fewer packages where a small module does the job (file sniffing, CSV, XLSX) | `.npmrc`, `architecture.md` | CI, review |
 
 ## Found and fixed in this review

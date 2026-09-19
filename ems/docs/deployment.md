@@ -46,7 +46,8 @@ the repository. `.env.example` lists every variable with placeholders.
 
 ## A deploy
 
-1. CI is green on the commit (types, lint, all tests against PostgreSQL, migration drift, image builds).
+1. CI is green on the commit (types, lint, all tests against PostgreSQL, migration drift, the browser smoke with
+   axe at 375 and 1280 px, image builds).
 2. Build and push the three images, tagged with the commit.
 3. Run `ems-migrate` once with the production environment. Migrations are forward-only; take a database snapshot
    first if a migration drops or rewrites data.

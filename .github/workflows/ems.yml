@@ -69,6 +69,55 @@ jobs:
           if [ $code -ne 0 ] || ! echo "$out" | grep -q "No difference detected"; then echo "::error::drift check did not run"; exit 1; fi
       - run: npm run build
 
+      # Browser smoke (plan §13): the built API and web app on a freshly seeded database, driven by
+      # Playwright in the runner's Google Chrome at 375 and 1280 px, with axe on every page it visits
+      - name: Seed a smoke database
+        run: |
+          password="Smoke-$(openssl rand -hex 12)"
+          echo "::add-mask::$password"
+          echo "SEED_PASSWORD=$password" >> "$GITHUB_ENV"
+          PGPASSWORD=ems-ci psql -h 127.0.0.1 -U ems -d ems_test -c 'CREATE DATABASE ems_smoke'
+          export DATABASE_URL=postgresql://ems:ems-ci@127.0.0.1:5432/ems_smoke
+          npm run db:deploy
+          SEED_PASSWORD="$password" npm run db:seed
+      - name: Start the API and the web app
+        env:
+          DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_smoke
+          NODE_ENV: development
+          APP_URL: http://localhost:3000
+          TRUST_PROXY_HOPS: '1'
+          JOBS_ENABLED: 'false'
+          MAIL_DRIVER: console
+          MAIL_FROM: EMS smoke <no-reply@ems.invalid>
+          STORAGE_DRIVER: local
+          STORAGE_LOCAL_DIR: ${{ runner.temp }}/ems-storage
+        run: |
+          (cd backend && nohup node dist/main.js > "$RUNNER_TEMP/api.log" 2>&1 &)
+          (cd frontend && NODE_ENV=production nohup npx next start --port 3000 > "$RUNNER_TEMP/web.log" 2>&1 &)
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:4000/api/v1/health/ready > /dev/null && curl -sf -o /dev/null http://localhost:3000/login && exit 0
+            sleep 2
+          done
+          echo "::error::the API or the web app did not start"; tail -50 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log"; exit 1
+      - name: Browser smoke
+        env:
+          EMS_BASE_URL: http://localhost:3000
+        run: |
+          google-chrome --version
+          npm run e2e -w @ems/frontend
+      - name: Server logs
+        if: failure()
+        run: tail -100 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" || true
+      - name: Keep the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            ems/frontend/playwright-report
+            ems/frontend/test-results
+          retention-days: 7
+
   # The Dockerfiles can't be built on the development PC (no Docker), so CI proves them on every change
   images:
     runs-on: ubuntu-latest
