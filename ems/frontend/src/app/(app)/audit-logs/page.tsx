@@ -11,6 +11,8 @@ import { formatDateTime } from '@/lib/employees';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { AuditFilters } from './audit-filters';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Audit log' };
 
@@ -18,7 +20,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   const session = await getSession();
   if (!session || !can(session.permissions, 'audit.view', 'ALL')) return <Forbidden />;
 
-  const query = auditListQuery.parse(await searchParams);
+  const query = parseSearchParams(auditListQuery, await searchParams);
   // Only the parameters this page understands go back into links
   const params = {
     action: query.action,
@@ -34,6 +36,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
   const actorName = query.actorUserId ? (list.data.find((l) => l.actor?.id === query.actorUserId)?.actor?.name ?? null) : null;
   const entityLabel = query.entityId ? (list.data.find((l) => l.entityId === query.entityId)?.entityLabel ?? null) : null;
 
+  redirectPastLastPage(list.meta, (page) => auditHref(params, { page: String(page) }));
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Audit log" description="Every change, who made it and when. Entries can't be edited or deleted." />

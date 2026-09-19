@@ -1,6 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render as renderInDom, screen, waitFor } from '@testing-library/react';
 import { ApiRequestError } from '@/lib/api-error';
 import { LoginForm } from './login-form';
+
+// The form clears the query cache on sign-in, so it needs a client like the app's providers give it
+const render = (ui: React.ReactElement) => renderInDom(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 
 const replace = vi.fn();
 const refresh = vi.fn();

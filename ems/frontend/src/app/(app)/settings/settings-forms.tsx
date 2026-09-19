@@ -19,7 +19,12 @@ import { formatDate } from '@/lib/employees';
 import { applyApiError } from '@/lib/form-errors';
 import { cn } from '@/lib/utils';
 
-const TIME_ZONES = ['Asia/Dhaka', 'Asia/Kolkata', 'Asia/Dubai', 'Asia/Singapore', 'Europe/London', 'UTC'];
+/**
+ * The screens show dates and times in Dhaka time, so that is the only zone offered: a different one
+ * would make "today" on screen disagree with the API. Supporting others needs the formatters in
+ * `lib/` to take the zone from these settings.
+ */
+const TIME_ZONE = 'Asia/Dhaka';
 
 const settingsSchema = z.object({
   timeZone: z.string().min(1, 'Choose a time zone'),
@@ -39,7 +44,7 @@ export function AttendanceSettingsForm({ initial }: { initial: AttendanceSetting
     setError,
     reset,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<SettingsValues, unknown, z.output<typeof settingsSchema>>({ resolver: zodResolver(settingsSchema), defaultValues: initial });
+  } = useForm<SettingsValues, unknown, z.output<typeof settingsSchema>>({ resolver: zodResolver(settingsSchema), defaultValues: { ...initial, timeZone: TIME_ZONE } });
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
@@ -68,13 +73,10 @@ export function AttendanceSettingsForm({ initial }: { initial: AttendanceSetting
               <label htmlFor="time-zone" className="text-sm font-medium">
                 Time zone
               </label>
-              <select id="time-zone" className="h-11 rounded-md border bg-transparent px-3 text-sm" {...register('timeZone')}>
-                {TIME_ZONES.map((zone) => (
-                  <option key={zone} value={zone}>
-                    {zone}
-                  </option>
-                ))}
-              </select>
+              <input id="time-zone" readOnly value={`${TIME_ZONE} (Bangladesh)`} className="h-11 rounded-md border bg-muted/50 px-3 text-sm text-muted-foreground" aria-describedby="time-zone-hint" />
+              <p id="time-zone-hint" className="text-xs text-muted-foreground">
+                Dates and times across the app use Bangladesh time.
+              </p>
             </div>
             <TextField label="Workday starts" type="time" required registration={register('workdayStart')} error={errors.workdayStart} />
             <TextField label="Grace period (minutes)" type="number" inputMode="numeric" min={0} max={240} required registration={register('graceMinutes')} error={errors.graceMinutes} />

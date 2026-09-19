@@ -43,6 +43,12 @@ export function formatDateTime(iso: string): string {
   return `${formatDate(`${parts.year}-${parts.month}-${parts.day}`)}, ${parts.hour}:${parts.minute}`;
 }
 
+/** The Dhaka date of an instant (a `createdAt`, say): `21 Sep 2026`. formatDate would show the UTC date. */
+export function formatInstantDate(iso: string): string {
+  const parts = Object.fromEntries(dateTimeParts.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+  return formatDate(`${parts.year}-${parts.month}-${parts.day}`);
+}
+
 /** `+8801711204318` → `+880 1711-204318`; other numbers are left as entered. */
 export function formatPhone(phone: string): string {
   const match = /^\+880(\d{4})(\d{6})$/.exec(phone);

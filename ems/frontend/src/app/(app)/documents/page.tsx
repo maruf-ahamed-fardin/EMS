@@ -13,6 +13,8 @@ import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { DocumentFilters } from './document-filters';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Documents' };
 
@@ -27,7 +29,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
   if (!session || !can(session.permissions, 'document.view')) return <Forbidden />;
 
   const raw = await searchParams;
-  const query = documentListQuery.parse(raw);
+  const query = parseSearchParams(documentListQuery, raw);
   // Only the parameters this page understands go back into links
   const params = { q: query.q, documentTypeId: query.documentTypeId, expiry: query.expiry, page: query.page > 1 ? String(query.page) : undefined };
   const search = new URLSearchParams(Object.entries({ ...params, page: String(query.page), limit: '20' }).filter((e): e is [string, string] => Boolean(e[1])));
@@ -39,6 +41,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
   const ownOnly = session.permissions['document.view'] === 'OWN';
   const filtered = Boolean(query.q || query.documentTypeId);
 
+  redirectPastLastPage(list.meta, (page) => documentsHref(params, { page: String(page) }));
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader

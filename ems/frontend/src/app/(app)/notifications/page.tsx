@@ -11,6 +11,8 @@ import { StatePanel } from '@/components/shared/state-panel';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Notifications' };
 
@@ -26,12 +28,13 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   const session = await getSession();
   if (!session || !can(session.permissions, 'notification.view')) return <Forbidden />;
 
-  const query = notificationListQuery.parse({ ...(await searchParams), limit: 20 });
+  const query = parseSearchParams(notificationListQuery, { ...(await searchParams), limit: 20 });
   const [list, unread] = await Promise.all([
     serverApiJson<ListResponse<NotificationItem>>(`/notifications?limit=20&page=${query.page}${query.unread ? '&unread=true' : ''}`),
     serverApiJson<DataResponse<UnreadCount>>('/notifications/unread-count'),
   ]);
 
+  redirectPastLastPage(list.meta, (page) => href(query.unread, page));
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader

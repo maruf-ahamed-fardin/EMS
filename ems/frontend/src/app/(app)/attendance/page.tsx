@@ -28,6 +28,8 @@ import { formatDate } from '@/lib/employees';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { AttendanceFilters } from './attendance-filters';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Attendance' };
 
@@ -43,9 +45,12 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const params = Object.fromEntries(Object.entries(await searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])) as Record<string, string | undefined>;
   const today = dhakaToday();
   // Default to this month so the page opens on something useful
-  const from = params.from ?? monthStartOf(today);
-  const to = params.to ?? today;
-  const query = attendanceListQuery.parse({ ...params, from, to });
+  const isDate = (value: string | undefined): value is string => /^\d{4}-\d{2}-\d{2}$/.test(value ?? '');
+  let from = isDate(params.from) ? params.from : monthStartOf(today);
+  let to = isDate(params.to) ? params.to : today;
+  // A range the wrong way round (a hand-edited link) opens this month instead
+  if (from > to) [from, to] = [monthStartOf(today), today];
+  const query = parseSearchParams(attendanceListQuery, { ...params, from, to });
   const canManage = can(session.permissions, 'attendance.manage');
   const wide = viewScope === 'ALL' || viewScope === 'TEAM';
 
@@ -76,6 +81,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const present = summary ? summary.byStatus.PRESENT + summary.byStatus.LATE : 0;
   const expected = summary ? present + summary.byStatus.ABSENT : 0;
 
+  if (list) redirectPastLastPage(list.meta, (page) => attendanceHref({ ...params, from, to }, { page: String(page) }));
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader

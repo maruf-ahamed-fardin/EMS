@@ -4,6 +4,7 @@ import { type DataResponse, type ListResponse, NOTIFICATION_POLL_MS, type Notifi
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCan } from '@/components/auth/permissions';
@@ -24,6 +25,7 @@ export function badgeLabel(count: number): string {
 export function NotificationBell() {
   const allowed = useCan('notification.view');
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
@@ -49,6 +51,8 @@ export function NotificationBell() {
     try {
       await api('/notifications/read-all', { method: 'PATCH' });
       await queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.all });
+      // The notifications page, if it is open underneath, is rendered on the server
+      router.refresh();
     } catch {
       toast.error('Could not mark them as read. Try again.');
     } finally {

@@ -8,7 +8,7 @@ import { PersonAvatar } from '@/components/shared/person-avatar';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ApiRequestError } from '@/lib/api-error';
-import { formatDate } from '@/lib/employees';
+import { formatInstantDate } from '@/lib/employees';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { PositionFormDialog } from '../../positions/position-form-dialog';
@@ -58,7 +58,7 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
               {!department.isActive && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">Inactive</span>}
             </div>
             {department.description && <p className="mt-2 max-w-2xl text-muted-foreground">{department.description}</p>}
-            <p className="mt-2 text-xs text-muted-foreground">Created {formatDate(department.createdAt)}</p>
+            <p className="mt-2 text-xs text-muted-foreground">Created {formatInstantDate(department.createdAt)}</p>
           </div>
           {(allowed.update || can(session?.permissions ?? {}, 'department.delete')) && (
             <div className="flex flex-wrap gap-2">

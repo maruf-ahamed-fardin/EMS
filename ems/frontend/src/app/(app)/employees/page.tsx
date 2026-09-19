@@ -22,6 +22,8 @@ import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { EmployeeFilters } from './employee-filters';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Employees' };
 
@@ -35,8 +37,10 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
   const session = await getSession();
   if (!session || !can(session.permissions, 'employee.view', 'TEAM')) return <Forbidden />;
 
-  const params = flatten(await searchParams);
-  const query = employeeListQuery.parse(params);
+  const raw = flatten(await searchParams);
+  const query = parseSearchParams(employeeListQuery, raw);
+  // Only the parameters that passed go to the API and back into links
+  const params = Object.fromEntries(Object.entries(raw).filter(([key]) => (query as Record<string, unknown>)[key] !== undefined));
   const apiQuery = new URLSearchParams(
     Object.entries({ ...params, page: String(query.page), limit: String(query.limit), sort: query.sort }).filter(
       (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '',
@@ -60,6 +64,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
   const activeView = views.find((view) => (view.changes.status ?? undefined) === params.status && (view.changes.joinedFrom ?? undefined) === params.joinedFrom);
   const filtered = Boolean(query.q || query.departmentId || query.employmentType || query.status || query.joinedFrom);
 
+  redirectPastLastPage(list.meta, (page) => employeesHref(params, { page: String(page) }));
   return (
     <>
       <PageHeader

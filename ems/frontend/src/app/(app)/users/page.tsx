@@ -14,6 +14,8 @@ import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { UserFilters } from './user-filters';
 import { CreateUserDialog, UserActions } from './user-dialogs';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Users' };
 
@@ -41,7 +43,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   const session = await getSession();
   if (!session || !can(session.permissions, 'user.view')) return <Forbidden />;
 
-  const query = userListQuery.parse(await searchParams);
+  const query = parseSearchParams(userListQuery, await searchParams);
   const params = { q: query.q, roleId: query.roleId, status: query.status, page: query.page > 1 ? String(query.page) : undefined };
   const search = new URLSearchParams(Object.entries({ ...params, page: String(query.page), limit: '25' }).filter((e): e is [string, string] => Boolean(e[1])));
   const manage = can(session.permissions, 'user.manage');
@@ -50,6 +52,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     manage ? serverApiJson<DataResponse<UserFormOptions>>('/users/form-options').then((r) => r.data) : null,
   ]);
 
+  redirectPastLastPage(list.meta, (page) => usersHref(params, { page: String(page) }));
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader

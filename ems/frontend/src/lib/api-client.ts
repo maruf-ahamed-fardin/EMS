@@ -27,6 +27,7 @@ async function csrfToken(): Promise<string> {
 function onUnauthorized(path: string): void {
   if (path === '/auth/login' || typeof window === 'undefined') return;
   const here = `${window.location.pathname}${window.location.search}`;
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full load on purpose: it drops every cached query of the ended session
   window.location.assign(`/login?next=${encodeURIComponent(here)}`);
 }
 

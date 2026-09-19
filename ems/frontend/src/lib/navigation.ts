@@ -81,7 +81,7 @@ export const NAVIGATION: readonly NavGroup[] = [
       { label: 'Roles & permissions', href: '/roles', icon: ShieldCheck, anyOf: [['role.manage']] },
       { label: 'Leave types', href: '/leave/types', icon: Tags, anyOf: [['leave.manage_types']] },
       { label: 'Document types', href: '/documents/types', icon: FolderCog, anyOf: [['document.manage_types']] },
-      { label: 'Audit log', href: '/audit-logs', icon: ScrollText, anyOf: [['audit.view']] },
+      { label: 'Audit log', href: '/audit-logs', icon: ScrollText, anyOf: [['audit.view', 'ALL']] },
       { label: 'Settings', href: '/settings', icon: Settings, anyOf: [['settings.manage']] },
     ],
   },

@@ -15,6 +15,8 @@ import { daysLabel, formatLeaveRange } from '@/lib/leave';
 import { serverApiJson } from '@/lib/server-api';
 import { getSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { parseSearchParams } from '@/lib/search-params';
+import { redirectPastLastPage } from '@/lib/pagination';
 
 export const metadata: Metadata = { title: 'Leave requests' };
 
@@ -31,9 +33,10 @@ export default async function LeaveRequestsPage({ searchParams }: { searchParams
 
   const params = await searchParams;
   const view = VIEWS.find((v) => v.key === params.view) ?? VIEWS[0];
-  const page = leaveRequestListQuery.parse({ page: params.page }).page;
+  const page = parseSearchParams(leaveRequestListQuery, { page: params.page }).page;
   const list = await serverApiJson<ListResponse<LeaveRequestItem>>(`/leave/requests?limit=20&page=${page}${view.query ? `&${view.query}` : ''}`);
 
+  redirectPastLastPage(list.meta, (p) => `/leave/requests?${view.key !== 'waiting' ? `view=${view.key}&` : ''}page=${p}`);
   return (
     <div className="grid grid-cols-1 gap-6">
       <PageHeader title="Leave requests" description={view.key === 'waiting' ? `${list.meta.total} waiting for a decision, oldest first` : `${list.meta.total} requests`} />
@@ -77,7 +80,7 @@ export default async function LeaveRequestsPage({ searchParams }: { searchParams
                     </p>
                     <p className="mt-2 text-sm text-muted-foreground">&ldquo;{r.reason}&rdquo;</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Requested {relativeTime(r.requestedAt)} ago
+                      Requested {requestedWhen(r.requestedAt)}
                       {r.balanceAvailable !== null && r.status === 'PENDING' && ` · ${r.balanceAvailable} ${r.leaveType.name.toLowerCase()} days left after the days already waiting`}
                       {r.reviewedBy && ` · ${r.status === 'CANCELLED' ? 'Cancelled' : `Decided by ${r.reviewedBy}`}`}
                     </p>
@@ -98,4 +101,11 @@ export default async function LeaveRequestsPage({ searchParams }: { searchParams
       )}
     </div>
   );
+}
+
+/** "just now", "3h ago", "on 17 Sep": relativeTime's short forms read as a sentence. */
+function requestedWhen(iso: string): string {
+  const when = relativeTime(iso);
+  if (when === 'now') return 'just now';
+  return /^\d+[mhd]$/.test(when) ? `${when} ago` : `on ${when}`;
 }
