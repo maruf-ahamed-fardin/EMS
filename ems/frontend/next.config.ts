@@ -27,6 +27,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // Next buffers request bodies up to this size and cuts off the rest. Document uploads are up to
+    // 10 MB plus multipart overhead; the API itself answers 413 for anything larger.
+    proxyClientMaxBodySize: '11mb',
+  },
   output: process.env.BUILD_STANDALONE === '1' ? 'standalone' : undefined,
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${apiOrigin()}/api/:path*` }];

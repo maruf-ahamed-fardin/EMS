@@ -20,13 +20,13 @@ mobile check-in.
 |---|---|---|
 | 1 | Architecture: workspace, contracts, API skeleton, schema and baseline migration, app shell, CI, docs | **Done.** Migration applied to PostgreSQL 16; no drift. |
 | 2 | Authentication and RBAC | **Done.** Auth flows and the authorization matrix pass against PostgreSQL. |
-| 3 | Employees | **Done.** Deferred to their phases: photo upload and the Documents step (8), the Documents profile tab (8). |
+| 3 | Employees | **Done.** Deferred to their phases: photo upload (12). Documents are added from the profile rather than in the create form (see architecture.md). |
 | 4 | Departments and positions | **Done.** Delete with active employees returns 409 with the count. |
 | 5 | Dashboard and global search | **Done.** Every overview number is checked against direct SQL counts for all three variants. Visual check of the charts in a browser still to do. |
 | 6 | Attendance | **Done.** Late, absent and leave rules tested against PostgreSQL, including a check-in just after midnight in Dhaka. |
 | 7 | Leave | **Done.** Types, prorated balances with capped carry-forward, preview, request, approve/reject/cancel, HR balance adjustment, review queue and profile Leave tab. Parallel submits can't overdraw a balance (tested against PostgreSQL). Leave notifications arrive with Phase 9. |
-| 8 | Documents | Next |
-| 9 | Notifications | |
+| 8 | Documents | **Done.** Local and S3 storage, upload checked by bytes, 60-second links, private types, soft delete, document types, expiry list and reminders, Documents tab and `/documents`. Cross-employee access returns 404; no storage key appears in any response (tested against PostgreSQL). Photo upload moves to Phase 12 with the profile screens. |
+| 9 | Notifications | Next |
 | 10 | Reports | |
 | 11 | Audit log viewer | |
 | 12 | Hardening, users, roles and settings screens | |

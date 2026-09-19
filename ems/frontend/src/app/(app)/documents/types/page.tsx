@@ -51,7 +51,7 @@ export default async function DocumentTypesPage() {
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">{type.hasExpiry ? 'Yes' : 'No'}</TableCell>
-                  <TableCell className="hidden tabular sm:table-cell">{type.documentCount}</TableCell>
+                  <TableCell className="hidden tabular sm:table-cell">{type.documentCount ?? '—'}</TableCell>
                   <TableCell className="pr-5">
                     <div className="flex justify-end gap-1">
                       <DocumentTypeDialog type={type} />
@@ -62,7 +62,7 @@ export default async function DocumentTypesPage() {
                         title={`Delete ${type.name}?`}
                         description="Nobody can upload it any more."
                         successMessage={`${type.name} deleted`}
-                        blockedReason={type.documentCount > 0 ? `${type.documentCount} documents use it.` : undefined}
+                        blockedReason={type.documentCount ? `${type.documentCount} documents use it.` : undefined}
                       />
                     </div>
                   </TableCell>

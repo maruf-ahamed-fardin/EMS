@@ -47,6 +47,8 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `dashboard/` | Overview, attendance trend, global search, and `DashboardCache` (cleared by `AuditService` on every non-sign-in change). |
 | `attendance/` | `attendance-rules.ts` (late, worked minutes, closing status: pure), `AttendanceIngestService.recordPunch()` (the one path for web and future devices), `AttendanceService` (lists, summary, corrections, closing days) and the scheduler. |
 | `settings/` | Attendance settings and holidays. |
+| `leave/` | Leave types, balances (`leave-rules.ts`: day counting, proration, carry-forward), requests and decisions, and the balance scheduler. |
+| `documents/` | `storage/storage.ts` (`DocumentStorage`: local disk with encrypted 60-second link tokens, or S3 with presigned URLs), `sniff.ts` (type from the bytes), upload, visibility (`documentVisibleWhere`, shared with the dashboard), `GET /files/:token`, document types and the expiry reminders. |
 | `common/clock.ts` | `Clock`, injected wherever "now" matters; tests replace it with `FixedClock`. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
 | `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
@@ -73,6 +75,7 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | `app/(app)/departments/`, `app/(app)/positions/` | Department cards and detail, positions table; create and edit in dialogs. |
 | `components/shared/delete-button.tsx` | Confirmed delete that stays visible but disabled, with the reason, when a rule blocks it. |
 | `components/dashboard/` | Stat tiles, presence bar, department bars and the attendance trend chart (Recharts). |
+| `components/documents/`, `app/(app)/documents/` | Document list, download and delete actions, upload dialog (multipart through `apiUpload`), `/documents` with expiry views, `/documents/types`. |
 | `components/shell/command-search.tsx` | Ctrl/⌘K search dialog. cmdk's own filtering is off: the API already filtered and scoped the results. |
 
 ### Charts
@@ -90,12 +93,17 @@ Status colors (on time, late, not checked in) always come with an icon and a lab
 | A new `selorax-ems` repository | `ems/` in this repository | Decision D1, 2026-09-17. |
 | `@nestjs/config` | A small global `ConfigModule` around `parseEnv` | Same fail-fast validation with a typed value and one less dependency. |
 | Next.js `middleware` | `src/proxy.ts` | Next 16 renamed middleware to proxy. |
-| MinIO in docker compose | Not yet | MinIO images are gone from Docker Hub. Phase 8 picks the S3-compatible image. |
+| MinIO in docker compose | A `local` storage driver (files under `backend/storage`, 60-second links served by `GET /files/:token`) for development and tests; `s3` for AWS S3, R2 or MinIO | Docker isn't available on the development PC and MinIO images are gone from Docker Hub. Both drivers sit behind one `DocumentStorage` interface, and the env schema refuses `local` in production. |
+| `file-type` for sniffing uploads | A small reader in `documents/sniff.ts` for the four allowed formats, including the DOCX zip directory | Four formats don't need a dependency, and fewer packages matter after the 2026-09 supply-chain incident. |
+| Upload streamed to storage | Held in memory up to 10 MB, then stored | The bytes are checked before anything is stored. 10 MB per request is small. |
+| Manager can't open `is_sensitive` types | Private types need `employee.view_private` for that person | The same rule then covers managers (no), HR (yes) and employees (their own), and it matches that permission's description. |
+| Documents step in the create form; `pending/` uploads moved on commit | After creating someone, HR adds documents from the profile's Documents tab | Every upload is its own transaction, so no orphaned files and no cleanup job. Revisit if HR asks for it. |
+| Notifications through `NotificationService` | Expiry reminders write in-app rows directly, with a `dedupe_key` | The service and channels arrive in Phase 9 and will take this over. |
 | Brand `#2E4BDB`, Geist | Violet `#5B4BFF`, Plus Jakarta Sans + Geist Mono | Follows `plan-preview.html`. |
 | Idempotency key on create | Unique indexes on email and employee ID, plus a disabled submit button while saving | A double submit gets a 409 naming the duplicate instead of creating a second record. Revisit for creates without a natural unique key. |
 | DataTable on TanStack Table | A plain table (md+) and cards (phones), with filters, sort and page in the URL | One list so far; add TanStack Table when row selection or column controls are built. |
 | DatePicker component | Native `<input type="date">` | Accessible and mobile-friendly with no extra dependency. |
-| 5-step create form with a Documents step | Personal, Employment, Contact, Account, Review | Documents need storage (Phase 8); that step is added then. |
+| 5-step create form with a Documents step | Personal, Employment, Contact, Account, Review | Documents are added from the profile instead (see below). |
 | Dashboard "Absent today" and department donut (preview) | "Not checked in" and a horizontal bar list | Absence is only settled after the day ends (assumption 3). Comparing department sizes is a bar's job. |
 | Attendance and leave demo data in Phases 6–8 | Seeded in Phase 5 (`prisma/demo-activity.ts`) | The dashboard needs real numbers to be checked against SQL. It uses the D6 defaults; Phases 6–7 build the flows. |
 | Nightly close at 23:55 (`@nestjs/schedule` cron) | A 10-minute interval plus a run at start-up that closes every closable day of the last week | The time zone is a setting, so a fixed cron time could be wrong; the interval also catches up days missed while the server was down. Closing is idempotent. |

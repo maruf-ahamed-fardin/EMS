@@ -29,9 +29,10 @@ export class DocumentTypesService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(): Promise<DocumentTypeItem[]> {
+  /** Everyone gets the types; only people who manage them get the organization-wide counts. */
+  async list(withCounts: boolean): Promise<DocumentTypeItem[]> {
     const rows = await this.prisma.documentType.findMany({ where: { deletedAt: null }, orderBy: { name: 'asc' }, select: TYPE_SELECT });
-    return rows.map(toItem);
+    return rows.map((row) => ({ ...toItem(row), documentCount: withCounts ? row._count.documents : null }));
   }
 
   async create(input: CreateDocumentTypeInput): Promise<DocumentTypeItem> {

@@ -116,6 +116,18 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `POST /leave/balances/allocate` | `leave.manage_balances` ALL | `{ year }`, this year or next → creates missing balances: prorated for that year's joiners, with unused days carried forward up to the type's cap. The server also does this at start-up and every hour (`JOBS_ENABLED`), so 1 January needs nobody. |
 | `GET /leave/types` | session | Active types; `?includeInactive=true` with `leave.manage_types` |
 | `POST /leave/types`, `PATCH /leave/types/:id`, `DELETE /leave/types/:id` | `leave.manage_types` | 409 for a duplicate name or code, and when deactivating or deleting a type that pending requests use. A new paid type gives everyone this year's balance. A changed allowance applies to balances created afterwards. Delete is soft. |
+| `GET /documents` | `document.view` (scoped) | `page`, `limit`, `q` (title, person or type), `employeeId`, `documentTypeId`, `expiry=EXPIRING` (within 30 days, soonest first) or `EXPIRED`. A **private** type (`isSensitive`) also needs `employee.view_private` for that person, so managers never see their team's IDs and employees see all of their own. Items carry `expiry` and `allowedActions.delete`; never the storage key or hash. |
+| `GET /employees/:id/documents` | `document.view` (scoped) | The same rules for one person. 404 when the person is outside your scope, so existence isn't revealed. |
+| `POST /employees/:id/documents` | `document.upload` (scoped) | 201. `multipart/form-data`: `file`, `documentTypeId`, `title`, and `expiresAt` for types that expire. The type is read from the bytes: PDF, PNG, JPEG or DOCX (macro-enabled Word is refused), otherwise 422 on `file`. 413 over 10 MB (refused before reading when the declared size is already too big). 422 on `documentTypeId` for a private type you couldn't open yourself. Stored as `employees/{employeeId}/{uuidv7}` with its sha256; audited as `document.uploaded`. |
+| `GET /documents/:id/url` | `document.view` (scoped) | `{ url, expiresAt }`: a 60-second download link (attachment, `no-store`). Audited as `document.accessed` every time. The link is never stored. 404 for anything you can't see. |
+| `GET /files/:token` | the token | Local storage driver only: serves the file for a valid, unexpired link token with `Content-Disposition: attachment`, `no-store` and a sandboxing CSP. The token is encrypted and signed, so it can't be changed or read. Anything else is 404. With S3 the link points at the bucket instead. |
+| `DELETE /documents/:id` | `document.delete` (scoped) | 204. Soft delete; the file stays in storage for the record. Audited as `document.deleted`. |
+| `GET /document-types` | session | All types. `documentCount` (organization-wide) only with `document.manage_types`, otherwise null. |
+| `POST /document-types`, `PATCH /document-types/:id`, `DELETE /document-types/:id` | `document.manage_types` | `name`, `code`, `isSensitive`, `hasExpiry`. 409 for a duplicate name or code, and for deleting a type that documents use. Delete is soft. |
+
+Expiry reminders: at start-up and every hour (`JOBS_ENABLED`), a document expiring in 30, 7 or 0 days gets one in-app
+notification for its employee and for everyone with `document.view` at ALL (for private types, also
+`employee.view_private` at ALL). `dedupe_key` makes each reminder arrive once. The bell to read them comes in Phase 9.
 
 Every auth event is written to `audit_logs` (`auth.login`, `auth.login_failed`, `auth.logout`,
 `auth.sessions_revoked`, `auth.password_reset_requested`, `auth.password_reset`, `auth.password_changed`).

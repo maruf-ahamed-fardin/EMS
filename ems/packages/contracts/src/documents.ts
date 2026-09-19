@@ -50,7 +50,8 @@ export interface DocumentTypeItem {
   isSensitive: boolean;
   /** Documents of this type need an expiry date. */
   hasExpiry: boolean;
-  documentCount: number;
+  /** Documents of this type across the organization; only for people who manage types, otherwise null. */
+  documentCount: number | null;
 }
 
 // ─── Documents ──────────────────────────────────────────────────────────────────────────────────

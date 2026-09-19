@@ -55,6 +55,10 @@ describeWithDatabase('documents', () => {
     it('lists types for everyone, and only document.manage_types changes them', async () => {
       const list = seen(await as.employee.get('/document-types').expect(200)).body.data as DocumentTypeItem[];
       expect(list.map((d) => d.code)).toEqual(['CERTIFICATE', 'CONTRACT', 'NATIONAL_ID', 'PASSPORT']);
+      // Organization-wide counts are for the people who manage types
+      expect(list.every((d) => d.documentCount === null)).toBe(true);
+      const managed = (await as.hr_admin.get('/document-types').expect(200)).body.data as DocumentTypeItem[];
+      expect(managed.every((d) => d.documentCount === 0)).toBe(true);
       expect((await as.manager.post('/document-types', { name: 'Visa', code: 'VISA' })).status).toBe(403);
       const duplicate = await as.hr_admin.post('/document-types', { name: 'passport', code: 'PASSPORT' });
       expect(duplicate.status).toBe(409);
@@ -110,6 +114,11 @@ describeWithDatabase('documents', () => {
 
       const big = Buffer.concat([simplePdf(['Big']), Buffer.alloc(MAX_DOCUMENT_BYTES)]);
       expect((await as.employee.upload(`/employees/${ids.employee}/documents`, { documentTypeId: types.contract.id, title: 'Big' }, { content: big, filename: 'big.pdf' })).status).toBe(413);
+      // Clearly too big from its declared size: refused before any of it is read
+      const huge = Buffer.concat([simplePdf(['Huge']), Buffer.alloc(MAX_DOCUMENT_BYTES + 512 * 1024)]);
+      const early = await as.employee.upload(`/employees/${ids.employee}/documents`, { documentTypeId: types.contract.id, title: 'Huge' }, { content: huge, filename: 'huge.pdf' });
+      expect(early.status).toBe(413);
+      expect(early.body.message).toBe('Files can be up to 10 MB');
     });
 
     it('lets people upload only where their document.upload scope reaches', async () => {
