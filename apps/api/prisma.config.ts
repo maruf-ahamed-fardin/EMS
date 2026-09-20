@@ -1,12 +1,10 @@
 import { defineConfig } from 'prisma/config';
 
+import { loadRepoEnv } from './src/config/load-env';
+
 // Prisma 7 no longer reads .env itself. Load it when present, as `nest start` does through
 // ConfigModule. CI and containers set real environment variables instead.
-try {
-  process.loadEnvFile('../.env');
-} catch {
-  // No .env file: rely on the environment.
-}
+loadRepoEnv();
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',

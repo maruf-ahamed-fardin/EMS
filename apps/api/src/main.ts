@@ -6,14 +6,11 @@ import { AppModule } from './app.module';
 import { APP_CONFIG, type AppConfig } from './config/config.module';
 import { configureApp } from './configure-app';
 import { InvalidEnvironmentError } from './config/env';
+import { loadRepoEnv } from './config/load-env';
 
 async function bootstrap(): Promise<void> {
-  // Local development reads ../.env; containers and CI pass real environment variables.
-  try {
-    process.loadEnvFile('../.env');
-  } catch {
-    // no .env file
-  }
+  // Local development reads the repository's .env; containers and CI pass real environment variables.
+  loadRepoEnv();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   app.useLogger(app.get(Logger));
