@@ -1,12 +1,12 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from 'next-themes';
 import { useState } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ThemeProvider } from '@/components/theme';
 
-export function Providers({ children, nonce }: { children: React.ReactNode; nonce?: string }) {
+export function Providers({ children }: { children: React.ReactNode }) {
   // One client per browser session; created in state so a server render never shares it
   const [queryClient] = useState(
     () =>
@@ -18,8 +18,8 @@ export function Providers({ children, nonce }: { children: React.ReactNode; nonc
   );
 
   return (
-    // The theme script runs before the page paints, so it needs the CSP nonce
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange nonce={nonce}>
+    // The before-paint script lives in the document head (see ThemeScript); this only holds state
+    <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={300}>
           {children}

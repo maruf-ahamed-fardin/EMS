@@ -1045,7 +1045,6 @@ __metadata:
     jsdom: "npm:30.0.1"
     lucide-react: "npm:1.43.0"
     next: "npm:16.3.4"
-    next-themes: "npm:0.4.6"
     playwright-core: "npm:1.63.0"
     radix-ui: "npm:1.6.7"
     react: "npm:19.3.0"
@@ -11526,16 +11525,6 @@ __metadata:
     "@nestjs/swagger":
       optional: true
   checksum: 10c0/210b76bc6eafa7eb3463971b07954a37db9a63a9787d9bdd5a3efce11d4c771966b939276a90aa1a0d73391f612968af4d19a7e9424d98382a50bf518286544e
-  languageName: node
-  linkType: hard
-
-"next-themes@npm:0.4.6":
-  version: 0.4.6
-  resolution: "next-themes@npm:0.4.6"
-  peerDependencies:
-    react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
-    react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
-  checksum: 10c0/83590c11d359ce7e4ced14f6ea9dd7a691d5ce6843fe2dc520fc27e29ae1c535118478d03e7f172609c41b1ef1b8da6b8dd2d2acd6cd79cac1abbdbd5b99f2c4
   languageName: node
   linkType: hard
 

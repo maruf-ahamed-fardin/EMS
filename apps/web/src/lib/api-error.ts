@@ -24,3 +24,21 @@ export async function readApiError(response: Response): Promise<ApiRequestError>
   }
   return new ApiRequestError(response.status, body);
 }
+
+/**
+ * The API could not be reached at all: no response, so there is no status and no request id.
+ * Separate from {@link ApiRequestError}, which carries the API's own answer.
+ */
+export class ApiUnreachableError extends Error {
+  readonly origin: string;
+
+  constructor(origin: string, cause?: unknown) {
+    super(
+      `Cannot reach the API at ${origin}. Is it running? ` +
+        'In development, `yarn dev` starts it on :4000; in a container, check API_ORIGIN.',
+      { cause },
+    );
+    this.name = 'ApiUnreachableError';
+    this.origin = origin;
+  }
+}

@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { KeyRound, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
+import { isTheme, useTheme } from '@/components/theme';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -80,7 +80,13 @@ export function UserMenu({ user }: { user: ShellUser }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs text-muted-foreground">Theme</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+        <DropdownMenuRadioGroup
+          value={theme}
+          // Radix hands back a plain string; isTheme keeps the union honest
+          onValueChange={(value) => {
+            if (isTheme(value)) setTheme(value);
+          }}
+        >
           <DropdownMenuRadioItem value="light">
             <Sun aria-hidden /> Light
           </DropdownMenuRadioItem>
