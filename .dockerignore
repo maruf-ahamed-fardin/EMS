@@ -11,3 +11,8 @@
 apps/api/storage
 apps/api/src/generated
 .git
+
+# Yarn's caches and state; the pinned release in .yarn/releases IS needed and stays
+.yarn/*
+!.yarn/releases
+.pnp.*

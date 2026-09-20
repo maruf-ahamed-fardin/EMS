@@ -5,17 +5,19 @@
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
-ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false NEXT_TELEMETRY_DISABLED=1
-COPY .npmrc package.json package-lock.json ./
+ENV NEXT_TELEMETRY_DISABLED=1 YARN_ENABLE_GLOBAL_CACHE=false
+# .yarnrc.yml carries the supply-chain guards and the pinned release; .yarn/releases is the release
+COPY .yarnrc.yml yarn.lock package.json ./
+COPY .yarn/releases .yarn/releases
 COPY packages/contracts/package.json packages/contracts/
 COPY apps/web/package.json apps/web/
-RUN npm ci --workspace @ems/contracts --workspace @ems/frontend
+RUN yarn workspaces focus @ems/contracts @ems/frontend
 COPY packages/contracts packages/contracts
 COPY apps/web apps/web
 ARG API_ORIGIN
 RUN test -n "$API_ORIGIN" || (echo "Set --build-arg API_ORIGIN, e.g. http://api:4000" >&2 && exit 1)
 ENV API_ORIGIN=$API_ORIGIN BUILD_STANDALONE=1 NODE_ENV=production
-RUN npm run build -w @ems/contracts && npm run build -w @ems/frontend
+RUN yarn workspace @ems/contracts run build && yarn workspace @ems/frontend run build
 
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1

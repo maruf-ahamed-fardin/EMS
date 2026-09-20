@@ -23,12 +23,14 @@ between that document and the code is itself worth reporting.
 
 No real credentials and no real HR data, until the September 2026 password and token rotation is
 confirmed (decision D8 in `docs/plan.md`). Everything here is built on seed data, and
-`npm run db:seed` refuses to run in production. If you find something in the history that looks like
+`yarn db:seed` refuses to run in production. If you find something in the history that looks like
 a real secret, report it privately rather than opening an issue.
 
 ## Supply chain
 
-`.npmrc` refuses any package published less than seven days ago and never runs install scripts.
-`npm run check:payload` looks for code hidden after long runs of spaces, and CI runs it before
+`.yarnrc.yml` refuses any package published less than seven days ago (`npmMinimalAgeGate: "1w"`)
+and never runs install scripts (`enableScripts: false`). The Yarn release itself is pinned in
+`.yarn/releases`, so every machine and CI run use the same one.
+`yarn check:payload` looks for code hidden after long runs of spaces, and CI runs it before
 installing anything. Both exist because of the September 2026 incident. Don't weaken either to get a
 newer version faster; if a dependency genuinely needs an exception, say so in the pull request.

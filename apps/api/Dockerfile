@@ -6,19 +6,22 @@
 
 FROM node:22-bookworm-slim AS base
 WORKDIR /app
-ENV NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false
-# .npmrc carries the supply-chain guard (ignore-scripts, min-release-age); npm ci honours it here too
-COPY .npmrc package.json package-lock.json ./
+# Keep Yarn's cache in the layer instead of a global directory outside it
+ENV YARN_ENABLE_GLOBAL_CACHE=false
+# .yarnrc.yml carries the supply-chain guards (enableScripts, npmMinimalAgeGate) and the pinned
+# release the whole project uses; both must be in the image before any install runs.
+COPY .yarnrc.yml yarn.lock package.json ./
+COPY .yarn/releases .yarn/releases
 COPY packages/contracts/package.json packages/contracts/
 COPY apps/api/package.json apps/api/
 
 FROM base AS build
-RUN npm ci --workspace @ems/contracts --workspace @ems/backend
+RUN yarn workspaces focus @ems/contracts @ems/backend
 COPY packages/contracts packages/contracts
 COPY apps/api apps/api
-RUN npm run build -w @ems/contracts \
- && npm run prisma:generate -w @ems/backend \
- && npm run build -w @ems/backend
+RUN yarn workspace @ems/contracts run build \
+ && yarn workspace @ems/backend run prisma:generate \
+ && yarn workspace @ems/backend run build
 
 # Release step, run once per deploy before the new API starts (never at API start-up)
 FROM build AS migrate
@@ -28,13 +31,13 @@ USER node
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/catalogue/sync-cli.js"]
 
 FROM base AS prod-deps
-RUN npm ci --omit=dev --workspace @ems/contracts --workspace @ems/backend && mkdir -p apps/api/node_modules
+RUN yarn workspaces focus --production @ems/contracts @ems/backend && mkdir -p apps/api/node_modules
 
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production PORT=4000
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules node_modules
-# Packages npm couldn't hoist (a version only the backend uses)
+# Packages yarn couldn't hoist (a version only the backend uses)
 COPY --from=prod-deps /app/apps/api/node_modules apps/api/node_modules
 COPY --from=build /app/packages/contracts/package.json packages/contracts/package.json
 COPY --from=build /app/packages/contracts/dist packages/contracts/dist

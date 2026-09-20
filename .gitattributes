@@ -1,0 +1,9 @@
+# The vendored Yarn release is an executable bundle: keep it byte-for-byte as downloaded, so the
+# checkout is identical on Windows, Linux CI and inside the images.
+.yarn/releases/** binary
+
+# Files that are executed by a shell or Node on Linux must keep LF, whatever the checkout platform.
+*.sh text eol=lf
+scripts/*.mjs text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf

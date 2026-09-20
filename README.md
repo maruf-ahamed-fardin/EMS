@@ -1,7 +1,7 @@
 # SeloraX EMS
 
 The SeloraX employee management system: employees, departments, attendance, leave, documents,
-notifications, reports and audit. The repository is one npm workspace: a NestJS API, a Next.js web app
+notifications, reports and audit. The repository is one Yarn workspace: a NestJS API, a Next.js web app
 and the contracts package they share.
 
 | Folder | Workspace | What | Stack |
@@ -10,7 +10,8 @@ and the contracts package they share.
 | `apps/web` | `@ems/frontend` | The web app | Next.js 16, React 19, Tailwind 4, shadcn/ui |
 | `packages/contracts` | `@ems/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
 
-The folder and the workspace name differ, so `-w` takes the name: `npm run test -w @ems/backend`.
+The folder and the workspace name differ, and commands take the name:
+`yarn workspace @ems/backend run test`.
 `apps/web` never imports from `apps/api`; anything both sides need lives in `packages/contracts`.
 
 ```
@@ -39,16 +40,17 @@ the decisions taken. Progress per phase is in [`docs/requirements.md`](docs/requ
 
 ## Run it locally
 
-Needs Node 22.12+ and Docker Desktop.
+Needs Node 22.12+ and Docker Desktop. Yarn 4 is pinned in `.yarn/releases`, so there is nothing to
+install globally — `yarn` in this repository is that release.
 
 ```sh
-cp .env.example .env         # local-only values that match docker-compose.yml; set SEED_PASSWORD
-docker compose up -d         # Postgres on 127.0.0.1:5433, Mailpit on 127.0.0.1:8025
-npm ci
-npm run db:generate          # Prisma client
-npm run db:deploy            # apply migrations
-npm run db:seed              # permissions, roles and four demo accounts
-npm run dev                  # contracts watcher, API on :4000, web on :3000
+cp .env.example .env    # local-only values that match docker-compose.yml; set SEED_PASSWORD
+docker compose up -d    # Postgres on 127.0.0.1:5433, Mailpit on 127.0.0.1:8025
+yarn install            # --immutable in CI and the images: refuses to change yarn.lock
+yarn db:generate        # Prisma client
+yarn db:deploy          # apply migrations
+yarn db:seed            # permissions, roles and four demo accounts
+yarn dev                # contracts watcher, API on :4000, web on :3000
 ```
 
 Open http://localhost:3000 and sign in with one of the demo accounts and your `SEED_PASSWORD`:
@@ -67,14 +69,15 @@ set `MAIL_DRIVER=smtp` and `SMTP_URL=smtp://127.0.0.1:1025` and open Mailpit at 
 
 | Command | Does |
 |---|---|
-| `npm run dev` | Everything in watch mode |
-| `npm run typecheck` / `lint` / `test` / `build` | Across all three workspaces |
-| `npm run db:migrate` | Create a migration after editing `apps/api/prisma/schema.prisma` |
-| `npm run db:deploy` | Apply migrations (the release step in production, never at app start) |
-| `npm run catalogue:sync -w @ems/backend` | Align permissions and system roles with this build (release step, after `db:deploy`) |
-| `npm run db:seed` | Development demo data. Refuses production. |
-| `npm run db:drift -w @ems/backend` | Fails when the schema has changes with no migration |
-| `npm run check:payload` | Looks for code hidden after long runs of spaces (the September 2026 incident) |
+| `yarn dev` | Everything in watch mode |
+| `yarn typecheck` / `lint` / `test` / `build` | Across all three workspaces |
+| `yarn db:migrate` | Create a migration after editing `apps/api/prisma/schema.prisma` |
+| `yarn db:deploy` | Apply migrations (the release step in production, never at app start) |
+| `yarn workspace @ems/backend run catalogue:sync` | Align permissions and system roles with this build (release step, after `db:deploy`) |
+| `yarn db:seed` | Development demo data. Refuses production. |
+| `yarn workspace @ems/backend run db:drift` | Fails when the schema has changes with no migration |
+| `yarn check:payload` | Looks for code hidden after long runs of spaces (the September 2026 incident) |
+| `yarn install --immutable` | Install without letting `yarn.lock` change, as CI does |
 
 Backend tests that need a database run when `TEST_DATABASE_URL` is set, and they wipe that database.
 The compose file creates `ems_test` for this.

@@ -37,10 +37,10 @@ These live only in migration SQL. Prisma leaves them alone, but keep them in min
 ## Changing the schema
 
 1. Edit `schema.prisma`.
-2. `npm run db:migrate` (needs `DATABASE_URL` and `SHADOW_DATABASE_URL`). Name the migration after the change.
+2. `yarn db:migrate` (needs `DATABASE_URL` and `SHADOW_DATABASE_URL`). Name the migration after the change.
 3. If the change needs something Prisma can't express (a CHECK, an extension), add it to the generated
    `migration.sql` before committing, and list it in the table above.
-4. `npm run db:generate`, then the tests.
+4. `yarn db:generate`, then the tests.
 
 CI fails when `schema.prisma` has changes that no migration creates.
 

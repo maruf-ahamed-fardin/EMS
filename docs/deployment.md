@@ -64,7 +64,7 @@ docker run --rm --env-file prod.env ems-api node dist/users/create-admin-cli.js 
 
 It creates a Super Admin with a password nobody knows, records it in the audit log, and refuses to run while any
 Super Admin can sign in. (If every Super Admin account ever ends up inactive, the same command is the way back in.) The person then sets their password with **Forgot password?** on the sign-in page and adds
-everyone else in **Users**. The demo seed (`npm run db:seed`) refuses production.
+everyone else in **Users**. The demo seed (`yarn db:seed`) refuses production.
 
 ## Scaling
 

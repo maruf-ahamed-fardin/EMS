@@ -39,29 +39,29 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: yarn
+          cache-dependency-path: yarn.lock
       # Before installing anything: a compromised config file must never get as far as running
       - name: Hidden payload check
         run: node scripts/check-payload.mjs
-      - run: npm ci
+      - run: yarn install --immutable
       - name: Known vulnerabilities in dependencies
-        run: npm audit --audit-level=high
-      - run: npm run db:generate
-      - run: npm run typecheck
-      - run: npm run lint
+        run: yarn npm audit --environment production --severity high --recursive
+      - run: yarn db:generate
+      - run: yarn typecheck
+      - run: yarn lint
       - name: Create the shadow database
         run: PGPASSWORD=ems-ci psql -h 127.0.0.1 -U ems -d ems_test -c 'CREATE DATABASE ems_shadow'
-      - run: npm test
+      - run: yarn test
       # Prisma 7.10 can exit 0 without comparing anything, so the step also requires its summary
       - name: Migrations match the schema
         run: |
           set +e
-          out=$(npm run --silent db:drift -w @ems/backend 2>&1); code=$?
+          out=$(yarn workspace @ems/backend run db:drift 2>&1); code=$?
           echo "$out"
           if [ $code -eq 2 ]; then echo "::error::schema.prisma has changes with no migration"; exit 1; fi
           if [ $code -ne 0 ] || ! echo "$out" | grep -q "No difference detected"; then echo "::error::drift check did not run"; exit 1; fi
-      - run: npm run build
+      - run: yarn build
 
       # Browser smoke (plan §13): the built API and web app on a freshly seeded database, driven by
       # Playwright in the runner's Google Chrome at 375 and 1280 px, with axe on every page it visits
@@ -72,8 +72,8 @@ jobs:
           echo "SEED_PASSWORD=$password" >> "$GITHUB_ENV"
           PGPASSWORD=ems-ci psql -h 127.0.0.1 -U ems -d ems_test -c 'CREATE DATABASE ems_smoke'
           export DATABASE_URL=postgresql://ems:ems-ci@127.0.0.1:5432/ems_smoke
-          npm run db:deploy
-          SEED_PASSWORD="$password" npm run db:seed
+          yarn db:deploy
+          SEED_PASSWORD="$password" yarn db:seed
       - name: Start the API and the web app
         env:
           DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_smoke
@@ -98,7 +98,7 @@ jobs:
           EMS_BASE_URL: http://localhost:3000
         run: |
           google-chrome --version
-          npm run e2e -w @ems/frontend
+          yarn workspace @ems/frontend run e2e
       - name: Server logs
         if: failure()
         run: tail -100 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" || true

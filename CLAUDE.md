@@ -1,7 +1,7 @@
 # SeloraX EMS
 
 The SeloraX Employee Management System, and nothing else: a NestJS + Prisma + PostgreSQL API, a
-Next.js frontend and the contracts package they share, in one npm workspace at the repository root.
+Next.js frontend and the contracts package they share, in one Yarn 4 workspace at the repository root.
 See `README.md` for setup and commands, and read `docs/plan.md` before starting work — it is the
 source of truth for scope, the order of work and the decisions taken.
 
@@ -28,16 +28,17 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
 - **No real credentials or HR data** in this repository until the September 2026 password and token
   rotation is confirmed (plan D8). Everything is built on seed data.
-- **Installs are age-gated.** `.npmrc` refuses package versions younger than 7 days and never runs
-  install scripts. Don't override it to get a newer version faster.
-- **After editing `apps/api/prisma/schema.prisma`,** run `npm run db:migrate`; `npm run db:drift -w
+- **Yarn 4 only**, pinned in `.yarn/releases` — never npm. Installs are age-gated: `.yarnrc.yml`
+  refuses package versions younger than 7 days (`npmMinimalAgeGate`) and never runs install scripts
+  (`enableScripts: false`). Don't override either to get a newer version faster.
+- **After editing `apps/api/prisma/schema.prisma`,** run `yarn db:migrate`; `yarn db:drift -w
   @ems/backend` fails when the schema has changes with no migration.
-- **`npm run check:payload`** looks for code hidden after long runs of spaces (the September 2026
+- **`yarn check:payload`** looks for code hidden after long runs of spaces (the September 2026
   incident). CI runs it before installing anything.
 
 ## Local development
 
 No Docker on the development PC: `docker-compose.yml` is the documented path, but Postgres is run
 from a portable build on `127.0.0.1:5433`. The demo accounts are `superadmin@`, `hr@`, `manager@`
-and `employee@demo.selorax.test`. `npm run db:seed` sets their password from `SEED_PASSWORD`, which
+and `employee@demo.selorax.test`. `yarn db:seed` sets their password from `SEED_PASSWORD`, which
 `apps/api/src/auth/password-policy.ts` requires to be 10+ characters.

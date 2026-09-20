@@ -3,12 +3,18 @@
 ## Get set up
 
 Node 22.12 or newer (`.nvmrc` pins it; `nvm use` picks it up) and a PostgreSQL 16 you can wipe.
-`README.md` has the sequence — copy `.env.example` to `.env`, start Postgres, `npm ci`, generate the
-Prisma client, apply migrations, seed, `npm run dev`.
+`README.md` has the sequence — copy `.env.example` to `.env`, start Postgres, `yarn install`,
+generate the Prisma client, apply migrations, seed, `yarn dev`.
 
-`npm ci`, never `npm install`, unless you are deliberately changing a dependency. `.npmrc` refuses
-packages published less than seven days ago and never runs install scripts; both are supply-chain
-guards from the September 2026 incident, so don't switch them off to get a newer version sooner.
+The project is on **Yarn 4**, pinned in `.yarn/releases` and selected by the `packageManager` field,
+so you need no global install: `yarn` in this repository is that release. Use
+`yarn install --immutable` unless you are deliberately changing a dependency — it refuses to modify
+`yarn.lock`, which is what CI and the images do.
+
+Don't run npm here. `.yarnrc.yml` refuses packages published less than seven days ago
+(`npmMinimalAgeGate`) and never runs install scripts (`enableScripts: false`); both are
+supply-chain guards from the September 2026 incident, so don't switch them off to get a newer
+version sooner.
 
 ## The shape of the repository
 
@@ -20,12 +26,12 @@ docs/                architecture, API, security, database, permissions, deploym
 scripts/             repository tooling (the hidden-payload check, Postgres init SQL)
 ```
 
-Both apps are npm workspaces named `@ems/backend` and `@ems/frontend`; the folders are `apps/api`
-and `apps/web`. Run anything for one of them with `-w`, from the repository root:
+Both apps are Yarn workspaces named `@ems/backend` and `@ems/frontend`; the folders are `apps/api`
+and `apps/web`. The name is what commands take, from the repository root:
 
 ```sh
-npm run test -w @ems/backend
-npm run dev  -w @ems/frontend
+yarn workspace @ems/backend run test
+yarn workspace @ems/frontend run dev
 ```
 
 Nothing in `apps/web` may import from `apps/api`. Anything both sides need goes in
@@ -34,19 +40,19 @@ Nothing in `apps/web` may import from `apps/api`. Anything both sides need goes 
 ## Before you open a pull request
 
 ```sh
-npm run check:payload   # code hidden after long runs of spaces (the September 2026 incident)
-npm run typecheck
-npm run lint
-npm test
+yarn check:payload   # code hidden after long runs of spaces (the September 2026 incident)
+yarn typecheck
+yarn lint
+yarn test
 ```
 
 CI runs exactly these, in this order, and `check:payload` runs before anything is installed. Tests
 that need a database are skipped unless `TEST_DATABASE_URL` is set; that database is **wiped**, so
 its name must contain `test`.
 
-After editing `apps/api/prisma/schema.prisma`, run `npm run db:migrate` and commit the generated
-migration. `npm run db:drift -w @ems/backend` fails when the schema has changes with no migration,
-and so does CI.
+After editing `apps/api/prisma/schema.prisma`, run `yarn db:migrate` and commit the generated
+migration. `yarn workspace @ems/backend run db:drift` fails when the schema has changes with no
+migration, and so does CI.
 
 ## Conventions worth knowing before you write code
 

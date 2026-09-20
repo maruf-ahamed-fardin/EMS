@@ -53,7 +53,7 @@ closed (`CORS_ORIGINS` exists only for development tools).
 | `documents/` | `storage/storage.ts` (`DocumentStorage`: local disk with encrypted 60-second link tokens, or S3 with presigned URLs), `sniff.ts` (type from the bytes), upload, visibility (`documentVisibleWhere`, shared with the dashboard), `GET /files/:token`, document types and the expiry reminders. |
 | `common/clock.ts` | `Clock`, injected wherever "now" matters; tests replace it with `FixedClock`. |
 | `health/` | `GET /health` (liveness) and `GET /health/ready` (database). |
-| `generated/prisma/` | Generated client, not committed. `npm run db:generate` rebuilds it. |
+| `generated/prisma/` | Generated client, not committed. `yarn db:generate` rebuilds it. |
 
 Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in plan §2.
 
@@ -130,9 +130,17 @@ Status colors (on time, late, not checked in) always come with an icon and a lab
 
 After the September 2026 supply-chain incident, dependencies are handled conservatively:
 
-- **`.npmrc`**: `min-release-age=7` (a version must be public for a week), `ignore-scripts=true` (no
-  install scripts), `save-exact=true`. The lockfile pins every version. CI uses `npm ci` and
-  `npm audit --audit-level=high`.
+- **`.yarnrc.yml`**: `npmMinimalAgeGate: "1w"` (a version must be public for a week),
+  `enableScripts: false` (no install scripts), `defaultSemverRangePrefix: ""` (exact versions).
+  `yarn.lock` pins every version, and the Yarn release itself is pinned in `.yarn/releases`, so CI,
+  the images and every machine run the same one. CI uses `yarn install --immutable` (which refuses to
+  change the lockfile, as `npm ci` did) and `yarn npm audit --severity high`. `.npmrc` keeps the
+  equivalent npm settings as a safety net for anyone who runs npm here by mistake.
+- **Peer dependencies are declared, not inherited.** npm used to hoist a package's unmet peers into
+  the tree by accident; Yarn does not. `vite` (peer of `vitest` and `@vitejs/plugin-react`),
+  `react-is` (peer of `recharts`) and `playwright-core` (peer of `@axe-core/playwright`) are
+  therefore direct devDependencies of the workspaces that need them. Without them the frontend and
+  contracts test suites fail to start.
 - **Majors chosen on purpose** (2026-09-17): NestJS 11 (12 was two days old and `nestjs-zod` supports only
   10–11), Prisma 7.10.0 (npm's `latest` tag pointed at an 8.0 release candidate), TypeScript 6.0.3 (7 is
   the new native compiler; Nest depends on decorator metadata), Next 16.3.4 (16.3.5 was under a week old).
@@ -140,14 +148,14 @@ After the September 2026 supply-chain incident, dependencies are handled conserv
   production storage) and `pdfkit` 0.20.2 (PDF reports). After installing, the new packages were scanned for the
   PolinRider payload pattern and install scripts. `pdfkit` ships a bundled Yarn (`.yarn/releases/yarn-4.16.0.cjs`)
   that is byte-identical to the official `@yarnpkg/cli-dist` 4.16.0 and is never loaded.
-- **Overrides** in `package.json` patch high-severity advisories in transitive dependencies without
+- **Resolutions** in `package.json` patch high-severity advisories in transitive dependencies without
   changing majors: `multer` 2.3.0 (used by Nest's Express adapter), `deepmerge-ts` 8.0.2 and `mysql2` 3.24.4
-  (inside the Prisma CLI). `npm ls` reports them as "invalid"; that is expected for overrides of pinned
-  versions. Remove each override once the parent package ships the fix.
+  (inside the Prisma CLI). They were npm `overrides` until the move to Yarn; `resolutions` is Yarn's
+  equivalent. Remove each one once the parent package ships the fix.
 - **`cn`**: newer shadcn CLIs import an npm package called `cn`. It is published by shadcn, but the name
   changed owner in September 2026, so the components import `@/lib/utils` (clsx + tailwind-merge) instead.
   After `npx shadcn add`, replace `from "cn"` and uninstall it.
-- **`scripts/check-payload.mjs`** runs first in CI, before `npm ci`, and fails on code hidden after a long
+- **`scripts/check-payload.mjs`** runs first in CI, before `yarn install --immutable`, and fails on code hidden after a long
   run of spaces, the PolinRider pattern.
 
 ## Known traps
