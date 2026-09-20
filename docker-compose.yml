@@ -1,29 +1,33 @@
-# Local MySQL for development and the database tests. Not used in production.
-#
+# Local development services only. Nothing here is used in production.
 #   docker compose up -d
-#   npm run db:migrate
-#   TEST_DATABASE_URL=mysql://root@127.0.0.1:3307/teamprofile_test npm test
-#
-# Port 3307 so it never clashes with a MySQL already running on 3306.
+# Ports bind to 127.0.0.1, so these services aren't reachable from the network.
+name: selorax-ems
 
 services:
-  db:
-    image: mysql:8.4
-    ports: ['3307:3306']
+  postgres:
+    image: postgres:16-alpine
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-    # The collation matters: unique usernames rely on it ignoring letter case
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_0900_ai_ci
+      POSTGRES_USER: ems
+      POSTGRES_PASSWORD: ems-local-only
+      POSTGRES_DB: ems
+    ports: ['127.0.0.1:5433:5432']
     volumes:
-      - ./scripts/db-init.sql:/docker-entrypoint-initdb.d/00-databases.sql:ro
-      - db-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
+      # Creates ems_test and ems_shadow next to ems (first start only)
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/10-databases.sql:ro
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1']
+      test: ['CMD-SHELL', 'pg_isready -U ems -d ems']
       interval: 5s
       timeout: 5s
       retries: 20
 
+  # The S3-compatible bucket for documents is added in Phase 8. The plan named MinIO, but its images
+  # are no longer published on Docker Hub (checked 2026-09-17), so the image is chosen then.
+
+  # Catches outgoing email (password resets, Phase 2). Inbox at http://127.0.0.1:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ['127.0.0.1:1025:1025', '127.0.0.1:8025:8025']
+
 volumes:
-  db-data:
+  postgres-data:

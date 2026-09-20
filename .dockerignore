@@ -1,12 +1,13 @@
-.git
-node_modules
-.next
-coverage
-*.tsbuildinfo
-docker-compose.yml
+# The build context is the repository root. Keep secrets, local data and build output out of every image.
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.log
+**/*.tsbuildinfo
 .env
-.env*.local
-tests
-Dockerfile
-.dockerignore
-ems
+.env.*
+!.env.example
+backend/storage
+backend/src/generated
+.git

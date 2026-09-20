@@ -1,58 +1,43 @@
-# Team-SeloraX
+# SeloraX EMS
 
-Public profile cards for SeloraX team members. One Next.js app (App Router, React, TypeScript,
-Tailwind v4) serves the pages and the API. See `README.md` for setup and commands.
+The SeloraX Employee Management System, and nothing else: a NestJS + Prisma + PostgreSQL API, a
+Next.js frontend and the contracts package they share, in one npm workspace at the repository root.
+See `README.md` for setup and commands, and read `docs/plan.md` before starting work — it is the
+source of truth for scope, the order of work and the decisions taken.
 
-## The one thing to know first
+## History you will run into
 
-There are **two data paths**, and only the first is live:
+Until 2026-09-20 this repository held a second, unrelated app (Team-SeloraX profile cards: Next.js,
+Drizzle, MySQL) at the root, and the EMS lived in `ems/`. That app was retired and the EMS moved up
+to the root. Decision D1 in `docs/plan.md` and the differences table in `docs/architecture.md` record
+this. Anything on `main` or in older commits still has the old layout, so paths there start with
+`ems/` — and a `git log` on any EMS file needs `--follow` to cross the move.
 
-1. **Live:** pages and `/api/team-profile` read the HR app's `kv_store` table through
-   `src/lib/team.ts`. This is what users hit today.
-2. **Not yet connected:** `src/server/**` and `drizzle/` describe this app's own database
-   (`members`, `member_profiles`, `member_avatars`, `username_aliases`, `sync_runs`).
-   **Nothing in the app reads these tables yet.** The kv_store sync can plan changes
-   (`src/server/modules/sync/plan.ts`) but cannot apply them, and there is no auth, no write
-   API and no avatar upload, although the schema and `usernames.ts` reserved list anticipate all three.
-
-When changing profile behaviour that users see, change path 1. Don't assume path 2 is wired up.
-
-For local work without a database, `HR_DATA_FILE` points path 1 at a JSON file with the same shape
-as the three `kv_store` keys (`tests/fixtures/kv-sample.json`). It is development only - the env
-schema refuses it in production, so it can never serve real visitors.
-
-## The `ems/` folder is a different project
-
-`ems/` holds the SeloraX Employee Management System: its own npm workspace (NestJS + Prisma + Postgres
-backend, Next.js frontend, shared contracts) with its own lockfile, `.npmrc`, lint, tests and CI
-(`.github/workflows/ems.yml`). Nothing in it is imported by the app above, and the root tsconfig, ESLint,
-Tailwind and Docker context exclude it. Run its commands from `ems/`, and read `ems/README.md` and
-`ems/docs/plan.md` before working there. None of the conventions below apply to it.
+| Document | What it covers |
+|---|---|
+| `docs/architecture.md` | How it is built, and where and why it differs from the plan |
+| `docs/api.md` | Every endpoint, its permission and its rules |
+| `docs/security.md` | Every security control, where it lives and which test proves it |
+| `docs/database.md`, `docs/permissions.md` | Schema and the permission catalogue |
+| `docs/deployment.md` | Images, configuration, a deploy, the first admin, backups and restore |
 
 ## Conventions
 
-- **Environment:** every variable goes through the zod schema in `src/server/env.ts`. Never read
-  `process.env` directly for configuration. The exception is `src/lib/site.ts`, which `next build`
-  imports before runtime config exists, and `logger.ts`, which must work when the config is broken.
-- **Secrets in errors:** connection URLs carry passwords. `parseEnv` reports which variable is
-  wrong, never its value, and `logger.ts` redacts known secret paths. Keep it that way.
-- **API routes** wrap their handler in `route()` from `src/server/lib/http.ts`. It supplies the
-  request id, a bound logger, `private, no-store` by default, and turns thrown errors into
-  RFC 9457 `problem+json`. Don't use `console.error` in a route.
-- **Public fields are an allow-list.** `PUBLIC_USER_FIELDS` in `src/lib/team.ts` is the only thing
-  keeping passwords, salaries and addresses out of public responses, because `kv_store` rows hold
-  all of them. Tests in `tests/unit/team.test.ts` guard this — extend them when the shape changes.
-- **Database:** MySQL 8 via Drizzle. Text columns rely on the `utf8mb4_0900_ai_ci` default
-  collation, which is what makes usernames case-insensitively unique. After editing
-  `src/server/db/schema`, run `npm run db:generate`; CI fails if the migration is missing.
-- **TLS:** every MySQL connection goes through `sslOptions` in `src/server/db/connection.ts`.
-  Certificate verification is required in production.
-- **`src/server/db/schema` and `connection.ts` use relative imports**, not the `@/` alias, because
-  drizzle-kit and the scripts load them outside the Next.js bundler.
+- **Environment:** every variable goes through `backend/src/config/env.ts`. It validates at startup
+  and its errors name the variable, never the value.
+- **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
+- **No real credentials or HR data** in this repository until the September 2026 password and token
+  rotation is confirmed (plan D8). Everything is built on seed data.
+- **Installs are age-gated.** `.npmrc` refuses package versions younger than 7 days and never runs
+  install scripts. Don't override it to get a newer version faster.
+- **After editing `backend/prisma/schema.prisma`,** run `npm run db:migrate`; `npm run db:drift -w
+  @ems/backend` fails when the schema has changes with no migration.
+- **`npm run check:payload`** looks for code hidden after long runs of spaces (the September 2026
+  incident). CI runs it before installing anything.
 
-## Testing
+## Local development
 
-`npm test` runs Vitest. Database tests in `tests/integration` skip unless `TEST_DATABASE_URL` is
-set; they drop and recreate the database, so the name must contain "test". `docker compose up -d`
-provides a suitable server on port 3307. `server-only` is aliased to a stub in `vitest.config.mts`
-because Next resolves it through its bundler rather than installing it.
+No Docker on the development PC: `docker-compose.yml` is the documented path, but Postgres is run
+from a portable build on `127.0.0.1:5433`. The demo accounts are `superadmin@`, `hr@`, `manager@`
+and `employee@demo.selorax.test`. `npm run db:seed` sets their password from `SEED_PASSWORD`, which
+`backend/src/auth/password-policy.ts` requires to be 10+ characters.

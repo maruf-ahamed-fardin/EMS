@@ -3,9 +3,7 @@ name: EMS
 on:
   push:
     branches: [main]
-    paths: ['ems/**', '.github/workflows/ems.yml']
   pull_request:
-    paths: ['ems/**', '.github/workflows/ems.yml']
 
 permissions:
   contents: read
@@ -13,10 +11,6 @@ permissions:
 concurrency:
   group: ems-${{ github.ref }}
   cancel-in-progress: true
-
-defaults:
-  run:
-    working-directory: ems
 
 jobs:
   check:
@@ -46,7 +40,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ems/package-lock.json
+          cache-dependency-path: package-lock.json
       # Before installing anything: a compromised config file must never get as far as running
       - name: Hidden payload check
         run: node scripts/check-payload.mjs
@@ -114,8 +108,8 @@ jobs:
         with:
           name: playwright-report
           path: |
-            ems/frontend/playwright-report
-            ems/frontend/test-results
+            frontend/playwright-report
+            frontend/test-results
           retention-days: 7
 
   # The Dockerfiles can't be built on the development PC (no Docker), so CI proves them on every change

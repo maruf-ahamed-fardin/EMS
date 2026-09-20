@@ -1,41 +1,35 @@
 {
-  "name": "selorax-teamprofile",
+  "name": "selorax-ems",
   "private": true,
-  "version": "0.0.0",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "sync:kv": "tsx scripts/sync-kv.ts"
+  "version": "0.1.0",
+  "description": "SeloraX Employee Management System",
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22.12"
   },
-  "dependencies": {
-    "drizzle-orm": "^0.45.2",
-    "mysql2": "^3.24.4",
-    "next": "16.3.5",
-    "pino": "^10.3.1",
-    "qrcode": "^1.5.4",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "zod": "^4.6.5"
+  "scripts": {
+    "dev": "npm run build -w @ems/contracts && concurrently -n contracts,api,web -c gray,magenta,cyan \"npm run dev -w @ems/contracts\" \"npm run dev -w @ems/backend\" \"npm run dev -w @ems/frontend\"",
+    "build": "npm run build -w @ems/contracts && npm run build -w @ems/backend && npm run build -w @ems/frontend",
+    "typecheck": "npm run build -w @ems/contracts && npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run build -w @ems/contracts && npm run test --workspaces --if-present",
+    "check:payload": "node scripts/check-payload.mjs",
+    "db:generate": "npm run prisma:generate -w @ems/backend",
+    "db:migrate": "npm run db:migrate -w @ems/backend",
+    "db:deploy": "npm run db:deploy -w @ems/backend",
+    "db:seed": "npm run db:seed -w @ems/backend",
+    "db:reset": "npm run db:reset -w @ems/backend"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^26.5.1",
-    "@types/qrcode": "^1.5.6",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitest/coverage-v8": "^5.0.1",
-    "drizzle-kit": "^0.31.10",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "16.3.5",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.13",
-    "typescript": "^6.0.3",
-    "vitest": "^5.0.1"
+    "concurrently": "9.2.4"
+  },
+  "overrides": {
+    "multer": "2.3.0",
+    "deepmerge-ts": "8.0.2",
+    "mysql2": "3.24.4"
   }
 }
