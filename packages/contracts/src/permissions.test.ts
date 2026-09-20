@@ -3,7 +3,8 @@ import { can, DEFAULT_ROLE_GRANTS, isPermissionKey, PERMISSION_KEYS, pageMeta, S
 
 describe('permission catalogue', () => {
   it('uses module.action keys', () => {
-    for (const key of PERMISSION_KEYS) expect(key).toMatch(/^[a-z]+\.[a-z_]+$/);
+    // Both halves are snake_case: the module may be two words, as in team_profile.view
+    for (const key of PERMISSION_KEYS) expect(key).toMatch(/^[a-z]+(_[a-z]+)*\.[a-z]+(_[a-z]+)*$/);
   });
 
   it('only grants keys that exist', () => {

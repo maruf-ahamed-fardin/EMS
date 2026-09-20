@@ -4,7 +4,6 @@ import {
   pageMeta,
   type TeamProfileDetail,
   type TeamProfileFilters,
-  type TeamProfileLink,
   type TeamProfileListItem,
   type TeamProfileQuery,
   type UpdateOwnTeamProfileInput,
@@ -77,7 +76,7 @@ function toDetail(row: Row, viewerEmployeeId: string | null): TeamProfileDetail 
     businessPhone: profile?.businessPhone ?? null,
     bloodGroup: row.bloodGroup,
     headline: profile?.headline ?? null,
-    links: (profile?.links ?? []) as TeamProfileLink[],
+    links: profile?.links ?? [],
     managerName: row.manager ? `${row.manager.firstName} ${row.manager.lastName}` : null,
     joiningDate: row.joiningDate.toISOString().slice(0, 10),
     isSelf: viewerEmployeeId !== null && viewerEmployeeId === row.id,
@@ -163,7 +162,7 @@ export class TeamProfileService {
       headline: row.teamProfile?.headline ?? null,
       showPersonalPhone: row.teamProfile?.showPersonalPhone ?? true,
       personalPhone: row.phone,
-      links: (row.teamProfile?.links ?? []) as TeamProfileLink[],
+      links: row.teamProfile?.links ?? [],
       hasPhoto: row.photoKey !== null,
     };
   }

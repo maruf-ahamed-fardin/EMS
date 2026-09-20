@@ -63,7 +63,7 @@ export function RoleEditor({ role, catalogue, canGrantAdmin }: { role: RoleItem;
       {modules.map(([module, permissions]) => (
         <section key={module} className="overflow-hidden rounded-2xl border bg-card shadow-panel" aria-labelledby={`module-${module}`}>
           <h2 id={`module-${module}`} className="border-b px-4 py-3 text-sm font-semibold capitalize md:px-5">
-            {module}
+            {module.replaceAll('_', ' ')}
           </h2>
           <ul className="divide-y">
             {permissions.map((p) => {

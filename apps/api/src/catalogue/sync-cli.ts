@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { parseEnv } from '../config/env';
+import { loadRepoEnv } from '../config/load-env';
 import { PrismaClient } from '../generated/prisma/client';
 import { syncCatalogue } from './sync-catalogue';
 
@@ -8,11 +9,7 @@ import { syncCatalogue } from './sync-catalogue';
  * Brings permissions and system roles in line with this build. Creates no users and no demo data.
  */
 async function main() {
-  try {
-    process.loadEnvFile('../.env');
-  } catch {
-    // no .env file
-  }
+  loadRepoEnv();
   const config = parseEnv();
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: config.DATABASE_URL }) });
   try {

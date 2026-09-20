@@ -53,7 +53,6 @@ export const AUDIT_ACTIONS = {
   'document_type.deleted': 'Deleted a document type',
   'report.exported': 'Exported a report',
   'team_profile.updated': 'Edited their team profile card',
-  'team_profile.photo_changed': 'Changed their team profile photo',
 } as const;
 export type AuditAction = keyof typeof AUDIT_ACTIONS;
 export const AUDIT_ACTION_KEYS = Object.keys(AUDIT_ACTIONS) as AuditAction[];

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { USABLE_SUPER_ADMIN } from '../auth/account-protection';
 import { generateToken } from '../common/security/tokens';
 import { parseEnv } from '../config/env';
+import { loadRepoEnv } from '../config/load-env';
 import { PrismaClient } from '../generated/prisma/client';
 
 /**
@@ -13,11 +14,7 @@ import { PrismaClient } from '../generated/prisma/client';
  * none can (every one inactive), it is the way back in; running it needs the production database login.
  */
 async function main() {
-  try {
-    process.loadEnvFile('../.env');
-  } catch {
-    // no .env file
-  }
+  loadRepoEnv();
   const email = z.email().safeParse(process.argv[2]?.trim().toLowerCase());
   if (!email.success) throw new Error('Usage: node dist/users/create-admin-cli.js admin@example.com');
 
