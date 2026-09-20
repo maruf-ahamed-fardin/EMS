@@ -43,6 +43,15 @@ async findOne(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
 Permission changes reach sessions within 60 seconds (the `PermissionsService` cache), and at once on
 the instance that made them.
 
+## Team Profile: the one unscoped module
+
+`team_profile.view` has no scope. Every other "view" permission narrows to OWN, TEAM or ALL, but a
+staff directory that shows only your own team is not a directory, so this one always reaches
+everyone. What makes that safe is the response rather than the reach: `CARD_SELECT` in
+`team-profile.service.ts` is a short, explicit column list, and `team-profile-shape.spec.ts` fails
+if a private field ever reaches a card. `team_profile.manage_own` lets a person edit their own card
+and nobody else's; editing someone else's is `employee.update`.
+
 ## Default roles
 
 | Role | Summary |

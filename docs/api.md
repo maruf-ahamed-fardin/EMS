@@ -68,6 +68,11 @@ endpoint, `?q=` for search, plus module filters. The shared `paginationQuery` sc
 | `POST /auth/change-password` | session | `{ currentPassword, newPassword }` → 204. Signs out other sessions, keeps this one. |
 | `GET /roles` | `role.manage` | Roles with user counts and their grants |
 | `GET /permissions` | `role.manage` | The permission catalogue |
+| `GET /team-profile` | `team_profile.view` | The staff directory. Query: `page`, `limit`, `q` (name, employee code or email), `departmentId`, `workLocation`. Unscoped on purpose: everyone sees everyone, which is why the response carries no private field. |
+| `GET /team-profile/filters` | `team_profile.view` | Departments and work locations that have someone listed, for the filter menus |
+| `GET /team-profile/me` | `team_profile.manage_own` | The viewer's own card, including `showPersonalPhone` and the personal number they may be hiding |
+| `PATCH /team-profile/me` | `team_profile.manage_own` | `{ businessPhone?, bloodGroup?, headline?, showPersonalPhone?, links? }` → the updated own card. Links must be https and are at most one per kind. Audited as `team_profile.updated`. |
+| `GET /team-profile/:employeeId` | `team_profile.view` | One card: name, code, position, department, location, email, the numbers the person publishes, blood group, headline, links, manager and joining date. 404 for someone inactive or deleted. |
 | `GET /employees` | `employee.view` (scoped) | List. Query: `page`, `limit`, `q`, `departmentId`, `positionId`, `managerId`, `status`, `employmentType`, `joinedFrom`, `sort` (`name`, `code`, `joined`, `created`; prefix `-` for descending) |
 | `GET /employees/form-options` | `employee.create` or `employee.update` | Departments, positions, active managers, assignable roles, next free employee ID |
 | `GET /employees/check-unique` | `employee.create` or `employee.update` | `?email=&employeeCode=&excludeId=` → availability, with the ID of whoever holds the email |

@@ -21,7 +21,7 @@ const LISTED = { deletedAt: null, status: 'ACTIVE' } as const;
  * that one carries date of birth, address and emergency contact, and a card must not be able to
  * return them even by mistake. A new column on `employees` does not appear here by default.
  */
-const CARD_SELECT = {
+export const CARD_SELECT = {
   id: true,
   employeeCode: true,
   firstName: true,
@@ -45,13 +45,14 @@ const CARD_SELECT = {
   },
 } satisfies Prisma.EmployeeSelect;
 
-type Row = Prisma.EmployeeGetPayload<{ select: typeof CARD_SELECT }>;
+export type CardRow = Prisma.EmployeeGetPayload<{ select: typeof CARD_SELECT }>;
+type Row = CardRow;
 
 function initialsOf(first: string, last: string): string {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 }
 
-function toListItem(row: Row): TeamProfileListItem {
+export function toListItem(row: Row): TeamProfileListItem {
   return {
     employeeId: row.id,
     employeeCode: row.employeeCode,
@@ -67,7 +68,7 @@ function toListItem(row: Row): TeamProfileListItem {
   };
 }
 
-function toDetail(row: Row, viewerEmployeeId: string | null): TeamProfileDetail {
+export function toDetail(row: Row, viewerEmployeeId: string | null): TeamProfileDetail {
   const profile = row.teamProfile;
   const showsPersonal = profile?.showPersonalPhone ?? true;
   return {
