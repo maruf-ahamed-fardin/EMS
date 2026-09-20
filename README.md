@@ -4,14 +4,30 @@ The SeloraX employee management system: employees, departments, attendance, leav
 notifications, reports and audit. The repository is one npm workspace: a NestJS API, a Next.js web app
 and the contracts package they share.
 
-| Workspace | What | Stack |
-|---|---|---|
-| `packages/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
-| `backend` | The API at `/api/v1` | NestJS 11, Prisma 7, PostgreSQL 16 |
-| `frontend` | The web app | Next.js 16, React 19, Tailwind 4, shadcn/ui |
+| Folder | Workspace | What | Stack |
+|---|---|---|---|
+| `apps/api` | `@ems/backend` | The API at `/api/v1` | NestJS 11, Prisma 7, PostgreSQL 16 |
+| `apps/web` | `@ems/frontend` | The web app | Next.js 16, React 19, Tailwind 4, shadcn/ui |
+| `packages/contracts` | `@ems/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
+
+The folder and the workspace name differ, so `-w` takes the name: `npm run test -w @ems/backend`.
+`apps/web` never imports from `apps/api`; anything both sides need lives in `packages/contracts`.
+
+```
+apps/
+  api/      src/  prisma/  test/       the API, its schema and migrations, its tests
+  web/      src/  test/  e2e/          the web app, its unit tests and its Playwright tests
+packages/
+  contracts/                           zod schemas, enums, PERMISSIONS, API types
+docs/                                  plan, architecture, API, security, database, deployment
+scripts/                               repository tooling: the payload check, Postgres init SQL
+.github/workflows/                     CI
+```
 
 Start with [`docs/plan.md`](docs/plan.md). It is the source of truth for scope, the order of work and
 the decisions taken. Progress per phase is in [`docs/requirements.md`](docs/requirements.md).
+[`CONTRIBUTING.md`](CONTRIBUTING.md) covers the workflow and what to run before a pull request;
+[`SECURITY.md`](SECURITY.md) covers reporting a vulnerability.
 
 | Document | What it covers |
 |---|---|

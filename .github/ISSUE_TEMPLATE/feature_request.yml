@@ -1,0 +1,29 @@
+name: Feature request
+description: Something the system should do that it does not do yet
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: Who is blocked, and what they are trying to do. Describe the need, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional. If you already have a shape in mind, sketch it here.
+  - type: textarea
+    id: permissions
+    attributes:
+      label: Who should be able to do this
+      description: >
+        Which roles, and whether it reaches beyond a person's own records. Anything that crosses
+        employees needs a permission and a scope — see `docs/permissions.md`.
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before filing
+      options:
+        - label: I checked `docs/plan.md` and `docs/requirements.md` — this is not already planned
