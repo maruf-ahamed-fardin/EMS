@@ -39,6 +39,15 @@ export const PERMISSIONS = {
   'document.delete': { module: 'documents', description: 'Delete documents' },
   'document.manage_types': { module: 'documents', description: 'Manage document types' },
 
+  'team_profile.view': {
+    module: 'team_profile',
+    description: 'Browse the staff directory and open a colleague’s card',
+  },
+  'team_profile.manage_own': {
+    module: 'team_profile',
+    description: 'Edit your own card: photo, business phone, blood group and links',
+  },
+
   'notification.view': { module: 'notifications', description: 'Receive notifications' },
 
   'report.view': { module: 'reports', description: 'View reports' },

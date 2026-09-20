@@ -52,6 +52,8 @@ export const AUDIT_ACTIONS = {
   'document_type.updated': 'Edited a document type',
   'document_type.deleted': 'Deleted a document type',
   'report.exported': 'Exported a report',
+  'team_profile.updated': 'Edited their team profile card',
+  'team_profile.photo_changed': 'Changed their team profile photo',
 } as const;
 export type AuditAction = keyof typeof AUDIT_ACTIONS;
 export const AUDIT_ACTION_KEYS = Object.keys(AUDIT_ACTIONS) as AuditAction[];
@@ -72,6 +74,7 @@ export const AUDIT_ENTITY_TYPES = {
   document: 'Documents',
   document_type: 'Document types',
   report: 'Reports',
+  team_profile: 'Team profile cards',
 } as const;
 export type AuditEntityType = keyof typeof AUDIT_ENTITY_TYPES;
 

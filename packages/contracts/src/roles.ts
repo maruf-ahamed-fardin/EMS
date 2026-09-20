@@ -27,6 +27,8 @@ export const DEFAULT_ROLE_GRANTS: Record<SystemRoleKey, Grants> = {
   hr_admin: allOf(PERMISSION_KEYS.filter((key) => key !== 'user.manage' && key !== 'role.manage')),
 
   manager: {
+    'team_profile.view': 'ALL',
+    'team_profile.manage_own': 'ALL',
     'employee.view': 'TEAM',
     'department.view': 'ALL',
     'position.view': 'ALL',
@@ -43,6 +45,8 @@ export const DEFAULT_ROLE_GRANTS: Record<SystemRoleKey, Grants> = {
   },
 
   employee: {
+    'team_profile.view': 'ALL',
+    'team_profile.manage_own': 'ALL',
     'employee.view': 'OWN',
     'employee.view_private': 'OWN',
     'department.view': 'ALL',

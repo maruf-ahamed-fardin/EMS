@@ -30,6 +30,22 @@ export type AttendanceSource = (typeof AttendanceSource)[number];
 export const LeaveRequestStatus = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
 export type LeaveRequestStatus = (typeof LeaveRequestStatus)[number];
 
+/**
+ * Blood group, shown on the Team Profile card. `POS`/`NEG` rather than +/- because Prisma enum
+ * values must be identifiers; `BLOOD_GROUP_LABELS` renders them as B+ and so on.
+ */
+export const BloodGroup = [
+  'A_POS',
+  'A_NEG',
+  'B_POS',
+  'B_NEG',
+  'AB_POS',
+  'AB_NEG',
+  'O_POS',
+  'O_NEG',
+] as const;
+export type BloodGroup = (typeof BloodGroup)[number];
+
 export const ALL_ENUMS = {
   UserStatus,
   EmploymentType,
@@ -40,4 +56,5 @@ export const ALL_ENUMS = {
   AttendanceRecordType,
   AttendanceSource,
   LeaveRequestStatus,
+  BloodGroup,
 } as const;

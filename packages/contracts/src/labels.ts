@@ -1,4 +1,4 @@
-import type { AttendanceStatus, EmployeeStatus, EmploymentType, LeaveRequestStatus } from './enums';
+import type { AttendanceStatus, BloodGroup, EmployeeStatus, EmploymentType, LeaveRequestStatus } from './enums';
 
 /** Words for stored values, shared by the web app and the reports so both say the same thing. */
 
@@ -25,4 +25,16 @@ export const LEAVE_STATUS_LABELS: Record<LeaveRequestStatus, string> = {
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
   CANCELLED: 'Cancelled',
+};
+
+/** B_POS reads as B+ on the card; the stored value stays an identifier Prisma accepts. */
+export const BLOOD_GROUP_LABELS: Record<BloodGroup, string> = {
+  A_POS: 'A+',
+  A_NEG: 'A-',
+  B_POS: 'B+',
+  B_NEG: 'B-',
+  AB_POS: 'AB+',
+  AB_NEG: 'AB-',
+  O_POS: 'O+',
+  O_NEG: 'O-',
 };

@@ -28,6 +28,7 @@ import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.controller';
 import { OrganizationModule } from './organization/organization.module';
+import { TeamProfileModule } from './team-profile/team-profile.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.controller';
 import { RolesModule } from './roles/roles.module';
@@ -57,6 +58,7 @@ import { UsersModule } from './users/users.controller';
     UsersModule,
     EmployeesModule,
     OrganizationModule,
+    TeamProfileModule,
     DashboardModule,
     AttendanceModule,
     SettingsModule,

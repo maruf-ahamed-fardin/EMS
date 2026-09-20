@@ -22,6 +22,9 @@ export const AUDIT_FIELDS: Record<string, readonly string[]> = {
   document: ['employeeId', 'documentTypeId', 'title', 'mimeType', 'sizeBytes', 'expiresAt', 'deletedAt'],
   document_type: ['name', 'code', 'isSensitive', 'hasExpiry', 'deletedAt'],
   report: ['report', 'format', 'filters', 'rows'],
+  // Link URLs and the numbers themselves are the change, so they are worth keeping; the photo
+  // key never is, and NEVER_LOGGED drops it even if it were listed.
+  team_profile: ['businessPhone', 'bloodGroup', 'headline', 'showPersonalPhone', 'links', 'hasPhoto'],
 };
 
 /** Second line of defence: keys that are never written, even if an allow-list names them. */

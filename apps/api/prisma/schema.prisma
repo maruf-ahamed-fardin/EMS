@@ -81,6 +81,28 @@ enum LeaveRequestStatus {
   CANCELLED
 }
 
+/// Shown on the Team Profile card. POS/NEG because enum values must be identifiers; the UI
+/// renders them as B+ and so on through BLOOD_GROUP_LABELS.
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+/// The link kinds a card can show. Anything else is not stored, so no unknown icons render.
+enum TeamProfileLinkKind {
+  FACEBOOK
+  INSTAGRAM
+  GITHUB
+  LINKEDIN
+  WEBSITE
+}
+
 // ─── Identity and access ────────────────────────────────────────────────────────────────────────
 
 model User {
@@ -250,6 +272,8 @@ model Employee {
   emergencyContact Json           @map("emergency_contact")
   /// Storage key of the profile photo. Never returned to clients.
   photoKey         String?        @map("photo_key")
+  /// Optional and self-declared. Emergency use; each person chooses whether to publish it.
+  bloodGroup       BloodGroup?    @map("blood_group")
   departmentId     String         @map("department_id") @db.Uuid
   positionId       String         @map("position_id") @db.Uuid
   managerId        String?        @map("manager_id") @db.Uuid
@@ -273,6 +297,7 @@ model Employee {
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]
   documents         Document[]
+  teamProfile       TeamProfile?
 
   @@unique([employeeCode], where: { deletedAt: null })
   @@unique([email], where: { deletedAt: null })
@@ -501,6 +526,42 @@ model Notification {
   @@unique([userId, dedupeKey])
   @@index([userId, readAt, createdAt(sort: Desc)])
   @@map("notifications")
+}
+
+// ─── Team Profile ───────────────────────────────────────────────────────────────────────────────
+
+/// What a person adds to their own card on top of their employee record. One row per employee,
+/// created the first time they save. Absent means an unedited card, which is still shown.
+model TeamProfile {
+  employeeId        String   @id @map("employee_id") @db.Uuid
+  /// A second number the person is happy to publish, unlike `employees.phone`.
+  businessPhone     String?  @map("business_phone")
+  /// At most 120 characters; a line about themselves, under the job title.
+  headline          String?
+  /// Hides `employees.phone` from the card without removing it from the employee record.
+  showPersonalPhone Boolean  @default(true) @map("show_personal_phone")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  links    TeamProfileLink[]
+
+  @@map("team_profiles")
+}
+
+/// One social or web link on a card. At most one of each kind per person.
+model TeamProfileLink {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  employeeId String              @map("employee_id") @db.Uuid
+  kind       TeamProfileLinkKind
+  /// Always https; validated before it is stored and again before it is rendered.
+  url        String
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  profile TeamProfile @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+
+  @@unique([employeeId, kind])
+  @@map("team_profile_links")
 }
 
 /// Append-only. Rows are written in the same transaction as the change they describe.
