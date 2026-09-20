@@ -1,5 +1,5 @@
 import { BLOOD_GROUP_LABELS, can, type DataResponse, type TeamProfileDetail } from '@ems/contracts';
-import { ArrowLeft, Building2, Copy, Droplet, Mail, MapPin, Phone } from 'lucide-react';
+import { ArrowLeft, Building2, Droplet, Mail, MapPin, Phone } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';

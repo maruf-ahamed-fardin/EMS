@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils';
  * Only these five kinds exist, so every link renders as a known icon and nothing unrecognised can
  * appear. `noreferrer` because these point off our origin, and they are people's own accounts.
  */
-type Icon = (props: { className?: string }) => React.ReactElement;
+/** Both lucide icons and the hand-drawn brand marks take a className and nothing else here. */
+type Icon = React.ComponentType<{ className?: string }>;
 
 const LINKS: Record<TeamProfileLinkKind, { icon: Icon; label: string; className: string }> = {
   FACEBOOK: { icon: FacebookIcon, label: 'Facebook', className: 'bg-[#eef0fb] text-[#1b5fc1] dark:bg-[#1b5fc1]/15 dark:text-[#8ab4f8]' },

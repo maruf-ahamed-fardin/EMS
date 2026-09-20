@@ -8,9 +8,11 @@ export function ProfileCardTile({ person }: { person: TeamProfileListItem }) {
   return (
     <Link
       href={`/team-profile/${person.employeeId}`}
-      className="group block rounded-2xl bg-gradient-to-r from-primary via-[#7b3fe4] to-[#d9481f] p-px shadow-panel transition-shadow hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+      className="group block overflow-hidden rounded-2xl border bg-card shadow-panel transition-shadow hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
     >
-      <div className="h-full rounded-[calc(var(--radius)+8px)] bg-card p-5">
+      {/* The brand edge, as on the full card */}
+      <div aria-hidden className="h-1 bg-gradient-to-r from-primary via-[#7b3fe4] to-[#d9481f]" />
+      <div className="p-5">
         <div className="flex items-center gap-3">
           <ProfileAvatar initials={person.initials} size="sm" />
           <div className="min-w-0">

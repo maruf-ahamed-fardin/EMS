@@ -12,6 +12,8 @@ describe('visibleNavigation', () => {
   it('gives an employee the short menu', () => {
     expect(hrefsFor('employee')).toEqual([
       '/dashboard',
+      // Team Profile is for everyone: it is the staff directory
+      '/team-profile',
       '/departments',
       '/positions',
       '/attendance',
