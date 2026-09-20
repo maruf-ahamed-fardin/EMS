@@ -7,6 +7,7 @@ import {
 import {
   BriefcaseBusiness,
   Building2,
+  ContactRound,
   CalendarCheck,
   ChartColumn,
   FileText,
@@ -51,6 +52,7 @@ export const NAVIGATION: readonly NavGroup[] = [
   {
     label: 'People',
     items: [
+      { label: 'Team Profile', href: '/team-profile', icon: ContactRound, anyOf: [['team_profile.view']] },
       { label: 'Employees', href: '/employees', icon: Users, anyOf: [['employee.view', 'TEAM']] },
       { label: 'Departments', href: '/departments', icon: Building2, anyOf: [['department.view']] },
       { label: 'Positions', href: '/positions', icon: BriefcaseBusiness, anyOf: [['position.view']] },
