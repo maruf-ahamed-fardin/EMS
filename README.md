@@ -53,7 +53,7 @@ set `MAIL_DRIVER=smtp` and `SMTP_URL=smtp://127.0.0.1:1025` and open Mailpit at 
 |---|---|
 | `npm run dev` | Everything in watch mode |
 | `npm run typecheck` / `lint` / `test` / `build` | Across all three workspaces |
-| `npm run db:migrate` | Create a migration after editing `backend/prisma/schema.prisma` |
+| `npm run db:migrate` | Create a migration after editing `apps/api/prisma/schema.prisma` |
 | `npm run db:deploy` | Apply migrations (the release step in production, never at app start) |
 | `npm run catalogue:sync -w @ems/backend` | Align permissions and system roles with this build (release step, after `db:deploy`) |
 | `npm run db:seed` | Development demo data. Refuses production. |
@@ -70,7 +70,7 @@ The compose file creates `ems_test` for this.
 - **Installs are age-gated.** `.npmrc` refuses package versions younger than 7 days and never runs
   install scripts. Don't override it to get a newer version faster.
 - **Configuration is validated at startup.** The backend reads every variable through
-  `backend/src/config/env.ts`, and its errors name the variable, never the value.
+  `apps/api/src/config/env.ts`, and its errors name the variable, never the value.
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
 
 More detail: [architecture](docs/architecture.md) · [database](docs/database.md) · [API](docs/api.md) ·

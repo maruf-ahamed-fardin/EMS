@@ -23,14 +23,14 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 
 ## Conventions
 
-- **Environment:** every variable goes through `backend/src/config/env.ts`. It validates at startup
+- **Environment:** every variable goes through `apps/api/src/config/env.ts`. It validates at startup
   and its errors name the variable, never the value.
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
 - **No real credentials or HR data** in this repository until the September 2026 password and token
   rotation is confirmed (plan D8). Everything is built on seed data.
 - **Installs are age-gated.** `.npmrc` refuses package versions younger than 7 days and never runs
   install scripts. Don't override it to get a newer version faster.
-- **After editing `backend/prisma/schema.prisma`,** run `npm run db:migrate`; `npm run db:drift -w
+- **After editing `apps/api/prisma/schema.prisma`,** run `npm run db:migrate`; `npm run db:drift -w
   @ems/backend` fails when the schema has changes with no migration.
 - **`npm run check:payload`** looks for code hidden after long runs of spaces (the September 2026
   incident). CI runs it before installing anything.
@@ -40,4 +40,4 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 No Docker on the development PC: `docker-compose.yml` is the documented path, but Postgres is run
 from a portable build on `127.0.0.1:5433`. The demo accounts are `superadmin@`, `hr@`, `manager@`
 and `employee@demo.selorax.test`. `npm run db:seed` sets their password from `SEED_PASSWORD`, which
-`backend/src/auth/password-policy.ts` requires to be 10+ characters.
+`apps/api/src/auth/password-policy.ts` requires to be 10+ characters.

@@ -108,8 +108,8 @@ jobs:
         with:
           name: playwright-report
           path: |
-            frontend/playwright-report
-            frontend/test-results
+            apps/web/playwright-report
+            apps/web/test-results
           retention-days: 7
 
   # The Dockerfiles can't be built on the development PC (no Docker), so CI proves them on every change
@@ -124,13 +124,13 @@ jobs:
         run: node scripts/check-payload.mjs
       - name: Build the API, release and web images
         run: |
-          docker build -f backend/Dockerfile --target runtime -t ems-api .
-          docker build -f backend/Dockerfile --target migrate -t ems-migrate .
-          docker build -f frontend/Dockerfile --build-arg API_ORIGIN=http://api:4000 -t ems-web .
+          docker build -f apps/api/Dockerfile --target runtime -t ems-api .
+          docker build -f apps/api/Dockerfile --target migrate -t ems-migrate .
+          docker build -f apps/web/Dockerfile --build-arg API_ORIGIN=http://api:4000 -t ems-web .
       - name: Images run as a non-root user and load their native and generated code
         run: |
           test "$(docker run --rm ems-api id -u)" != "0"
           test "$(docker run --rm ems-web id -u)" != "0"
           docker run --rm ems-api node -e "require('argon2'); require('./dist/generated/prisma/client'); console.log('api ok')"
-          docker run --rm ems-web test -f frontend/server.js
+          docker run --rm ems-web test -f apps/web/server.js
           docker run --rm ems-migrate npx prisma --version

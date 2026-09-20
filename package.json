@@ -5,8 +5,7 @@
   "description": "SeloraX Employee Management System",
   "workspaces": [
     "packages/*",
-    "backend",
-    "frontend"
+    "apps/*"
   ],
   "engines": {
     "node": ">=22.12"
