@@ -1,4 +1,4 @@
-import type { DataResponse, EmployeeDetail } from '@ems/contracts';
+import { can, type DataResponse, type EmployeeDetail, type OwnTeamProfile } from '@ems/contracts';
 import { KeyRound, UserRound } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -10,11 +10,14 @@ import { Button } from '@/components/ui/button';
 import { ApiRequestError } from '@/lib/api-error';
 import { EMPLOYMENT_TYPE_LABELS, formatDate } from '@/lib/employees';
 import { serverApiJson } from '@/lib/server-api';
+import { getSession } from '@/lib/session';
+import { MyCardForm } from './my-card-form';
 import { MyContactForm } from './my-contact-form';
 
 export const metadata: Metadata = { title: 'My profile' };
 
 export default async function MyProfilePage() {
+  const session = await getSession();
   let me: EmployeeDetail;
   try {
     me = (await serverApiJson<DataResponse<EmployeeDetail>>('/me/profile')).data;
@@ -40,6 +43,13 @@ export default async function MyProfilePage() {
     }
     throw error;
   }
+
+  // The card is a separate resource, and a missing one is not a reason to fail the page
+  const card = can(session?.permissions ?? {}, 'team_profile.manage_own')
+    ? await serverApiJson<DataResponse<OwnTeamProfile>>('/team-profile/me')
+        .then((response) => response.data)
+        .catch(() => null)
+    : null;
 
   return (
     <>
@@ -79,7 +89,10 @@ export default async function MyProfilePage() {
             ))}
           </dl>
         </aside>
-        {me.private && <MyContactForm phone={me.phone} details={me.private} />}
+        <div className="flex flex-col gap-6">
+          {me.private && <MyContactForm phone={me.phone} details={me.private} />}
+          {card && <MyCardForm card={card} employeeId={me.id} />}
+        </div>
       </div>
     </>
   );
