@@ -1,12 +1,15 @@
+'use client';
+
 import { DEFAULT_THEME, DARK_QUERY, THEME_STORAGE_KEY } from '@/lib/theme';
 
 /**
  * Sets the theme on `<html>` before the page paints, so there is no flash of the wrong one.
  *
- * This is a server component on purpose. React 19 warns when a client component renders a
- * `<script>` ("Scripts inside React components are never executed when rendering on the client"),
- * which is what next-themes did. Rendered here it is part of the server-sent HTML, runs once, and
- * is never re-rendered on the client.
+ * Only the server-rendered copy runs. When React creates the element in the browser instead of
+ * hydrating it (the root `<head>` is client-rendered after an error or a root remount), a script
+ * would never execute and React 19 warns "Encountered a script tag while rendering React
+ * component". On the client it is therefore a `text/plain` data block, which React leaves alone;
+ * the `type` mismatch against the server HTML is covered by `suppressHydrationWarning`.
  *
  * `nonce` is the per-request CSP nonce from `proxy.ts`; without it the script is blocked.
  */
@@ -26,5 +29,12 @@ export function ThemeScript({ nonce }: { nonce?: string }) {
     `e.classList.remove("light","dark");e.classList.add(r);e.style.colorScheme=r;` +
     `}catch(_){}})();`;
 
-  return <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: script }} />;
+  return (
+    <script
+      type={typeof window === 'undefined' ? undefined : 'text/plain'}
+      nonce={nonce}
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: script }}
+    />
+  );
 }

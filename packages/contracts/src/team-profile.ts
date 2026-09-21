@@ -19,7 +19,10 @@ export interface TeamProfileLink {
   url: string;
 }
 
-/** One card in the grid. Enough to recognise someone and reach them; nothing private. */
+/**
+ * One card in the grid. Enough to recognise someone and reach them; nothing private. Personal
+ * phone and blood group stay on the full card, one click away.
+ */
 export interface TeamProfileListItem {
   employeeId: string;
   employeeCode: string;
@@ -33,20 +36,20 @@ export interface TeamProfileListItem {
   hasPhoto: boolean;
   /** Whether a tag has been issued for this person, so the grid can mark it. */
   hasTag: boolean;
-}
-
-export interface TeamProfileDetail extends TeamProfileListItem {
-  /** `employees.phone`. Hidden when the person has hidden it, and never on a public card. */
-  personalPhone: string | null;
   /** Self-declared, optional. */
   businessPhone: string | null;
-  /** Self-declared, optional; hidden on a public card. */
-  bloodGroup: BloodGroup | null;
   /** A line the person writes about themselves, at most 120 characters. */
   headline: string | null;
   links: TeamProfileLink[];
   managerName: string | null;
   joiningDate: string;
+}
+
+export interface TeamProfileDetail extends TeamProfileListItem {
+  /** `employees.phone`. Hidden when the person has hidden it, and never on a public card. */
+  personalPhone: string | null;
+  /** Self-declared, optional; hidden on a public card. */
+  bloodGroup: BloodGroup | null;
   /** True when this card is the viewer's own, so the UI can offer Edit. */
   isSelf: boolean;
 }

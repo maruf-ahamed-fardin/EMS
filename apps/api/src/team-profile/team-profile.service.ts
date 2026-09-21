@@ -65,21 +65,20 @@ export function toListItem(row: Row): TeamProfileListItem {
     hasPhoto: row.photoKey !== null,
     // Tags arrive with the NFC phase; until then no card claims to have one.
     hasTag: false,
+    businessPhone: row.teamProfile?.businessPhone ?? null,
+    headline: row.teamProfile?.headline ?? null,
+    links: row.teamProfile?.links ?? [],
+    managerName: row.manager ? `${row.manager.firstName} ${row.manager.lastName}` : null,
+    joiningDate: row.joiningDate.toISOString().slice(0, 10),
   };
 }
 
 export function toDetail(row: Row, viewerEmployeeId: string | null): TeamProfileDetail {
-  const profile = row.teamProfile;
-  const showsPersonal = profile?.showPersonalPhone ?? true;
+  const showsPersonal = row.teamProfile?.showPersonalPhone ?? true;
   return {
     ...toListItem(row),
     personalPhone: showsPersonal ? row.phone : null,
-    businessPhone: profile?.businessPhone ?? null,
     bloodGroup: row.bloodGroup,
-    headline: profile?.headline ?? null,
-    links: profile?.links ?? [],
-    managerName: row.manager ? `${row.manager.firstName} ${row.manager.lastName}` : null,
-    joiningDate: row.joiningDate.toISOString().slice(0, 10),
     isSelf: viewerEmployeeId !== null && viewerEmployeeId === row.id,
   };
 }

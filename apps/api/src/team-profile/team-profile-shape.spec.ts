@@ -58,6 +58,16 @@ describe('the Team Profile shape', () => {
     );
   });
 
+  it('keeps the personal number and blood group off the grid, for the full card only', () => {
+    expect(Object.keys(toListItem(row)).sort()).toEqual(
+      [
+        'employeeId', 'employeeCode', 'fullName', 'initials', 'position', 'department', 'workLocation',
+        'email', 'hasPhoto', 'hasTag', 'businessPhone', 'headline', 'links', 'managerName', 'joiningDate',
+      ].sort(),
+    );
+    expect(JSON.stringify(toListItem(row))).not.toContain('8801711234567');
+  });
+
   it('hides the personal number when the person turned it off', () => {
     const shown = toDetail(row, null);
     expect(shown.personalPhone).toBe('+8801711234567');

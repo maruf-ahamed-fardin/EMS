@@ -18,9 +18,18 @@ const LINKS: Record<TeamProfileLinkKind, { icon: Icon; label: string; className:
   WEBSITE: { icon: Globe, label: 'Website', className: 'bg-accent text-accent-foreground' },
 };
 
-export function ProfileLinks({ links, className }: { links: TeamProfileLink[]; className?: string }) {
+export function ProfileLinks({
+  links,
+  size = 'md',
+  className,
+}: {
+  links: TeamProfileLink[];
+  /** `sm` for the grid tile, `md` for the full card. */
+  size?: 'sm' | 'md';
+  className?: string;
+}) {
   return (
-    <ul className={cn('flex list-none flex-wrap justify-center gap-2.5 p-0', className)}>
+    <ul className={cn('flex list-none flex-wrap justify-center p-0', size === 'sm' ? 'gap-1.5' : 'gap-2.5', className)}>
       {links.map((link) => {
         const { icon: Icon, label, className: tone } = LINKS[link.kind];
         return (
@@ -32,11 +41,12 @@ export function ProfileLinks({ links, className }: { links: TeamProfileLink[]; c
               aria-label={label}
               title={label}
               className={cn(
-                'grid size-11 place-items-center rounded-full transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
+                'grid place-items-center rounded-full transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
+                size === 'sm' ? 'size-8' : 'size-11',
                 tone,
               )}
             >
-              <Icon className="size-[19px]" />
+              <Icon className={size === 'sm' ? 'size-[15px]' : 'size-[19px]'} />
             </a>
           </li>
         );
