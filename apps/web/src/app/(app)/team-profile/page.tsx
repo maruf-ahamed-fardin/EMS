@@ -1,12 +1,11 @@
 import {
   can,
   type DataResponse,
-  type ListResponse,
   type TeamProfileFilters as Filters,
-  type TeamProfileListItem,
+  type TeamProfileListResponse,
   teamProfileQuery,
 } from '@ems/contracts';
-import { SearchX } from 'lucide-react';
+import { SearchX, UserSearch, Users } from 'lucide-react';
 import type { Metadata } from 'next';
 import { Forbidden } from '@/components/shared/module-page';
 import { PageHeader } from '@/components/shared/page-header';
@@ -44,11 +43,19 @@ export default async function TeamProfilePage({ searchParams }: { searchParams: 
     ),
   );
 
+  // Browsing everyone is for HR, managers and admins; everyone else looks one person up at a time.
+  // The API enforces this — the page only chooses what to draw.
+  const browse = can(session.permissions, 'team_profile.browse');
+
   const [list, filters] = await Promise.all([
-    serverApiJson<ListResponse<TeamProfileListItem>>(`/team-profile?${apiQuery.toString()}`),
-    serverApiJson<DataResponse<Filters>>('/team-profile/filters').then((response) => response.data),
+    serverApiJson<TeamProfileListResponse>(`/team-profile?${apiQuery.toString()}`),
+    browse
+      ? serverApiJson<DataResponse<Filters>>('/team-profile/filters').then((response) => response.data)
+      : Promise.resolve(null),
   ]);
-  redirectPastLastPage(list.meta, (page) => teamProfileHref(params, { page: String(page) }));
+  if (list.mode === 'browse') {
+    redirectPastLastPage(list.meta, (page) => teamProfileHref(params, { page: String(page) }));
+  }
 
   const searching = Boolean(params.q ?? params.departmentId ?? params.workLocation);
 
@@ -56,14 +63,20 @@ export default async function TeamProfilePage({ searchParams }: { searchParams: 
     <>
       <PageHeader
         title="Team Profile"
-        description="Everyone at SeloraX. Search by name or employee ID, then open a card to get in touch."
+        description={
+          list.mode === 'browse'
+            ? 'Everyone at SeloraX. Search, filter by team or place, and open a card to get in touch.'
+            : 'Look up a colleague by full name, work email or employee ID, or scan their card.'
+        }
       />
 
       <div className="mb-5">
         <TeamProfileFilters params={params} filters={filters} />
       </div>
 
-      {list.data.length === 0 ? (
+      {list.mode === 'lookup' ? (
+        <LookupResult list={list} query={params.q} />
+      ) : list.data.length === 0 ? (
         <StatePanel
           icon={SearchX}
           title="Nobody matches that"
@@ -71,12 +84,13 @@ export default async function TeamProfilePage({ searchParams }: { searchParams: 
         />
       ) : (
         <>
-          <p className="mb-4 text-sm text-muted-foreground">
+          <p className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Users aria-hidden className="size-4" />
             {list.meta.total} {list.meta.total === 1 ? 'person' : 'people'}
             {searching ? ' match' : ''}
           </p>
 
-          <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
             {list.data.map((person) => (
               <li key={person.employeeId}>
                 <ProfileCardTile person={person} />
@@ -84,7 +98,7 @@ export default async function TeamProfilePage({ searchParams }: { searchParams: 
             ))}
           </ul>
 
-          <div className="mt-2 rounded-2xl border bg-card">
+          <div className="mt-5 rounded-2xl border bg-card">
             <Pagination
               meta={list.meta}
               hrefFor={(page) => teamProfileHref(params, { page: String(page) })}
@@ -94,5 +108,58 @@ export default async function TeamProfilePage({ searchParams }: { searchParams: 
         </>
       )}
     </>
+  );
+}
+
+/**
+ * A lookup shows the person searched for — or everyone who shares that exact name, each with their
+ * own employee ID — or explains why it shows nobody.
+ */
+function LookupResult({ list, query }: { list: TeamProfileListResponse; query: string | undefined }) {
+  const [first] = list.data;
+  if (first && list.data.length === 1) {
+    return (
+      <div className="mx-auto w-full max-w-md">
+        <ProfileCardTile person={first} />
+      </div>
+    );
+  }
+  if (first) {
+    return (
+      <>
+        <p className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <Users aria-hidden className="size-4" />
+          {list.data.length} people are called {first.fullName}. Check the employee ID to find the one you mean.
+        </p>
+        <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+          {list.data.map((person) => (
+            <li key={person.employeeId}>
+              <ProfileCardTile person={person} />
+            </li>
+          ))}
+        </ul>
+      </>
+    );
+  }
+  if (!query) {
+    return (
+      <StatePanel
+        icon={UserSearch}
+        title="Who are you looking for?"
+        description="Type a colleague’s full name, work email or employee ID (such as SX-001), or scan their QR code or NFC tag."
+      />
+    );
+  }
+  if (list.ambiguous) {
+    return (
+      <StatePanel
+        icon={UserSearch}
+        title="Different people match that"
+        description="Type their full name, or use their work email or employee ID, to find the one you mean."
+      />
+    );
+  }
+  return (
+    <StatePanel icon={SearchX} title="Nobody matches that" description="Check the spelling, or try their employee ID such as SX-001." />
   );
 }

@@ -1,11 +1,10 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
 import {
   type DataResponse,
-  type ListResponse,
   type OwnTeamProfile,
   type TeamProfileDetail,
   type TeamProfileFilters,
-  type TeamProfileListItem,
+  type TeamProfileListResponse,
   teamProfileQuery,
   updateOwnTeamProfileSchema,
 } from '@ems/contracts';
@@ -18,10 +17,10 @@ class TeamProfileQueryDto extends createZodDto(teamProfileQuery) {}
 class UpdateOwnTeamProfileDto extends createZodDto(updateOwnTeamProfileSchema) {}
 
 /**
- * The staff directory (Team Profile). Unlike `/employees`, the reach is not scoped: everyone who
- * holds `team_profile.view` sees everyone, which is the point of a directory. What keeps that safe
- * is the response shape — the service reads its own short column list, so no private employee
- * field can appear here even if one is added to the table later.
+ * The staff directory (Team Profile). `team_profile.view` lets someone look a colleague up and
+ * open their card; `team_profile.browse` lets them page through everyone (see the service). What
+ * keeps a card safe is its shape — the service reads its own short column list, so no private
+ * employee field can appear here even if one is added to the table later.
  */
 @Controller('team-profile')
 export class TeamProfileController {
@@ -29,12 +28,12 @@ export class TeamProfileController {
 
   @RequirePermission('team_profile.view')
   @Get()
-  async list(@Query() query: TeamProfileQueryDto): Promise<ListResponse<TeamProfileListItem>> {
-    return this.teamProfile.list(query);
+  async list(@CurrentAuth() auth: AuthContext, @Query() query: TeamProfileQueryDto): Promise<TeamProfileListResponse> {
+    return this.teamProfile.list(auth, query);
   }
 
   /** The departments and locations that actually have someone listed, for the filter menus. */
-  @RequirePermission('team_profile.view')
+  @RequirePermission('team_profile.browse')
   @Get('filters')
   async filters(): Promise<DataResponse<TeamProfileFilters>> {
     return { data: await this.teamProfile.filters() };

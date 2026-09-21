@@ -41,7 +41,11 @@ export const PERMISSIONS = {
 
   'team_profile.view': {
     module: 'team_profile',
-    description: 'Browse the staff directory and open a colleague’s card',
+    description: 'Look up a colleague by name, email or employee ID and open their card',
+  },
+  'team_profile.browse': {
+    module: 'team_profile',
+    description: 'Browse and filter the whole staff directory, not only look people up',
   },
   'team_profile.manage_own': {
     module: 'team_profile',

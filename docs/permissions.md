@@ -43,14 +43,24 @@ async findOne(@CurrentAuth() auth: AuthContext, @Param('id') id: string) {
 Permission changes reach sessions within 60 seconds (the `PermissionsService` cache), and at once on
 the instance that made them.
 
-## Team Profile: the one unscoped module
+## Team Profile: look up, or browse
 
-`team_profile.view` has no scope. Every other "view" permission narrows to OWN, TEAM or ALL, but a
-staff directory that shows only your own team is not a directory, so this one always reaches
-everyone. What makes that safe is the response rather than the reach: `CARD_SELECT` in
-`team-profile.service.ts` is a short, explicit column list, and `team-profile-shape.spec.ts` fails
-if a private field ever reaches a card. `team_profile.manage_own` lets a person edit their own card
-and nobody else's; editing someone else's is `employee.update`.
+`team_profile.view` and `team_profile.browse` have no scope; what they reach is decided by which of
+them a role holds.
+
+- `team_profile.view` (every default role) lets a person **look a colleague up**: the directory is
+  empty until they search, and then shows only the person the search names — an exact employee
+  ID or work email, or a name. If several people share that exact name, all of them are shown (at
+  most 10), each with their own employee ID. A search matching people with different names
+  returns nobody, so a one-letter query cannot list the company. They can open that card, save the
+  contact, and scan a colleague's QR code or NFC tag.
+- `team_profile.browse` (Super Admin, HR / Admin and Manager by default) lets a person **page
+  through everyone**, with the department and location filters.
+
+Both are enforced in `TeamProfileService.list`, not in the page. What keeps a card safe either way
+is the response: `CARD_SELECT` in `team-profile.service.ts` is a short, explicit column list, and
+`team-profile-shape.spec.ts` fails if a private field ever reaches a card. `team_profile.manage_own`
+lets a person edit their own card and nobody else's; editing someone else's is `employee.update`.
 
 ## Default roles
 

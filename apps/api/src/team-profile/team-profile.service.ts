@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
+  can,
   type OwnTeamProfile,
   pageMeta,
   type TeamProfileDetail,
   type TeamProfileFilters,
   type TeamProfileListItem,
+  type TeamProfileListResponse,
   type TeamProfileQuery,
   type UpdateOwnTeamProfileInput,
 } from '@ems/contracts';
@@ -12,6 +14,9 @@ import type { AuthContext } from '../auth/auth-context';
 import { AuditService } from '../audit/audit.service';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+/** The most namesakes a lookup returns; past this the viewer has to use the employee ID. */
+export const LOOKUP_NAMESAKES_MAX = 10;
 
 /** Only people who are here and working appear on the directory. */
 const LISTED = { deletedAt: null, status: 'ACTIVE' } as const;
@@ -45,8 +50,31 @@ export const CARD_SELECT = {
   },
 } satisfies Prisma.EmployeeSelect;
 
+/**
+ * Every word of the search must match somewhere, so "anika akter" finds Anika Akter rather than
+ * nobody (no single column contains both words) or everyone called Anika.
+ */
+export function searchWhere(q: string): Prisma.EmployeeWhereInput {
+  const terms = q.split(/\s+/).filter(Boolean);
+  return {
+    AND: terms.map((term) => ({
+      OR: [
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+        { employeeCode: { contains: term, mode: 'insensitive' } },
+        { email: { contains: term, mode: 'insensitive' } },
+      ],
+    })),
+  };
+}
+
 export type CardRow = Prisma.EmployeeGetPayload<{ select: typeof CARD_SELECT }>;
 type Row = CardRow;
+
+/** Two people have the same name when these match: case and extra spaces do not count. */
+function fullNameKey(first: string, last: string): string {
+  return `${first} ${last}`.trim().replace(/\s+/g, ' ').toLowerCase();
+}
 
 function initialsOf(first: string, last: string): string {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
@@ -91,24 +119,18 @@ export class TeamProfileService {
   ) {}
 
   /**
-   * Everyone with `team_profile.view` sees everyone: that is what a staff directory is, and it is
-   * why the card carries no private field. Employee scopes (OWN, TEAM) do not apply here.
+   * The directory. `team_profile.browse` (HR, managers, admins by default) pages through everyone,
+   * with filters. Without it the list is a lookup: see {@link lookup}. Either way the response
+   * is the card shape, which carries no private field.
    */
-  async list(query: TeamProfileQuery) {
+  async list(auth: AuthContext, query: TeamProfileQuery): Promise<TeamProfileListResponse> {
+    if (!can(auth.permissions, 'team_profile.browse')) return this.lookup(query);
+
     const where: Prisma.EmployeeWhereInput = {
       ...LISTED,
       ...(query.departmentId ? { departmentId: query.departmentId } : {}),
       ...(query.workLocation ? { workLocation: query.workLocation } : {}),
-      ...(query.q
-        ? {
-            OR: [
-              { firstName: { contains: query.q, mode: 'insensitive' } },
-              { lastName: { contains: query.q, mode: 'insensitive' } },
-              { employeeCode: { contains: query.q, mode: 'insensitive' } },
-              { email: { contains: query.q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
+      ...(query.q ? searchWhere(query.q) : {}),
     };
 
     const [rows, total] = await Promise.all([
@@ -122,7 +144,55 @@ export class TeamProfileService {
       this.prisma.employee.count({ where }),
     ]);
 
-    return { data: rows.map(toListItem), meta: pageMeta(query.page, query.limit, total) };
+    return { data: rows.map(toListItem), meta: pageMeta(query.page, query.limit, total), mode: 'browse', ambiguous: false };
+  }
+
+  /**
+   * For people who may look a colleague up but not browse: nothing until they search, and then
+   * only the person the search names — an exact employee ID or email, or a name. When several
+   * people share that same full name, all of them are shown (up to {@link LOOKUP_NAMESAKES_MAX}),
+   * each with their own employee ID. A search matching *different* names returns nobody, so a
+   * one-letter query cannot list the company. Filters and paging are ignored.
+   */
+  private async lookup(query: TeamProfileQuery): Promise<TeamProfileListResponse> {
+    const none = (ambiguous: boolean): TeamProfileListResponse => ({
+      data: [],
+      meta: pageMeta(1, query.limit, 0),
+      mode: 'lookup',
+      ambiguous,
+    });
+    const found = (rows: CardRow[]): TeamProfileListResponse => ({
+      data: rows.map(toListItem),
+      meta: pageMeta(1, Math.max(query.limit, rows.length), rows.length),
+      mode: 'lookup',
+      ambiguous: false,
+    });
+
+    if (!query.q) return none(false);
+
+    const exact = await this.prisma.employee.findFirst({
+      where: {
+        ...LISTED,
+        OR: [
+          { employeeCode: { equals: query.q, mode: 'insensitive' } },
+          { email: { equals: query.q, mode: 'insensitive' } },
+        ],
+      },
+      select: CARD_SELECT,
+    });
+    if (exact) return found([exact]);
+
+    // One more than the cap: enough to know whether the search names one name, never a list
+    const rows = await this.prisma.employee.findMany({
+      where: { ...LISTED, ...searchWhere(query.q) },
+      orderBy: [{ employeeCode: 'asc' }],
+      take: LOOKUP_NAMESAKES_MAX + 1,
+      select: CARD_SELECT,
+    });
+    if (rows.length === 0) return none(false);
+    const names = new Set(rows.map((row) => fullNameKey(row.firstName, row.lastName)));
+    if (names.size === 1 && rows.length <= LOOKUP_NAMESAKES_MAX) return found(rows);
+    return none(true);
   }
 
   async filters(): Promise<TeamProfileFilters> {
@@ -213,4 +283,5 @@ export class TeamProfileService {
 
     return this.own(auth);
   }
+
 }

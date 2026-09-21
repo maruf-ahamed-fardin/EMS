@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { paginationQuery } from './api';
+import { type PageMeta, paginationQuery } from './api';
 import { BloodGroup } from './enums';
 
 /**
@@ -52,6 +52,18 @@ export interface TeamProfileDetail extends TeamProfileListItem {
   bloodGroup: BloodGroup | null;
   /** True when this card is the viewer's own, so the UI can offer Edit. */
   isSelf: boolean;
+}
+
+/**
+ * `GET /team-profile`. With `team_profile.browse` it is an ordinary page of the directory. Without
+ * it, it is a lookup: nothing until the viewer searches, and then only the one person the search
+ * names. A search that names several people returns nobody and sets `ambiguous`.
+ */
+export interface TeamProfileListResponse {
+  data: TeamProfileListItem[];
+  meta: PageMeta;
+  mode: 'browse' | 'lookup';
+  ambiguous: boolean;
 }
 
 // ─── Queries ────────────────────────────────────────────────────────────────────────────────────

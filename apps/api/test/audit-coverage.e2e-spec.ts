@@ -49,6 +49,7 @@ const WRITE_ROUTES: Record<string, { audits: AuditAction[] } | 'exempt'> = {
   'PATCH /leave/types/:id': { audits: ['leave_type.updated'] },
   'DELETE /leave/types/:id': { audits: ['leave_type.deleted'] },
   'POST /employees/:id/documents': { audits: ['document.uploaded'] },
+  'PATCH /team-profile/me': { audits: ['team_profile.updated'] },
   'DELETE /documents/:id': { audits: ['document.deleted'] },
   'POST /document-types': { audits: ['document_type.created'] },
   'PATCH /document-types/:id': { audits: ['document_type.updated'] },

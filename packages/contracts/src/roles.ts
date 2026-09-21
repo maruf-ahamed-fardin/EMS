@@ -28,6 +28,7 @@ export const DEFAULT_ROLE_GRANTS: Record<SystemRoleKey, Grants> = {
 
   manager: {
     'team_profile.view': 'ALL',
+    'team_profile.browse': 'ALL',
     'team_profile.manage_own': 'ALL',
     'employee.view': 'TEAM',
     'department.view': 'ALL',

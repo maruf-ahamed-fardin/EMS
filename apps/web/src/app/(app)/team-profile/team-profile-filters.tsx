@@ -11,13 +11,16 @@ import { SEARCH_MAX_LENGTH, useUrlSearch } from '@/lib/use-url-search';
 
 const ANY = '__any__';
 
-/** Search and filters. Every change goes into the URL, so the server renders the new list. */
+/**
+ * Search and filters. Every change goes into the URL, so the server renders the new list. Without
+ * `filters` (a viewer who can only look people up) it is the search box alone.
+ */
 export function TeamProfileFilters({
   params,
   filters,
 }: {
   params: Record<string, string | undefined>;
-  filters: Filters;
+  filters: Filters | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -38,7 +41,7 @@ export function TeamProfileFilters({
           maxLength={SEARCH_MAX_LENGTH}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search by name or employee ID"
+          placeholder={filters ? 'Search by name, email or employee ID' : 'Full name, work email or employee ID'}
           aria-label="Search the team profile"
           className="h-11 pr-9 pl-9"
         />
@@ -61,39 +64,43 @@ export function TeamProfileFilters({
         )}
       </div>
 
-      <Select
-        value={params.departmentId ?? ANY}
-        onValueChange={(value) => go({ departmentId: value === ANY ? undefined : value })}
-      >
-        <SelectTrigger className="h-11 lg:w-56" aria-label="Filter by department">
-          <SelectValue placeholder="All departments" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ANY}>All departments</SelectItem>
-          {filters.departments.map((department) => (
-            <SelectItem key={department.id} value={department.id}>
-              {department.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {filters && (
+        <>
+          <Select
+            value={params.departmentId ?? ANY}
+            onValueChange={(value) => go({ departmentId: value === ANY ? undefined : value })}
+          >
+            <SelectTrigger className="h-11 lg:w-56" aria-label="Filter by department">
+              <SelectValue placeholder="All departments" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>All departments</SelectItem>
+              {filters.departments.map((department) => (
+                <SelectItem key={department.id} value={department.id}>
+                  {department.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-      <Select
-        value={params.workLocation ?? ANY}
-        onValueChange={(value) => go({ workLocation: value === ANY ? undefined : value })}
-      >
-        <SelectTrigger className="h-11 lg:w-48" aria-label="Filter by location">
-          <SelectValue placeholder="All locations" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ANY}>All locations</SelectItem>
-          {filters.workLocations.map((location) => (
-            <SelectItem key={location} value={location}>
-              {location}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          <Select
+            value={params.workLocation ?? ANY}
+            onValueChange={(value) => go({ workLocation: value === ANY ? undefined : value })}
+          >
+            <SelectTrigger className="h-11 lg:w-48" aria-label="Filter by location">
+              <SelectValue placeholder="All locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>All locations</SelectItem>
+              {filters.workLocations.map((location) => (
+                <SelectItem key={location} value={location}>
+                  {location}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
+      )}
     </div>
   );
 }
