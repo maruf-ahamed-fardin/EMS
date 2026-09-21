@@ -79,6 +79,7 @@ export async function seedDemoTeamProfiles(prisma: PrismaClient) {
     const urls: Record<(typeof TeamProfileLinkKind)[number], string> = {
       FACEBOOK: `https://facebook.com/${handle}`,
       INSTAGRAM: `https://instagram.com/${handle}`,
+      DISCORD: `https://discord.com/users/${100000000000000000n + BigInt(n)}`,
       GITHUB: `https://github.com/${handle}`,
       LINKEDIN: `https://linkedin.com/in/${handle}`,
       WEBSITE: `https://${handle}.example.com`,

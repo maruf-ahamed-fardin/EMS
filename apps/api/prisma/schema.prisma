@@ -98,6 +98,7 @@ enum BloodGroup {
 enum TeamProfileLinkKind {
   FACEBOOK
   INSTAGRAM
+  DISCORD
   GITHUB
   LINKEDIN
   WEBSITE

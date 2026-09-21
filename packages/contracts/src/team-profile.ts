@@ -10,9 +10,38 @@ import { BloodGroup } from './enums';
  * its own narrow types and its own select list in the API rather than reusing the employee one.
  */
 
-/** The five link kinds a card can show. Anything else is not rendered, so no unknown icons. */
-export const TeamProfileLinkKind = ['FACEBOOK', 'INSTAGRAM', 'GITHUB', 'LINKEDIN', 'WEBSITE'] as const;
+/**
+ * The link kinds a card can show, in the order it shows them. Anything else is not rendered, so no
+ * unknown icons. A person fills in the ones they want and leaves the rest off.
+ */
+export const TeamProfileLinkKind = ['FACEBOOK', 'INSTAGRAM', 'DISCORD', 'GITHUB', 'LINKEDIN', 'WEBSITE'] as const;
 export type TeamProfileLinkKind = (typeof TeamProfileLinkKind)[number];
+
+/**
+ * The sites each kind may point to (the host itself or a subdomain of it). A GitHub icon must
+ * lead to GitHub, not to a lookalike page; only WEBSITE may be anywhere.
+ */
+export const TEAM_PROFILE_LINK_HOSTS: Record<TeamProfileLinkKind, readonly string[] | null> = {
+  FACEBOOK: ['facebook.com', 'fb.com'],
+  INSTAGRAM: ['instagram.com'],
+  DISCORD: ['discord.com', 'discord.gg'],
+  GITHUB: ['github.com'],
+  LINKEDIN: ['linkedin.com'],
+  WEBSITE: null,
+};
+
+/** True when `url` is on a site `kind` may point to. An unparseable URL is never a match. */
+export function linkMatchesKind(kind: TeamProfileLinkKind, url: string): boolean {
+  const hosts = TEAM_PROFILE_LINK_HOSTS[kind];
+  if (!hosts) return true;
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return hosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+}
 
 export interface TeamProfileLink {
   kind: TeamProfileLinkKind;
@@ -99,8 +128,16 @@ export const updateOwnTeamProfileSchema = z.object({
   /** Hides `employees.phone` from the card without deleting it from the employee record. */
   showPersonalPhone: z.boolean().optional(),
   links: z
-    .array(z.object({ kind: z.enum(TeamProfileLinkKind), url: linkUrl }))
+    .array(
+      z
+        .object({ kind: z.enum(TeamProfileLinkKind), url: linkUrl })
+        .refine((link) => linkMatchesKind(link.kind, link.url), {
+          message: 'That address is not on this site',
+          path: ['url'],
+        }),
+    )
     .max(TeamProfileLinkKind.length)
+    .refine((links) => new Set(links.map((link) => link.kind)).size === links.length, 'One link per kind')
     .optional(),
 });
 export type UpdateOwnTeamProfileInput = z.infer<typeof updateOwnTeamProfileSchema>;
