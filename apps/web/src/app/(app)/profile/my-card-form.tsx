@@ -131,7 +131,7 @@ export function MyCardForm({ card, employeeId }: { card: OwnTeamProfile; employe
   });
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border bg-card p-5 shadow-panel md:p-6">
+    <form onSubmit={onSubmit} className="@container rounded-2xl border bg-card p-4 shadow-panel sm:p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">My Team Profile card</h2>
@@ -154,7 +154,8 @@ export function MyCardForm({ card, employeeId }: { card: OwnTeamProfile; employe
         </div>
       )}
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* Container queries: the form sits beside the preview on wide screens, so its own width decides */}
+      <div className="mt-5 grid grid-cols-1 gap-4 @xl:grid-cols-2">
         <TextField
           label="Business phone"
           placeholder="+8801811234567"
@@ -190,7 +191,7 @@ export function MyCardForm({ card, employeeId }: { card: OwnTeamProfile; employe
           )}
         />
 
-        <div className="sm:col-span-2">
+        <div className="@xl:col-span-2">
           <TextField
             label="Headline"
             placeholder="Happy to pair on anything React."
@@ -225,7 +226,7 @@ export function MyCardForm({ card, employeeId }: { card: OwnTeamProfile; employe
         <p className="mt-0.5 mb-3 text-xs text-muted-foreground">
           Switch on the ones you want on your card — one, two or all of them — and leave the rest off.
         </p>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 @xl:grid-cols-2">
           {TeamProfileLinkKind.map((kind) => {
             const { icon: Icon, label, className: tone } = LINKS[kind];
             const on = links[kind]?.on ?? false;
@@ -277,7 +278,7 @@ export function MyCardForm({ card, employeeId }: { card: OwnTeamProfile; employe
       </fieldset>
 
       <div className="mt-6 flex justify-end">
-        <Button type="submit" disabled={!isDirty || isSubmitting}>
+        <Button type="submit" disabled={!isDirty || isSubmitting} className="h-11 w-full @md:h-9 @md:w-auto">
           {isSubmitting && <LoaderCircle aria-hidden className="animate-spin" />}
           Save my card
         </Button>

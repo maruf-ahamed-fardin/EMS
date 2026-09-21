@@ -148,7 +148,7 @@ export default async function TeamProfileCardPage({ params }: { params: Promise<
 
           {card.isSelf && (
             <Link
-              href="/profile"
+              href="/profile?tab=card"
               className="mt-2.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] px-5 font-bold hover:bg-secondary"
             >
               Edit my card
