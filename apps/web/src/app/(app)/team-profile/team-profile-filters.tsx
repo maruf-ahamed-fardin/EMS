@@ -4,6 +4,7 @@ import type { TeamProfileFilters as Filters } from '@ems/contracts';
 import { LoaderCircle, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
+import { ScanDialog } from '@/components/team-profile/scan-dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { teamProfileHref } from '@/lib/team-profile';
@@ -101,6 +102,8 @@ export function TeamProfileFilters({
           </Select>
         </>
       )}
+
+      <ScanDialog />
     </div>
   );
 }

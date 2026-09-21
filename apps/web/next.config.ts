@@ -21,7 +21,8 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // camera=(self): Team Profile scans QR codes on this origin only; no embedded frame may use it
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   // Browsers only honour this over https; two years, the length preload lists expect.
   // The Content-Security-Policy is per request, with a nonce, in src/proxy.ts

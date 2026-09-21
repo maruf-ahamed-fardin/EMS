@@ -1,4 +1,7 @@
-import type { TeamProfileDetail } from '@ems/contracts';
+import type { TeamProfileDetail, TeamProfileListItem } from '@ems/contracts';
+
+/** A grid card or a full card: the grid simply has no personal number to add. */
+export type VCardSource = TeamProfileListItem & Partial<Pick<TeamProfileDetail, 'personalPhone'>>;
 
 /**
  * vCard 3.0: the format every phone and mail client reads. 3.0 rather than 4.0 because iOS and
@@ -17,7 +20,7 @@ function splitName(fullName: string): { first: string; last: string } {
   return { first: parts.slice(0, -1).join(' '), last: parts.at(-1) ?? '' };
 }
 
-export function buildVCard(card: TeamProfileDetail): string {
+export function buildVCard(card: VCardSource): string {
   const { first, last } = splitName(card.fullName);
   const lines = [
     'BEGIN:VCARD',
@@ -40,7 +43,7 @@ export function buildVCard(card: TeamProfileDetail): string {
   return `${lines.join('\r\n')}\r\n`;
 }
 
-export function vCardFileName(card: TeamProfileDetail): string {
+export function vCardFileName(card: VCardSource): string {
   const safe = card.fullName.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
   return `${safe || card.employeeCode}.vcf`;
 }

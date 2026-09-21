@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Forbidden } from '@/components/shared/module-page';
+import { CardActions } from '@/components/team-profile/card-actions';
 import { ProfileAvatar } from '@/components/team-profile/profile-avatar';
 import { ProfileLinks } from '@/components/team-profile/profile-links';
 import { SaveContactButton } from '@/components/team-profile/save-contact-button';
@@ -143,17 +144,16 @@ export default async function TeamProfileCardPage({ params }: { params: Promise<
 
           {card.links.length > 0 && <ProfileLinks links={card.links} className="mt-5" />}
 
-          <div className="mt-5 flex w-full flex-col gap-2.5 sm:flex-row">
-            <SaveContactButton variant="vcard" card={card} />
-            {card.isSelf && (
-              <Link
-                href="/profile"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border-[1.5px] px-5 font-bold hover:bg-secondary sm:w-44"
-              >
-                Edit my card
-              </Link>
-            )}
-          </div>
+          <CardActions card={card} className="mt-5 w-full rounded-2xl border bg-secondary/40 p-1.5" />
+
+          {card.isSelf && (
+            <Link
+              href="/profile"
+              className="mt-2.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border-[1.5px] px-5 font-bold hover:bg-secondary"
+            >
+              Edit my card
+            </Link>
+          )}
         </div>
       </article>
     </div>
