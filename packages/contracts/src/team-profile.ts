@@ -63,6 +63,11 @@ export interface TeamProfileListItem {
   workLocation: string;
   email: string;
   hasPhoto: boolean;
+  /**
+   * Where the photo is served (`/api/v1/team-profile/:id/photo?v=…`), or null for none. The `v`
+   * changes with every new photo, so browsers may cache it for good. Never the storage key.
+   */
+  photoUrl: string | null;
   /** Whether a tag has been issued for this person, so the grid can mark it. */
   hasTag: boolean;
   /** Self-declared, optional. */
@@ -151,9 +156,16 @@ export interface OwnTeamProfile {
   personalPhone: string;
   links: TeamProfileLink[];
   hasPhoto: boolean;
+  photoUrl: string | null;
 }
 
 // ─── Photos ─────────────────────────────────────────────────────────────────────────────────────
+
+/** The field name of the multipart upload for `POST /team-profile/me/photo`. */
+export const PHOTO_FIELD = 'photo';
+
+/** The browser crops and re-encodes to this square, which also drops the camera's metadata (GPS). */
+export const PHOTO_SIZE_PX = 512;
 
 /** Small enough that a card loads instantly; large enough for a retina avatar. */
 export const PHOTO_MAX_BYTES = 2 * 1024 * 1024;

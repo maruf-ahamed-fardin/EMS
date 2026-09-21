@@ -1,7 +1,11 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import {
   type DataResponse,
   type OwnTeamProfile,
+  PHOTO_FIELD,
+  PHOTO_MAX_BYTES,
   type TeamProfileDetail,
   type TeamProfileFilters,
   type TeamProfileListResponse,
@@ -53,6 +57,48 @@ export class TeamProfileController {
     @Body() body: UpdateOwnTeamProfileDto,
   ): Promise<DataResponse<OwnTeamProfile>> {
     return { data: await this.teamProfile.updateOwn(auth, body) };
+  }
+
+  /**
+   * Replaces the viewer's own photo. The browser crops it to a small square first, so the 2 MB
+   * limit is generous; multer stops reading past it. The type is checked from the bytes.
+   */
+  @RequirePermission('team_profile.manage_own')
+  @Post('me/photo')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor(PHOTO_FIELD, { limits: { fileSize: PHOTO_MAX_BYTES, files: 1, fields: 0 } }))
+  async setPhoto(
+    @CurrentAuth() auth: AuthContext,
+    @UploadedFile() file: { buffer: Buffer; size: number } | undefined,
+  ): Promise<DataResponse<OwnTeamProfile>> {
+    return { data: await this.teamProfile.setPhoto(auth, file) };
+  }
+
+  @RequirePermission('team_profile.manage_own')
+  @Delete('me/photo')
+  async removePhoto(@CurrentAuth() auth: AuthContext): Promise<DataResponse<OwnTeamProfile>> {
+    return { data: await this.teamProfile.removePhoto(auth) };
+  }
+
+  /**
+   * A card's photo, for `<img>`. The URL carries a version that changes with every new photo, so
+   * it can be cached for good — privately, since it is only for signed-in colleagues. Served as an
+   * inline image that can never run as a page on this origin.
+   */
+  @RequirePermission('team_profile.view')
+  @Get(':employeeId/photo')
+  async photo(@Param('employeeId', ParseUUIDPipe) employeeId: string, @Res() res: Response): Promise<void> {
+    const { bytes, contentType } = await this.teamProfile.photo(employeeId);
+    res.set({
+      'Content-Type': contentType,
+      'Content-Length': String(bytes.length),
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'private, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+      'Cross-Origin-Resource-Policy': 'same-origin',
+    });
+    res.end(bytes);
   }
 
   @RequirePermission('team_profile.view')

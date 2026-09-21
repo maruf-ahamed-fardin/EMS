@@ -50,6 +50,8 @@ const WRITE_ROUTES: Record<string, { audits: AuditAction[] } | 'exempt'> = {
   'DELETE /leave/types/:id': { audits: ['leave_type.deleted'] },
   'POST /employees/:id/documents': { audits: ['document.uploaded'] },
   'PATCH /team-profile/me': { audits: ['team_profile.updated'] },
+  'POST /team-profile/me/photo': { audits: ['team_profile.photo_updated'] },
+  'DELETE /team-profile/me/photo': { audits: ['team_profile.photo_removed'] },
   'DELETE /documents/:id': { audits: ['document.deleted'] },
   'POST /document-types': { audits: ['document_type.created'] },
   'PATCH /document-types/:id': { audits: ['document_type.updated'] },

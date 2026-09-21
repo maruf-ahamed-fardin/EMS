@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -21,6 +21,8 @@ export interface SignedUrlOptions {
  */
 export interface DocumentStorage {
   put(key: string, body: Buffer, contentType: string): Promise<void>;
+  /** The file's bytes, or null when there is none. For small files the API serves itself (card photos). */
+  get(key: string): Promise<Buffer | null>;
   delete(key: string): Promise<void>;
   /** A short-lived link that downloads the file as an attachment. Never stored. */
   signedUrl(key: string, options: SignedUrlOptions): Promise<string>;
@@ -83,6 +85,15 @@ export class LocalDocumentStorage implements DocumentStorage {
     await rename(temporary, target);
   }
 
+  async get(key: string): Promise<Buffer | null> {
+    try {
+      return await readFile(this.pathOf(key));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw error;
+    }
+  }
+
   async delete(key: string): Promise<void> {
     await rm(this.pathOf(key), { force: true });
   }
@@ -133,6 +144,17 @@ export class S3DocumentStorage implements DocumentStorage {
   async put(key: string, body: Buffer, contentType: string): Promise<void> {
     assertKey(key);
     await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType, ContentLength: body.length }));
+  }
+
+  async get(key: string): Promise<Buffer | null> {
+    assertKey(key);
+    try {
+      const object = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+      return object.Body ? Buffer.from(await object.Body.transformToByteArray()) : null;
+    } catch (error) {
+      if ((error as { name?: string }).name === 'NoSuchKey') return null;
+      throw error;
+    }
   }
 
   async delete(key: string): Promise<void> {

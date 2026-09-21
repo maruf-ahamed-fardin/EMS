@@ -45,6 +45,8 @@ describe('the Team Profile shape', () => {
     const card = toDetail(row, null);
     expect(card.hasPhoto).toBe(true);
     expect(JSON.stringify(card)).not.toContain('photo.jpg');
+    expect(JSON.stringify(card)).not.toContain('employees/01a0');
+    expect(card.photoUrl).toMatch(/^\/api\/v1\/team-profile\/[0-9a-f-]{36}\/photo\?v=[\w-]{12}$/);
     expect(toListItem(row)).not.toHaveProperty('photoKey');
   });
 
@@ -52,7 +54,7 @@ describe('the Team Profile shape', () => {
     expect(Object.keys(toDetail(row, null)).sort()).toEqual(
       [
         'employeeId', 'employeeCode', 'fullName', 'initials', 'position', 'department', 'workLocation',
-        'email', 'hasPhoto', 'hasTag', 'personalPhone', 'businessPhone', 'bloodGroup', 'headline',
+        'email', 'hasPhoto', 'photoUrl', 'hasTag', 'personalPhone', 'businessPhone', 'bloodGroup', 'headline',
         'links', 'managerName', 'joiningDate', 'isSelf',
       ].sort(),
     );
@@ -62,7 +64,7 @@ describe('the Team Profile shape', () => {
     expect(Object.keys(toListItem(row)).sort()).toEqual(
       [
         'employeeId', 'employeeCode', 'fullName', 'initials', 'position', 'department', 'workLocation',
-        'email', 'hasPhoto', 'hasTag', 'businessPhone', 'headline', 'links', 'managerName', 'joiningDate',
+        'email', 'hasPhoto', 'photoUrl', 'hasTag', 'businessPhone', 'headline', 'links', 'managerName', 'joiningDate',
       ].sort(),
     );
     expect(JSON.stringify(toListItem(row))).not.toContain('8801711234567');

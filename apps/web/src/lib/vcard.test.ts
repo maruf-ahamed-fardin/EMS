@@ -12,6 +12,7 @@ const card: TeamProfileDetail = {
   workLocation: 'Remote',
   email: 'anika@selorax.test',
   hasPhoto: false,
+  photoUrl: null,
   hasTag: false,
   personalPhone: '+8801711234567',
   businessPhone: '+8801811234567',

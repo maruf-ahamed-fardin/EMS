@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { PersonAvatar } from '@/components/shared/person-avatar';
 import { StatePanel } from '@/components/shared/state-panel';
 import { Tag } from '@/components/shared/status-badge';
+import { PhotoEditor } from '@/components/team-profile/photo-editor';
 import { ProfileCardTile } from '@/components/team-profile/profile-card-tile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +20,11 @@ import { MyContactForm } from './my-contact-form';
 export const metadata: Metadata = { title: 'My profile' };
 
 const TABS = ['details', 'card'] as const;
+
+function initialsOf(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  return `${parts[0]?.charAt(0) ?? ''}${parts.length > 1 ? (parts.at(-1)?.charAt(0) ?? '') : ''}`.toUpperCase();
+}
 
 export default async function MyProfilePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const session = await getSession();
@@ -145,7 +151,8 @@ export default async function MyProfilePage({ searchParams }: { searchParams: Pr
                   </div>
                 </section>
               )}
-              <div className="min-w-0 lg:order-1">
+              <div className="flex min-w-0 flex-col gap-6 lg:order-1">
+                <PhotoEditor photoUrl={card.photoUrl} initials={initialsOf(me.fullName)} />
                 <MyCardForm card={card} employeeId={me.id} />
               </div>
             </div>

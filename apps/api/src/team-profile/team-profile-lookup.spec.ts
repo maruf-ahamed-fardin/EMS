@@ -1,6 +1,7 @@
 import type { PermissionMap } from '@ems/contracts';
 import type { AuditService } from '../audit/audit.service';
 import type { AuthContext } from '../auth/auth-context';
+import type { DocumentStorage } from '../documents/storage/storage';
 import type { PrismaService } from '../prisma/prisma.service';
 import { type CardRow, LOOKUP_NAMESAKES_MAX, searchWhere, TeamProfileService } from './team-profile.service';
 
@@ -51,7 +52,7 @@ function setup(opts: { exact?: CardRow | null; matches?: CardRow[]; all?: CardRo
       count: jest.fn().mockResolvedValue((opts.all ?? []).length),
     },
   };
-  const service = new TeamProfileService(prisma as unknown as PrismaService, {} as AuditService);
+  const service = new TeamProfileService(prisma as unknown as PrismaService, {} as AuditService, {} as DocumentStorage);
   return { service, prisma };
 }
 

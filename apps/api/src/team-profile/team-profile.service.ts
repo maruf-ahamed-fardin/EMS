@@ -1,7 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   can,
   type OwnTeamProfile,
+  PHOTO_MAX_BYTES,
+  type PhotoContentType,
   pageMeta,
   type TeamProfileDetail,
   type TeamProfileFilters,
@@ -12,8 +15,10 @@ import {
 } from '@ems/contracts';
 import type { AuthContext } from '../auth/auth-context';
 import { AuditService } from '../audit/audit.service';
+import { DOCUMENT_STORAGE, type DocumentStorage } from '../documents/storage/storage';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { photoUrl, sniffPhotoType } from './photo';
 
 /** The most namesakes a lookup returns; past this the viewer has to use the employee ID. */
 export const LOOKUP_NAMESAKES_MAX = 10;
@@ -91,6 +96,7 @@ export function toListItem(row: Row): TeamProfileListItem {
     workLocation: row.workLocation,
     email: row.email,
     hasPhoto: row.photoKey !== null,
+    photoUrl: photoUrl(row.id, row.photoKey),
     // Tags arrive with the NFC phase; until then no card claims to have one.
     hasTag: false,
     businessPhone: row.teamProfile?.businessPhone ?? null,
@@ -113,9 +119,12 @@ export function toDetail(row: Row, viewerEmployeeId: string | null): TeamProfile
 
 @Injectable()
 export class TeamProfileService {
+  private readonly logger = new Logger(TeamProfileService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    @Inject(DOCUMENT_STORAGE) private readonly storage: DocumentStorage,
   ) {}
 
   /**
@@ -234,6 +243,7 @@ export class TeamProfileService {
       personalPhone: row.phone,
       links: row.teamProfile?.links ?? [],
       hasPhoto: row.photoKey !== null,
+      photoUrl: photoUrl(row.id, row.photoKey),
     };
   }
 
@@ -284,4 +294,92 @@ export class TeamProfileService {
     return this.own(auth);
   }
 
+  // ─── Photo ──────────────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * A listed person's photo, for `<img>`. Only for people on the directory, so a deleted or
+   * inactive person's photo stops being served with their card.
+   */
+  async photo(employeeId: string): Promise<{ bytes: Buffer; contentType: PhotoContentType }> {
+    const row = await this.prisma.employee.findFirst({ where: { id: employeeId, ...LISTED }, select: { photoKey: true } });
+    const bytes = row?.photoKey ? await this.storage.get(row.photoKey) : null;
+    const contentType = bytes ? sniffPhotoType(bytes) : null;
+    if (!bytes || !contentType) throw new NotFoundException('No photo');
+    return { bytes, contentType };
+  }
+
+  /**
+   * Replaces the viewer's own photo. The type is read from the bytes. The new file is stored under
+   * a new key before the record points at it, and the old file is removed only after the change is
+   * committed, so a failure at any step leaves a working photo behind.
+   */
+  async setPhoto(auth: AuthContext, file: { buffer: Buffer; size: number } | undefined): Promise<OwnTeamProfile> {
+    const employeeId = auth.user.employeeId;
+    if (!employeeId) throw new NotFoundException('This account is not linked to an employee record');
+    if (!file || file.size === 0) throw new BadRequestException('Choose a photo to upload');
+    if (file.size > PHOTO_MAX_BYTES) throw new BadRequestException('That photo is larger than 2 MB');
+    const contentType = sniffPhotoType(file.buffer);
+    if (!contentType) throw new BadRequestException('Use a JPEG, PNG or WebP image');
+
+    const current = await this.prisma.employee.findFirst({ where: { id: employeeId, ...LISTED }, select: { photoKey: true } });
+    if (!current) throw new NotFoundException('This account is not linked to an employee record');
+
+    const key = `employees/${employeeId}/photo-${randomUUID()}`;
+    await this.storage.put(key, file.buffer, contentType);
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.employee.update({ where: { id: employeeId }, data: { photoKey: key } });
+        await this.audit.record(
+          {
+            action: 'team_profile.photo_updated',
+            entityType: 'team_profile',
+            entityId: employeeId,
+            // Never the storage keys (`redaction.ts` keeps only hasPhoto for a card anyway)
+            before: { hasPhoto: current.photoKey !== null },
+            after: { hasPhoto: true },
+          },
+          tx,
+        );
+      });
+    } catch (error) {
+      await this.removeFile(key);
+      throw error;
+    }
+    if (current.photoKey) await this.removeFile(current.photoKey);
+    return this.own(auth);
+  }
+
+  /** Takes the viewer's photo off their card, and deletes the file. */
+  async removePhoto(auth: AuthContext): Promise<OwnTeamProfile> {
+    const employeeId = auth.user.employeeId;
+    if (!employeeId) throw new NotFoundException('This account is not linked to an employee record');
+    const current = await this.prisma.employee.findFirst({ where: { id: employeeId, ...LISTED }, select: { photoKey: true } });
+    if (!current) throw new NotFoundException('This account is not linked to an employee record');
+    if (!current.photoKey) return this.own(auth);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.employee.update({ where: { id: employeeId }, data: { photoKey: null } });
+      await this.audit.record(
+        {
+          action: 'team_profile.photo_removed',
+          entityType: 'team_profile',
+          entityId: employeeId,
+          before: { hasPhoto: true },
+          after: { hasPhoto: false },
+        },
+        tx,
+      );
+    });
+    await this.removeFile(current.photoKey);
+    return this.own(auth);
+  }
+
+  /** Best effort: an orphaned file is only wasted space, never a reason to fail the request. */
+  private async removeFile(key: string): Promise<void> {
+    try {
+      await this.storage.delete(key);
+    } catch (error) {
+      this.logger.warn(`Could not delete an old photo file: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 }

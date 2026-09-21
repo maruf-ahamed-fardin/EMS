@@ -16,6 +16,7 @@ const card: VCardSource = {
   workLocation: 'Dhaka office',
   email: 'ayesha.chowdhury@demo.selorax.test',
   hasPhoto: false,
+  photoUrl: null,
   hasTag: false,
   businessPhone: '+8809600000054',
   headline: null,

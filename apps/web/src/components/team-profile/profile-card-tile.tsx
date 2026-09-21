@@ -74,7 +74,7 @@ export function ProfileCardTile({ person, className }: { person: TeamProfileList
       <div className="flex flex-1 flex-col px-4 pb-4 sm:px-5">
         {/* relative + z-10: the band is positioned, so without its own stacking the avatar slides under it */}
         <div className="relative z-10 -mt-11 flex justify-center">
-          <ProfileAvatar initials={person.initials} size="md" />
+          <ProfileAvatar initials={person.initials} photoUrl={person.photoUrl} size="md" />
         </div>
 
         <h2 className="mt-4 flex items-center justify-center gap-1 text-center text-[17px] leading-tight font-extrabold tracking-tight">

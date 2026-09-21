@@ -84,7 +84,7 @@ export default async function TeamProfileCardPage({ params }: { params: Promise<
         <div aria-hidden className="h-[7px] bg-gradient-to-r from-primary via-[#7b3fe4] to-[#d9481f]" />
 
         <div className="flex flex-col items-center px-6 pt-7 pb-6 sm:px-8">
-          <ProfileAvatar initials={card.initials} size="lg" />
+          <ProfileAvatar initials={card.initials} photoUrl={card.photoUrl} size="lg" />
 
           <h1 className="mt-4 text-center text-[26px] font-extrabold tracking-tight text-balance">{card.fullName}</h1>
           {card.headline && <p className="mt-1.5 text-center text-sm text-muted-foreground">{card.headline}</p>}
