@@ -7,9 +7,9 @@ checked by CI on every change (`.github/workflows/ems.yml`, job `images`).
 
 | Piece | Image | Notes |
 |---|---|---|
-| API | `backend/Dockerfile`, target `runtime` | `node dist/main.js` on port 4000 as user `node`. Health: `GET /api/v1/health` (process up), `GET /api/v1/health/ready` (database reachable). |
-| Release step | `backend/Dockerfile`, target `migrate` | `prisma migrate deploy`, then catalogue sync (permissions and system roles). Run once per deploy, **before** the new API starts. Never at API start-up. |
-| Web | `frontend/Dockerfile` | Next.js standalone server on port 3000 as user `node`. Forwards `/api/*` to `API_ORIGIN`, which is baked in at build time (`--build-arg API_ORIGIN=http://api:4000`). |
+| API | `apps/api/Dockerfile`, target `runtime` | `node dist/main.js` on port 4000 as user `node`. Health: `GET /api/v1/health` (process up), `GET /api/v1/health/ready` (database reachable). |
+| Release step | `apps/api/Dockerfile`, target `migrate` | `prisma migrate deploy`, then catalogue sync (permissions and system roles). Run once per deploy, **before** the new API starts. Never at API start-up. |
+| Web | `apps/web/Dockerfile` | Next.js standalone server on port 3000 as user `node`. Forwards `/api/*` to `API_ORIGIN`, which is baked in at build time (`--build-arg API_ORIGIN=http://api:4000`). |
 | Database | Managed PostgreSQL 16 | Neon, Supabase, RDS or similar, with TLS and point-in-time recovery. |
 | Files | S3-compatible private bucket | AWS S3 or Cloudflare R2, versioning on, public access blocked. |
 | Email | SMTP | Password links and invitations. |
@@ -17,9 +17,9 @@ checked by CI on every change (`.github/workflows/ems.yml`, job `images`).
 Build from the repository root:
 
 ```bash
-docker build -f backend/Dockerfile --target runtime -t ems-api .
-docker build -f backend/Dockerfile --target migrate -t ems-migrate .
-docker build -f frontend/Dockerfile --build-arg API_ORIGIN=http://api:4000 -t ems-web .
+docker build -f apps/api/Dockerfile --target runtime -t ems-api .
+docker build -f apps/api/Dockerfile --target migrate -t ems-migrate .
+docker build -f apps/web/Dockerfile --build-arg API_ORIGIN=http://api:4000 -t ems-web .
 ```
 
 Only the web server faces the internet, behind a TLS-terminating proxy or load balancer. The API is reached through
@@ -28,7 +28,7 @@ CORS stays closed.
 
 ## Configuration
 
-The API refuses to start with an unsafe production configuration (`backend/src/config/env.ts`). It needs:
+The API refuses to start with an unsafe production configuration (`apps/api/src/config/env.ts`). It needs:
 
 | Variable | Production value |
 |---|---|
@@ -65,6 +65,32 @@ docker run --rm --env-file prod.env ems-api node dist/users/create-admin-cli.js 
 It creates a Super Admin with a password nobody knows, records it in the audit log, and refuses to run while any
 Super Admin can sign in. (If every Super Admin account ever ends up inactive, the same command is the way back in.) The person then sets their password with **Forgot password?** on the sign-in page and adds
 everyone else in **Users**. The demo seed (`yarn db:seed`) refuses production.
+
+## Demo: Render and Vercel
+
+A demo on seed data only (plan D8: no real people or credentials). The web app is on Vercel, the API on Render
+(`render.yaml`), the database on Neon, files in a Cloudflare R2 bucket and mail through any SMTP provider. Here the
+API is public, because Vercel forwards `/api/*` over the internet; the CSRF origin check (`APP_URL`), closed CORS
+and the rate limits still apply.
+
+Create these on throwaway accounts, and paste every secret straight into the platform that uses it:
+
+1. **Neon:** a project in Singapore. Copy the direct (not pooled) connection string, `…?sslmode=require`.
+2. **R2:** a private bucket and an API token with Object Read & Write on it. Note the bucket, the
+   `https://<account>.r2.cloudflarestorage.com` endpoint and the key pair.
+3. **SMTP:** for example Brevo's free plan, with a verified sender. Only password links and invitations use it;
+   the demo users sign in with `SEED_PASSWORD`.
+4. **Render:** New → Blueprint, pick this repository and branch. Fill in the `sync: false` variables:
+   `APP_URL` is the Vercel URL. Then in the service's Settings copy the **Deploy Hook** URL.
+5. **GitHub:** Settings → Environments → `demo`, with the secrets `DATABASE_URL`, `RENDER_DEPLOY_HOOK_URL`,
+   `SEED_PASSWORD` (10+ characters) and `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`.
+6. **Deploy:** Actions → Deploy API → Run workflow, with *Reset the demo data* ticked the first time. It
+   migrates, syncs the catalogue, seeds, then triggers Render. Check `https://<service>.onrender.com/api/v1/health/ready`.
+7. **Vercel:** Root Directory `apps/web` with files outside it included, preset Next.js, and `API_ORIGIN` set to
+   the Render URL. Redeploy, since `API_ORIGIN` is read at build time.
+
+Render's free plan sleeps after 15 idle minutes, so the first request after that takes about a minute, and the
+background jobs only run while it is awake.
 
 ## Scaling
 
