@@ -9,6 +9,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       // Next resolves this through its bundler; under Vitest it needs a real module
       'server-only': fileURLToPath(new URL('./test/server-only.ts', import.meta.url)),
+      // The API package is compiled separately and may not be built when the web tests run
+      '@ems/backend': fileURLToPath(new URL('./test/ems-backend.ts', import.meta.url)),
     },
   },
   test: {

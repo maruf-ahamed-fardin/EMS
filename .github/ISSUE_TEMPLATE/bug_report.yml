@@ -29,7 +29,7 @@ body:
     attributes:
       label: Where
       options:
-        - apps/api (the API)
+        - apps/web/server (the API)
         - apps/web (the web app)
         - packages/contracts
         - Database or migrations

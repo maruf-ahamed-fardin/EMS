@@ -34,8 +34,8 @@ export class ApiUnreachableError extends Error {
 
   constructor(origin: string, cause?: unknown) {
     super(
-      `Cannot reach the API at ${origin}. Is it running? ` +
-        'In development, `yarn dev` starts it on :4000; in a container, check API_ORIGIN.',
+      `Cannot reach the API at ${origin}. It runs inside this app (apps/web/server): ` +
+        'check the server log for why it did not start, usually a missing environment variable.',
       { cause },
     );
     this.name = 'ApiUnreachableError';

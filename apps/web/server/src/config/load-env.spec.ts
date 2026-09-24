@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadRepoEnv } from './load-env';
+import { loadRepoEnv, repoRoot } from './load-env';
 
 /**
  * The API runs from its workspace folder while `.env` sits at the repository root, so the distance
@@ -41,5 +41,22 @@ describe('loadRepoEnv', () => {
     writeFileSync(join(inner, '.env'), 'EMS_TEST_KEY=inner\n');
 
     expect(loadRepoEnv(inner)).toBe(join(inner, '.env'));
+  });
+});
+
+/** STORAGE_LOCAL_DIR is resolved against this, so the web app, the seed and the tests find the same files. */
+describe('repoRoot', () => {
+  it('finds the folder holding yarn.lock from any depth, and the folder itself at the top', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ems-root-'));
+    writeFileSync(join(root, 'yarn.lock'), '');
+    const deep = join(root, 'apps', 'web', 'server');
+    mkdirSync(deep, { recursive: true });
+    expect(repoRoot(deep)).toBe(root);
+    expect(repoRoot(root)).toBe(root);
+  });
+
+  it('falls back to the starting folder outside a checkout', () => {
+    const nowhere = mkdtempSync(join(tmpdir(), 'ems-noroot-'));
+    expect(repoRoot(nowhere)).toBe(nowhere);
   });
 });

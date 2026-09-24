@@ -1,11 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { ApiUnreachableError, readApiError } from './api-error';
-
-/** The API as seen from this server. Same variable the /api rewrite uses. */
-function apiOrigin(): string {
-  return process.env.API_ORIGIN ?? 'http://127.0.0.1:4000';
-}
+import { embeddedApi } from './embedded-api';
 
 /**
  * Server-side API calls for server components (plan §2): the visitor's cookies are forwarded, so the
@@ -15,8 +11,9 @@ export async function serverApi(path: string): Promise<Response> {
   const cookieHeader = (await cookies()).toString();
   const requestId = (await headers()).get('x-request-id');
 
-  const origin = apiOrigin();
+  let origin = 'the API inside this app';
   try {
+    ({ origin } = await embeddedApi());
     return await fetch(`${origin}/api/v1${path}`, {
       headers: {
         accept: 'application/json',
@@ -26,9 +23,8 @@ export async function serverApi(path: string): Promise<Response> {
       cache: 'no-store',
     });
   } catch (cause) {
-    // fetch rejects with a bare "TypeError: fetch failed" when nothing is listening, which says
-    // nothing about which address failed or why. In development that is almost always the API not
-    // running yet; in a container it is usually the wrong API_ORIGIN.
+    // The API failed to start (most often a missing or invalid environment variable, named in the
+    // server log), or fetch rejected with a bare "TypeError: fetch failed" that says nothing useful
     throw new ApiUnreachableError(origin, cause);
   }
 }

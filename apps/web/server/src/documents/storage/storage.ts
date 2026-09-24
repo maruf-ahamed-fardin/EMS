@@ -4,6 +4,7 @@ import path from 'node:path';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { AppConfig } from '../../config/env';
+import { repoRoot } from '../../config/load-env';
 
 export const DOCUMENT_STORAGE = Symbol('DOCUMENT_STORAGE');
 
@@ -185,5 +186,7 @@ export function createDocumentStorage(config: AppConfig): DocumentStorage {
       secretAccessKey: config.S3_SECRET_ACCESS_KEY,
     });
   }
-  return new LocalDocumentStorage(config.STORAGE_LOCAL_DIR);
+  // Relative to the repository root, not the working directory: the web app, the seed and the tests
+  // each run from a different folder, and must find the same files
+  return new LocalDocumentStorage(path.resolve(repoRoot(), config.STORAGE_LOCAL_DIR));
 }

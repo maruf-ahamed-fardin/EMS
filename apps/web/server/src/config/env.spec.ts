@@ -87,7 +87,7 @@ describe('parseEnv (auth and mail)', () => {
 
 describe('parseEnv (document storage)', () => {
   it('keeps documents on local disk by default', () => {
-    expect(parseEnv(base)).toMatchObject({ STORAGE_DRIVER: 'local', STORAGE_LOCAL_DIR: './storage' });
+    expect(parseEnv(base)).toMatchObject({ STORAGE_DRIVER: 'local', STORAGE_LOCAL_DIR: 'apps/web/server/storage' });
   });
 
   it('needs a bucket, and both keys or neither, for S3', () => {

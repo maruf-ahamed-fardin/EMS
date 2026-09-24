@@ -24,3 +24,16 @@ export function loadRepoEnv(from: string = process.cwd()): string | null {
     if (dir === root) return null;
   }
 }
+
+/**
+ * The repository root: the nearest folder at or above `from` that holds yarn.lock, or `from` itself
+ * outside a checkout. Relative paths in the configuration (STORAGE_LOCAL_DIR) are resolved against it,
+ * because the web app, the seed and the tests each run from a different folder and must agree.
+ */
+export function repoRoot(from: string = process.cwd()): string {
+  const { root } = parse(from);
+  for (let dir = from; ; dir = dirname(dir)) {
+    if (existsSync(join(dir, 'yarn.lock'))) return dir;
+    if (dir === root) return from;
+  }
+}

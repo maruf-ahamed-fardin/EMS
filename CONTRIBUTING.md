@@ -19,22 +19,24 @@ version sooner.
 ## The shape of the repository
 
 ```
-apps/api/            NestJS API at /api/v1, Prisma, PostgreSQL
-apps/web/            Next.js web app
+apps/web/            Next.js web app; serves the API at /api/*
+apps/web/server/     NestJS API at /api/v1, Prisma, PostgreSQL, run inside the web app
 packages/contracts/  enums, permissions, default roles and API types both sides import
 docs/                architecture, API, security, database, permissions, deployment, plan
 scripts/             repository tooling (the hidden-payload check, Postgres init SQL)
 ```
 
-Both apps are Yarn workspaces named `@ems/backend` and `@ems/frontend`; the folders are `apps/api`
-and `apps/web`. The name is what commands take, from the repository root:
+The API and the web app are Yarn workspaces named `@ems/backend` and `@ems/frontend`; the folders are
+`apps/web/server` and `apps/web`. The name is what commands take, from the repository root:
 
 ```sh
 yarn workspace @ems/backend run test
 yarn workspace @ems/frontend run dev
 ```
 
-Nothing in `apps/web` may import from `apps/api`. Anything both sides need goes in
+The web app uses the API package in exactly one place, `apps/web/src/lib/embedded-api.ts`, which starts
+it; everything else talks to it over HTTP at `/api/v1`, as a browser does, so the API's guards apply to
+every call. Anything both sides need goes in
 `packages/contracts`, which has no runtime dependency beyond zod.
 
 ## Before you open a pull request
@@ -50,7 +52,7 @@ CI runs exactly these, in this order, and `check:payload` runs before anything i
 that need a database are skipped unless `TEST_DATABASE_URL` is set; that database is **wiped**, so
 its name must contain `test`.
 
-After editing `apps/api/prisma/schema.prisma`, run `yarn db:migrate` and commit the generated
+After editing `apps/web/server/prisma/schema.prisma`, run `yarn db:migrate` and commit the generated
 migration. `yarn workspace @ems/backend run db:drift` fails when the schema has changes with no
 migration, and so does CI.
 
@@ -58,7 +60,7 @@ migration, and so does CI.
 
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
   Every rule has to exist server-side, with a test that proves it — see `docs/security.md`.
-- **Configuration is validated at startup** through `apps/api/src/config/env.ts`. Never read
+- **Configuration is validated at startup** through `apps/web/server/src/config/env.ts`. Never read
   `process.env` directly, and keep errors naming the variable, never its value: connection URLs
   carry passwords.
 - **Every write is audited.** A write that lands without an audit entry logs a warning in tests;

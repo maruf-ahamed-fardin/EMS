@@ -6,13 +6,14 @@
   "packageManager": "yarn@4.18.0",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "apps/web/server"
   ],
   "engines": {
     "node": ">=22.12"
   },
   "scripts": {
-    "dev": "yarn workspace @ems/contracts run build && concurrently -n contracts,api,web -c gray,magenta,cyan \"yarn workspace @ems/contracts run dev\" \"yarn workspace @ems/backend run dev\" \"yarn workspace @ems/frontend run dev\"",
+    "dev": "yarn workspace @ems/contracts run build && yarn workspace @ems/backend run build && concurrently -n contracts,api,web -c gray,magenta,cyan \"yarn workspace @ems/contracts run dev\" \"yarn workspace @ems/backend run dev\" \"yarn workspace @ems/frontend run dev\"",
     "build": "yarn workspace @ems/contracts run build && yarn workspace @ems/backend run build && yarn workspace @ems/frontend run build",
     "typecheck": "yarn workspace @ems/contracts run build && yarn workspaces foreach --all --topological run typecheck",
     "lint": "yarn workspaces foreach --all run lint",

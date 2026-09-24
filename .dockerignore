@@ -8,8 +8,8 @@
 .env
 .env.*
 !.env.example
-apps/api/storage
-apps/api/src/generated
+apps/web/server/storage
+apps/web/server/src/generated
 .git
 
 # Yarn's caches and state; the pinned release in .yarn/releases IS needed and stays
