@@ -4,7 +4,10 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { APP_CONFIG } from '../src/config/config.module';
 import { parseEnv } from '../src/config/env';
+import { AttendanceService } from '../src/attendance/attendance.service';
 import { configureApp } from '../src/configure-app';
+import { DocumentExpiryReminders } from '../src/documents/document-expiry';
+import { LeaveBalancesService } from '../src/leave/leave-balances.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 /** The HTTP stack without a database: prefix, headers, request ids and the error format. */
@@ -119,5 +122,71 @@ describe('API shell (no database)', () => {
   it('does not allow cross-origin browser calls by default', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/health').set('origin', 'https://evil.example');
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('has no job route without CRON_SECRET, whatever the caller sends', async () => {
+    await request(app.getHttpServer()).get('/api/v1/jobs/run').set('authorization', 'Bearer undefined').expect(404);
+    await request(app.getHttpServer()).get('/api/v1/jobs/run').set('authorization', 'Bearer ').expect(404);
+  });
+});
+
+describe('Job route (no database)', () => {
+  const SECRET = 'a-cron-secret-that-is-long-enough-0123456789';
+  const closePendingDays = jest.fn().mockResolvedValue([]);
+  const runReminders = jest.fn().mockResolvedValue({ created: 0 });
+  const ensureYear = jest.fn().mockResolvedValue(0);
+  let app: NestExpressApplication;
+
+  beforeAll(async () => {
+    const config = parseEnv({
+      NODE_ENV: 'test',
+      LOG_LEVEL: 'silent',
+      DATABASE_URL: 'postgresql://unused@127.0.0.1:1/unused',
+      JOBS_ENABLED: 'false',
+      CRON_SECRET: SECRET,
+    });
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(APP_CONFIG)
+      .useValue(config)
+      .overrideProvider(PrismaService)
+      .useValue({ $queryRaw: jest.fn(), $disconnect: jest.fn() })
+      .overrideProvider(AttendanceService)
+      .useValue({ closePendingDays })
+      .overrideProvider(DocumentExpiryReminders)
+      .useValue({ run: runReminders })
+      .overrideProvider(LeaveBalancesService)
+      .useValue({ ensureYear, currentYear: jest.fn().mockResolvedValue(2026) })
+      .compile();
+
+    app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false });
+    configureApp(app, config);
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  it('answers 404 and runs nothing without the right secret', async () => {
+    await request(app.getHttpServer()).get('/api/v1/jobs/run').expect(404);
+    await request(app.getHttpServer()).get('/api/v1/jobs/run').set('authorization', `Bearer ${SECRET}x`).expect(404);
+    await request(app.getHttpServer()).get('/api/v1/jobs/run').set('authorization', SECRET).expect(404);
+    expect(closePendingDays).not.toHaveBeenCalled();
+    expect(runReminders).not.toHaveBeenCalled();
+    expect(ensureYear).not.toHaveBeenCalled();
+  });
+
+  it('runs every job with the secret, and one failure does not stop the others', async () => {
+    closePendingDays.mockRejectedValueOnce(new Error('database down'));
+    const res = await request(app.getHttpServer()).get('/api/v1/jobs/run').set('authorization', `Bearer ${SECRET}`).expect(200);
+    expect(res.body).toEqual({ data: { closeAttendanceDays: 'failed', documentExpiryReminders: 'ok', ensureLeaveBalances: 'ok' } });
+    expect(runReminders).toHaveBeenCalledTimes(1);
+    expect(ensureYear).toHaveBeenCalledWith(2026);
+  });
+
+  it('refuses a secret shorter than 32 characters at start-up', () => {
+    expect(() => parseEnv({ DATABASE_URL: 'postgresql://unused@127.0.0.1:1/unused', CRON_SECRET: 'short' })).toThrow(/CRON_SECRET/);
   });
 });

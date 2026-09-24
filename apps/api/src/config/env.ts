@@ -48,6 +48,11 @@ const envSchema = z
       .enum(['true', 'false'])
       .default('true')
       .transform((value) => value === 'true'),
+    /**
+     * Where timers can't run (Vercel), a scheduler calls GET /api/v1/jobs/run with
+     * "Authorization: Bearer <CRON_SECRET>" to run the same jobs. Unset, that route answers 404.
+     */
+    CRON_SECRET: z.string().min(32, 'must be at least 32 characters').optional(),
 
     /** A successful write that records no audit entry fails with 500 instead of a logged warning (tests). */
     AUDIT_STRICT: z
