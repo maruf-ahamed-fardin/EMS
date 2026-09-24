@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Yarn 4: the pinned release in .yarn/releases is committed; its caches are not
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+.pnp.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.sw?
+
+# Build output and generated code: rebuilt by `npm run build` / `npm run db:generate`
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+apps/api/src/generated/
+
+# Local configuration and data
+.env
+.env.*
+!.env.example
+apps/api/storage/
+
+# Playwright output
+apps/web/test-results/
+apps/web/playwright-report/

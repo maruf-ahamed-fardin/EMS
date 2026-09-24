@@ -1,0 +1,52 @@
+name: Bug report
+description: Something behaves differently from what the docs or the code say it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security problem? Don't file it here — see `SECURITY.md` and report it privately.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: The smallest sequence that shows it. Include the role you were signed in as.
+      placeholder: |
+        1. Sign in as manager@demo.selorax.test
+        2. Open Leave → Requests
+        3. …
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - apps/api (the API)
+        - apps/web (the web app)
+        - packages/contracts
+        - Database or migrations
+        - Build, CI or Docker
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or branch
+      placeholder: e.g. main at 1a2b3c4
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        API log lines or a browser console error, if you have them. Redact anything that looks like
+        a secret — connection URLs carry passwords.
+      render: text

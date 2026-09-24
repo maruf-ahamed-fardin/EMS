@@ -1,0 +1,590 @@
+// SeloraX EMS database (plan §3). docs/database.md explains the conventions.
+//
+// - Tables and columns are snake_case (@@map/@map); the client uses camelCase.
+// - Primary keys are UUIDv7, so they sort by creation time.
+// - Soft-deleted tables keep their unique constraints partial (WHERE deleted_at IS NULL), so a
+//   deleted row never blocks reusing its code or email.
+// - Emails are citext. The citext and pg_trgm extensions and the CHECK constraints are in the
+//   migration SQL, because Prisma does not model them.
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums (values mirror packages/contracts/src/enums.ts) ──────────────────────────────────────
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Gender {
+  FEMALE
+  MALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum PermissionScope {
+  OWN
+  TEAM
+  ALL
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  ON_LEAVE
+  HOLIDAY
+  WEEKEND
+}
+
+enum AttendanceRecordType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+enum AttendanceSource {
+  WEB
+  MOBILE
+  BIOMETRIC
+  RFID
+  API
+  ADMIN
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// Shown on the Team Profile card. POS/NEG because enum values must be identifiers; the UI
+/// renders them as B+ and so on through BLOOD_GROUP_LABELS.
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+/// The link kinds a card can show. Anything else is not stored, so no unknown icons render.
+enum TeamProfileLinkKind {
+  FACEBOOK
+  INSTAGRAM
+  DISCORD
+  GITHUB
+  LINKEDIN
+  WEBSITE
+}
+
+// ─── Identity and access ────────────────────────────────────────────────────────────────────────
+
+model User {
+  id                String     @id @default(uuid(7)) @db.Uuid
+  email             String     @unique @db.Citext
+  passwordHash      String     @map("password_hash")
+  roleId            String     @map("role_id") @db.Uuid
+  employeeId        String?    @unique @map("employee_id") @db.Uuid
+  status            UserStatus @default(ACTIVE)
+  lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  failedLoginCount  Int        @default(0) @map("failed_login_count")
+  lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(3)
+  passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(3)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  role                  Role                 @relation(fields: [roleId], references: [id])
+  employee              Employee?            @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  sessions              Session[]
+  passwordResetTokens   PasswordResetToken[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  reviewedLeaveRequests LeaveRequest[]
+  uploadedDocuments     Document[]
+  attendanceRecords     AttendanceRecord[]
+  settingsUpdated       Setting[]
+
+  @@index([roleId])
+  @@index([status])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  key         String   @unique
+  name        String
+  description String?
+  /// System roles are seeded and cannot be deleted.
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  /// `module.action`, seeded from PERMISSIONS in @ems/contracts.
+  key         String   @unique
+  module      String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String          @map("role_id") @db.Uuid
+  permissionId String          @map("permission_id") @db.Uuid
+  scope        PermissionScope
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model Session {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  /// sha256 of the cookie token. The token itself is never stored.
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  ip         String?
+  userAgent  String?   @map("user_agent")
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ─── Organization ───────────────────────────────────────────────────────────────────────────────
+
+model Department {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  name           String
+  code           String
+  description    String?
+  headEmployeeId String?   @map("head_employee_id") @db.Uuid
+  isActive       Boolean   @default(true) @map("is_active")
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  head      Employee?  @relation("DepartmentHead", fields: [headEmployeeId], references: [id], onDelete: SetNull)
+  employees Employee[] @relation("DepartmentEmployees")
+  positions Position[]
+
+  @@unique([name], where: { deletedAt: null })
+  @@unique([code], where: { deletedAt: null })
+  @@index([headEmployeeId])
+  @@map("departments")
+}
+
+model Position {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  title        String
+  departmentId String?   @map("department_id") @db.Uuid
+  level        String?
+  isActive     Boolean   @default(true) @map("is_active")
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  employees  Employee[]
+
+  @@unique([title, departmentId], where: { deletedAt: null })
+  @@index([departmentId])
+  @@map("positions")
+}
+
+model Employee {
+  id               String         @id @default(uuid(7)) @db.Uuid
+  /// Human-facing code such as SX-001.
+  employeeCode     String         @map("employee_code")
+  firstName        String         @map("first_name")
+  lastName         String         @map("last_name")
+  email            String         @db.Citext
+  phone            String
+  dateOfBirth      DateTime       @map("date_of_birth") @db.Date
+  gender           Gender?
+  /// { line1, city, postcode, country }
+  address          Json
+  /// { name, relationship, phone }
+  emergencyContact Json           @map("emergency_contact")
+  /// Storage key of the profile photo. Never returned to clients.
+  photoKey         String?        @map("photo_key")
+  /// Optional and self-declared. Emergency use; each person chooses whether to publish it.
+  bloodGroup       BloodGroup?    @map("blood_group")
+  departmentId     String         @map("department_id") @db.Uuid
+  positionId       String         @map("position_id") @db.Uuid
+  managerId        String?        @map("manager_id") @db.Uuid
+  joiningDate      DateTime       @map("joining_date") @db.Date
+  employmentType   EmploymentType @map("employment_type")
+  status           EmployeeStatus @default(ACTIVE)
+  workLocation     String         @map("work_location")
+  deactivatedAt    DateTime?      @map("deactivated_at") @db.Timestamptz(3)
+  deletedAt        DateTime?      @map("deleted_at") @db.Timestamptz(3)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  department        Department         @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+  position          Position           @relation(fields: [positionId], references: [id])
+  manager           Employee?          @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports     Employee[]         @relation("EmployeeManager")
+  headOf            Department[]       @relation("DepartmentHead")
+  user              User?
+  attendances       Attendance[]
+  attendanceRecords AttendanceRecord[]
+  leaveBalances     LeaveBalance[]
+  leaveRequests     LeaveRequest[]
+  documents         Document[]
+  teamProfile       TeamProfile?
+
+  @@unique([employeeCode], where: { deletedAt: null })
+  @@unique([email], where: { deletedAt: null })
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([managerId])
+  @@index([status])
+  @@index([joiningDate])
+  @@index([createdAt])
+  @@index([firstName(ops: raw("gin_trgm_ops"))], type: Gin, map: "employees_first_name_trgm_idx")
+  @@index([lastName(ops: raw("gin_trgm_ops"))], type: Gin, map: "employees_last_name_trgm_idx")
+  @@map("employees")
+}
+
+model Holiday {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  date      DateTime @unique @db.Date
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("holidays")
+}
+
+model Setting {
+  /// Section name (`attendance`, `leave`, `organization`); each has a zod schema.
+  key         String   @id
+  value       Json
+  updatedById String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+  @@map("settings")
+}
+
+// ─── Attendance ─────────────────────────────────────────────────────────────────────────────────
+
+/// One row per employee per working day: the day's result.
+model Attendance {
+  id            String           @id @default(uuid(7)) @db.Uuid
+  employeeId    String           @map("employee_id") @db.Uuid
+  /// The working day in the organization's time zone.
+  workDate      DateTime         @map("work_date") @db.Date
+  firstInAt     DateTime?        @map("first_in_at") @db.Timestamptz(3)
+  lastOutAt     DateTime?        @map("last_out_at") @db.Timestamptz(3)
+  workedMinutes Int              @default(0) @map("worked_minutes")
+  status        AttendanceStatus
+  lateMinutes   Int              @default(0) @map("late_minutes")
+  note          String?
+  sourceSummary String?          @map("source_summary")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee Employee           @relation(fields: [employeeId], references: [id])
+  records  AttendanceRecord[]
+
+  @@unique([employeeId, workDate])
+  @@index([workDate, status])
+  @@map("attendances")
+}
+
+/// Each raw punch. Every source (web, devices, admin corrections) writes here.
+model AttendanceRecord {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  attendanceId String               @map("attendance_id") @db.Uuid
+  employeeId   String               @map("employee_id") @db.Uuid
+  type         AttendanceRecordType
+  occurredAt   DateTime             @map("occurred_at") @db.Timestamptz(3)
+  source       AttendanceSource
+  deviceId     String?              @map("device_id")
+  ip           String?
+  /// Null for device punches.
+  createdById  String?              @map("created_by") @db.Uuid
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  createdBy  User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, occurredAt])
+  @@index([attendanceId])
+  @@index([createdById])
+  @@map("attendance_records")
+}
+
+// ─── Leave ──────────────────────────────────────────────────────────────────────────────────────
+
+model LeaveType {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  name               String
+  code               String
+  defaultDaysPerYear Decimal   @map("default_days_per_year") @db.Decimal(5, 1)
+  requiresDocument   Boolean   @default(false) @map("requires_document")
+  carryForwardMax    Decimal   @default(0) @map("carry_forward_max") @db.Decimal(5, 1)
+  isPaid             Boolean   @default(true) @map("is_paid")
+  isActive           Boolean   @default(true) @map("is_active")
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  balances LeaveBalance[]
+  requests LeaveRequest[]
+
+  @@unique([code], where: { deletedAt: null })
+  @@map("leave_types")
+}
+
+model LeaveBalance {
+  id                  String   @id @default(uuid(7)) @db.Uuid
+  employeeId          String   @map("employee_id") @db.Uuid
+  leaveTypeId         String   @map("leave_type_id") @db.Uuid
+  year                Int
+  allocated           Decimal  @default(0) @db.Decimal(5, 1)
+  carriedForward      Decimal  @default(0) @map("carried_forward") @db.Decimal(5, 1)
+  used                Decimal  @default(0) @db.Decimal(5, 1)
+  pending             Decimal  @default(0) @db.Decimal(5, 1)
+  /// False while the previous year is still running: carriedForward is 0 until it ends and is worked out.
+  carryForwardSettled Boolean  @default(true) @map("carry_forward_settled")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([leaveTypeId])
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id                   String             @id @default(uuid(7)) @db.Uuid
+  employeeId           String             @map("employee_id") @db.Uuid
+  leaveTypeId          String             @map("leave_type_id") @db.Uuid
+  startDate            DateTime           @map("start_date") @db.Date
+  endDate              DateTime           @map("end_date") @db.Date
+  /// Working days, frozen when the request is made (holidays can change later).
+  days                 Decimal            @db.Decimal(5, 1)
+  /// Whether the days come out of a balance: the type's isPaid when the request was made.
+  countsAgainstBalance Boolean            @default(true) @map("counts_against_balance")
+  reason               String
+  status               LeaveRequestStatus @default(PENDING)
+  reviewedById         String?            @map("reviewed_by") @db.Uuid
+  reviewedAt           DateTime?          @map("reviewed_at") @db.Timestamptz(3)
+  reviewNote           String?            @map("review_note")
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  leaveType  LeaveType @relation(fields: [leaveTypeId], references: [id])
+  reviewedBy User?     @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([employeeId, startDate])
+  @@index([leaveTypeId])
+  @@index([reviewedById])
+  @@map("leave_requests")
+}
+
+// ─── Documents, notifications, audit ────────────────────────────────────────────────────────────
+
+model DocumentType {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  name        String
+  code        String
+  /// Sensitive types (such as national ID) are hidden from managers.
+  isSensitive Boolean   @default(false) @map("is_sensitive")
+  hasExpiry   Boolean   @default(false) @map("has_expiry")
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  documents Document[]
+
+  @@unique([code], where: { deletedAt: null })
+  @@map("document_types")
+}
+
+model Document {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  employeeId     String    @map("employee_id") @db.Uuid
+  documentTypeId String    @map("document_type_id") @db.Uuid
+  title          String
+  /// `employees/{employeeId}/{uuidv7}`. Never returned to clients.
+  storageKey     String    @unique @map("storage_key")
+  mimeType       String    @map("mime_type")
+  sizeBytes      Int       @map("size_bytes")
+  sha256         String    @db.Char(64)
+  expiresAt      DateTime? @map("expires_at") @db.Date
+  uploadedById   String    @map("uploaded_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id])
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id])
+
+  @@index([employeeId])
+  @@index([documentTypeId])
+  @@index([uploadedById])
+  @@index([expiresAt], where: { deletedAt: null })
+  @@map("documents")
+}
+
+model Notification {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  type       String
+  title      String
+  body       String
+  link       String?
+  entityType String?   @map("entity_type")
+  entityId   String?   @map("entity_id")
+  readAt     DateTime? @map("read_at") @db.Timestamptz(3)
+  /// Stops a repeating trigger (such as a document expiry reminder) notifying twice.
+  dedupeKey  String?   @map("dedupe_key")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ─── Team Profile ───────────────────────────────────────────────────────────────────────────────
+
+/// What a person adds to their own card on top of their employee record. One row per employee,
+/// created the first time they save. Absent means an unedited card, which is still shown.
+model TeamProfile {
+  employeeId        String   @id @map("employee_id") @db.Uuid
+  /// A second number the person is happy to publish, unlike `employees.phone`.
+  businessPhone     String?  @map("business_phone")
+  /// At most 120 characters; a line about themselves, under the job title.
+  headline          String?
+  /// Hides `employees.phone` from the card without removing it from the employee record.
+  showPersonalPhone Boolean  @default(true) @map("show_personal_phone")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  links    TeamProfileLink[]
+
+  @@map("team_profiles")
+}
+
+/// One social or web link on a card. At most one of each kind per person.
+model TeamProfileLink {
+  id         String              @id @default(uuid(7)) @db.Uuid
+  employeeId String              @map("employee_id") @db.Uuid
+  kind       TeamProfileLinkKind
+  /// Always https; validated before it is stored and again before it is rendered.
+  url        String
+  createdAt  DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  profile TeamProfile @relation(fields: [employeeId], references: [employeeId], onDelete: Cascade)
+
+  @@unique([employeeId, kind])
+  @@map("team_profile_links")
+}
+
+/// Append-only. Rows are written in the same transaction as the change they describe.
+model AuditLog {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  /// `entity.verb`, such as `employee.updated`.
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  before      Json?
+  after       Json?
+  ip          String?
+  userAgent   String?  @map("user_agent")
+  requestId   String   @map("request_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@index([createdAt(sort: Desc)])
+  @@index([action])
+  @@map("audit_logs")
+}

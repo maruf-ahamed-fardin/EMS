@@ -1,0 +1,23 @@
+version: 2
+updates:
+  # The Yarn workspace, grouped into one weekly PR. Dependabot's "npm" ecosystem covers Yarn too.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      ems:
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
