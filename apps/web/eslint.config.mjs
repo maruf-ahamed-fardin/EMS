@@ -3,7 +3,8 @@ import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 
 export default defineConfig([
-  globalIgnores(['.next/**', 'coverage/**', 'next-env.d.ts']),
+  // server/ is the API, linted by its own eslint.config.mjs
+  globalIgnores(['.next/**', 'coverage/**', 'next-env.d.ts', 'server/**']),
   ...nextVitals,
   ...nextTs,
 ]);

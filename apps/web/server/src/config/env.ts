@@ -31,7 +31,12 @@ const envSchema = z
 
     /** Browser origins allowed to call the API directly. Production is same-origin, so usually empty. */
     CORS_ORIGINS: commaList,
-    /** Proxy hops in front of the API (Next.js rewrite, load balancer). Used for client IPs. */
+    /**
+     * Proxies that append to X-Forwarded-For in front of the app. Used for client IPs (rate limits).
+     * The web app's /api route forwards the header as it arrived: Vercel and most load balancers set or
+     * append the real client address. Don't expose the Node server directly without one, or a client
+     * can choose the address it is counted under.
+     */
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
 
     /**
@@ -71,7 +76,8 @@ const envSchema = z
      * bucket (AWS S3, Cloudflare R2, MinIO).
      */
     STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
-    STORAGE_LOCAL_DIR: z.string().min(1).default('./storage'),
+    /** Relative to the repository root. */
+    STORAGE_LOCAL_DIR: z.string().min(1).default('apps/web/server/storage'),
     S3_BUCKET: z.string().optional(),
     /** `auto` for Cloudflare R2. */
     S3_REGION: z.string().min(1).default('us-east-1'),

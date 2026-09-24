@@ -2,10 +2,10 @@
   "name": "@ems/backend",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/embedded.js",
   "scripts": {
     "build": "nest build",
-    "dev": "nest start --watch",
-    "start": "node dist/main.js",
+    "dev": "nest build --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "jest --runInBand",

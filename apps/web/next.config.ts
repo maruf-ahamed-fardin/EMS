@@ -1,21 +1,23 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import type { NextConfig } from 'next';
 
 /**
- * Where /api/* is forwarded. The browser only ever talks to this app's origin, so the session
- * cookie stays first-party and the API needs no CORS (plan §2).
+ * The API (server/, package @ems/backend) runs inside this app. Its own compiled code is bundled with
+ * the /api route, but every package it depends on is loaded with Node's require, as when it ran on its
+ * own: some read their own files at run time (pdfkit's fonts, pino's workers, Prisma's query compiler)
+ * and Nest imports optional packages inside try/catch, which only works unbundled.
  */
-function apiOrigin(): string {
-  const value = process.env.API_ORIGIN;
-  if (!value) {
-    if (process.env.NODE_ENV === 'production' && process.env.CI !== 'true') {
-      throw new Error('API_ORIGIN is required for a production build (for example http://api:4000)');
-    }
-    return 'http://127.0.0.1:4000';
-  }
-  const url = new URL(value);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('API_ORIGIN must be an http(s) URL');
-  return url.origin;
-}
+const backend = JSON.parse(readFileSync(path.join(__dirname, 'server/package.json'), 'utf8')) as { dependencies: Record<string, string> };
+const apiPackages = [
+  // rxjs stays bundled: Next already optimises its imports, and it reads no files of its own
+  ...Object.keys(backend.dependencies).filter((name) => !name.startsWith('@ems/') && name !== 'rxjs'),
+  // Optional Nest packages this app doesn't install; Nest skips them when require fails
+  '@nestjs/microservices',
+  '@nestjs/websockets',
+  'class-transformer',
+  'class-validator',
+];
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -31,17 +33,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  experimental: {
-    // Next buffers request bodies up to this size and cuts off the rest. Document uploads are up to
-    // 10 MB plus multipart overhead; the API itself answers 413 for anything larger.
-    proxyClientMaxBodySize: '11mb',
-  },
+  serverExternalPackages: apiPackages,
+  // Trace from the repository root, so the build output includes the packages the API loads at run time
+  outputFileTracingRoot: path.join(__dirname, '../..'),
+  turbopack: { root: path.join(__dirname, '../..') },
   output: process.env.BUILD_STANDALONE === '1' ? 'standalone' : undefined,
-  async rewrites() {
-    return [{ source: '/api/:path*', destination: `${apiOrigin()}/api/:path*` }];
-  },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    // Pages only: the API sets its own security headers (helmet), as it did as a separate server
+    return [{ source: '/((?!api/).*)', headers: securityHeaders }];
   },
 };
 

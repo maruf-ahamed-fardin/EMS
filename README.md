@@ -1,23 +1,26 @@
 # SeloraX EMS
 
 The SeloraX employee management system: employees, departments, attendance, leave, documents,
-notifications, reports and audit. The repository is one Yarn workspace: a NestJS API, a Next.js web app
-and the contracts package they share.
+notifications, reports and audit. The repository is one Yarn workspace: a Next.js web app with a NestJS
+API inside it, and the contracts package they share. It deploys as one app (one Vercel project).
 
 | Folder | Workspace | What | Stack |
 |---|---|---|---|
-| `apps/api` | `@ems/backend` | The API at `/api/v1` | NestJS 11, Prisma 7, PostgreSQL 16 |
-| `apps/web` | `@ems/frontend` | The web app | Next.js 16, React 19, Tailwind 4, shadcn/ui |
+| `apps/web` | `@ems/frontend` | The web app, which serves the API at `/api/*` | Next.js 16, React 19, Tailwind 4, shadcn/ui |
+| `apps/web/server` | `@ems/backend` | The API at `/api/v1`, run inside the web app | NestJS 11, Prisma 7, PostgreSQL 16 |
 | `packages/contracts` | `@ems/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
 
 The folder and the workspace name differ, and commands take the name:
 `yarn workspace @ems/backend run test`.
-`apps/web` never imports from `apps/api`; anything both sides need lives in `packages/contracts`.
+The web app reaches the API only through `src/lib/embedded-api.ts`, which starts it inside the same Node
+process on a private loopback port; `src/app/api/[...path]/route.ts` forwards every `/api/*` request to
+it unchanged. Nothing else in `apps/web/src` imports from `apps/web/server`; anything both sides need
+lives in `packages/contracts`.
 
 ```
 apps/
-  api/      src/  prisma/  test/       the API, its schema and migrations, its tests
   web/      src/  test/  e2e/          the web app, its unit tests and its Playwright tests
+    server/ src/  prisma/  test/       the API, its schema and migrations, its tests
 packages/
   contracts/                           zod schemas, enums, PERMISSIONS, API types
 docs/                                  plan, architecture, API, security, database, deployment
@@ -50,7 +53,7 @@ yarn install            # --immutable in CI and the images: refuses to change ya
 yarn db:generate        # Prisma client
 yarn db:deploy          # apply migrations
 yarn db:seed            # permissions, roles and four demo accounts
-yarn dev                # contracts watcher, API on :4000, web on :3000
+yarn dev                # contracts and API watchers, the app (with the API inside) on :3000
 ```
 
 Open http://localhost:3000 and sign in with one of the demo accounts and your `SEED_PASSWORD`:
@@ -71,7 +74,7 @@ set `MAIL_DRIVER=smtp` and `SMTP_URL=smtp://127.0.0.1:1025` and open Mailpit at 
 |---|---|
 | `yarn dev` | Everything in watch mode |
 | `yarn typecheck` / `lint` / `test` / `build` | Across all three workspaces |
-| `yarn db:migrate` | Create a migration after editing `apps/api/prisma/schema.prisma` |
+| `yarn db:migrate` | Create a migration after editing `apps/web/server/prisma/schema.prisma` |
 | `yarn db:deploy` | Apply migrations (the release step in production, never at app start) |
 | `yarn workspace @ems/backend run catalogue:sync` | Align permissions and system roles with this build (release step, after `db:deploy`) |
 | `yarn db:seed` | Development demo data. Refuses production. |
@@ -89,7 +92,7 @@ The compose file creates `ems_test` for this.
 - **Installs are age-gated.** `.npmrc` refuses package versions younger than 7 days and never runs
   install scripts. Don't override it to get a newer version faster.
 - **Configuration is validated at startup.** The backend reads every variable through
-  `apps/api/src/config/env.ts`, and its errors name the variable, never the value.
+  `apps/web/server/src/config/env.ts`, and its errors name the variable, never the value.
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
 
 More detail: [architecture](docs/architecture.md) · [database](docs/database.md) · [API](docs/api.md) ·

@@ -6,7 +6,7 @@ import type { AppConfig } from './config/env';
 
 export const API_PREFIX = 'api/v1';
 
-/** Everything main.ts sets up on the app, shared with the e2e tests so they exercise the same stack. */
+/** Everything embedded.ts sets up on the app, shared with the e2e tests so they exercise the same stack. */
 export function configureApp(app: NestExpressApplication, config: AppConfig): void {
   app.use(requestContextMiddleware);
   app.set('trust proxy', config.TRUST_PROXY_HOPS);

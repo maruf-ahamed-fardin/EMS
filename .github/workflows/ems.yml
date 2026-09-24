@@ -30,7 +30,6 @@ jobs:
       DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_test
       SHADOW_DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_shadow
       TEST_DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_test
-      API_ORIGIN: http://127.0.0.1:4000
       PRISMA_HIDE_UPDATE_MESSAGE: '1'
     steps:
       - uses: actions/checkout@v5
@@ -63,7 +62,7 @@ jobs:
           if [ $code -ne 0 ] || ! echo "$out" | grep -q "No difference detected"; then echo "::error::drift check did not run"; exit 1; fi
       - run: yarn build
 
-      # Browser smoke (plan §13): the built API and web app on a freshly seeded database, driven by
+      # Browser smoke (plan §13): the built app (the API runs inside it) on a freshly seeded database, driven by
       # Playwright in the runner's Google Chrome at 375 and 1280 px, with axe on every page it visits
       - name: Seed a smoke database
         run: |
@@ -74,9 +73,11 @@ jobs:
           export DATABASE_URL=postgresql://ems:ems-ci@127.0.0.1:5432/ems_smoke
           yarn db:deploy
           SEED_PASSWORD="$password" yarn db:seed
-      - name: Start the API and the web app
+      - name: Start the app
         env:
           DATABASE_URL: postgresql://ems:ems-ci@127.0.0.1:5432/ems_smoke
+          # The API runs in the app's process and shares its NODE_ENV. Production would require real SMTP
+          # and S3, which a runner doesn't have, so the production build is served in development mode.
           NODE_ENV: development
           APP_URL: http://localhost:3000
           TRUST_PROXY_HOPS: '1'
@@ -86,13 +87,12 @@ jobs:
           STORAGE_DRIVER: local
           STORAGE_LOCAL_DIR: ${{ runner.temp }}/ems-storage
         run: |
-          (cd backend && nohup node dist/main.js > "$RUNNER_TEMP/api.log" 2>&1 &)
-          (cd frontend && NODE_ENV=production nohup npx next start --port 3000 > "$RUNNER_TEMP/web.log" 2>&1 &)
+          (cd apps/web && nohup npx next start --port 3000 > "$RUNNER_TEMP/app.log" 2>&1 &)
           for i in $(seq 1 60); do
-            curl -sf http://127.0.0.1:4000/api/v1/health/ready > /dev/null && curl -sf -o /dev/null http://localhost:3000/login && exit 0
+            curl -sf http://localhost:3000/api/v1/health/ready > /dev/null && curl -sf -o /dev/null http://localhost:3000/login && exit 0
             sleep 2
           done
-          echo "::error::the API or the web app did not start"; tail -50 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log"; exit 1
+          echo "::error::the app did not start"; tail -50 "$RUNNER_TEMP/app.log"; exit 1
       - name: Browser smoke
         env:
           EMS_BASE_URL: http://localhost:3000
@@ -101,7 +101,7 @@ jobs:
           yarn workspace @ems/frontend run e2e
       - name: Server logs
         if: failure()
-        run: tail -100 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" || true
+        run: tail -100 "$RUNNER_TEMP/app.log" || true
       - name: Keep the Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -112,7 +112,7 @@ jobs:
             apps/web/test-results
           retention-days: 7
 
-  # The Dockerfiles can't be built on the development PC (no Docker), so CI proves them on every change
+  # The Dockerfile can't be built on the development PC (no Docker), so CI proves it on every change
   images:
     runs-on: ubuntu-latest
     needs: check
@@ -122,15 +122,13 @@ jobs:
           persist-credentials: false
       - name: Hidden payload check
         run: node scripts/check-payload.mjs
-      - name: Build the API, release and web images
+      - name: Build the app and release images
         run: |
-          docker build -f apps/api/Dockerfile --target runtime -t ems-api .
-          docker build -f apps/api/Dockerfile --target migrate -t ems-migrate .
-          docker build -f apps/web/Dockerfile --build-arg API_ORIGIN=http://api:4000 -t ems-web .
+          docker build -f apps/web/Dockerfile -t ems .
+          docker build -f apps/web/Dockerfile --target migrate -t ems-migrate .
       - name: Images run as a non-root user and load their native and generated code
         run: |
-          test "$(docker run --rm ems-api id -u)" != "0"
-          test "$(docker run --rm ems-web id -u)" != "0"
-          docker run --rm ems-api node -e "require('argon2'); require('./dist/generated/prisma/client'); console.log('api ok')"
-          docker run --rm ems-web test -f apps/web/server.js
+          test "$(docker run --rm ems id -u)" != "0"
+          docker run --rm ems test -f apps/web/server.js
+          docker run --rm ems node -e "require('argon2'); require('@prisma/client/runtime/client'); console.log('app ok')"
           docker run --rm ems-migrate npx prisma --version

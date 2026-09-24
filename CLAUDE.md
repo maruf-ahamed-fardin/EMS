@@ -1,7 +1,8 @@
 # SeloraX EMS
 
-The SeloraX Employee Management System, and nothing else: a NestJS + Prisma + PostgreSQL API, a
-Next.js frontend and the contracts package they share, in one Yarn 4 workspace at the repository root.
+The SeloraX Employee Management System, and nothing else: a Next.js app (`apps/web`) with a NestJS +
+Prisma + PostgreSQL API inside it (`apps/web/server`), and the contracts package they share, in one
+Yarn 4 workspace at the repository root. It deploys as one Vercel project with Root Directory `apps/web`.
 See `README.md` for setup and commands, and read `docs/plan.md` before starting work — it is the
 source of truth for scope, the order of work and the decisions taken.
 
@@ -13,6 +14,11 @@ to the root. Decision D1 in `docs/plan.md` and the differences table in `docs/ar
 this. Anything on `main` or in older commits still has the old layout, so paths there start with
 `ems/` — and a `git log` on any EMS file needs `--follow` to cross the move.
 
+On 2026-09-24 the API moved again, from `apps/api` into `apps/web/server`, and stopped being a server of
+its own: `apps/web/src/lib/embedded-api.ts` starts it inside the Next.js process on a loopback port, and
+`apps/web/src/app/api/[...path]/route.ts` forwards `/api/*` to it unchanged. Older commits have
+`apps/api/`.
+
 | Document | What it covers |
 |---|---|
 | `docs/architecture.md` | How it is built, and where and why it differs from the plan |
@@ -23,7 +29,7 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 
 ## Conventions
 
-- **Environment:** every variable goes through `apps/api/src/config/env.ts`. It validates at startup
+- **Environment:** every variable goes through `apps/web/server/src/config/env.ts`. It validates at startup
   and its errors name the variable, never the value.
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
 - **No real credentials or HR data** in this repository until the September 2026 password and token
@@ -31,7 +37,7 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 - **Yarn 4 only**, pinned in `.yarn/releases` — never npm. Installs are age-gated: `.yarnrc.yml`
   refuses package versions younger than 7 days (`npmMinimalAgeGate`) and never runs install scripts
   (`enableScripts: false`). Don't override either to get a newer version faster.
-- **After editing `apps/api/prisma/schema.prisma`,** run `yarn db:migrate`; `yarn db:drift -w
+- **After editing `apps/web/server/prisma/schema.prisma`,** run `yarn db:migrate`; `yarn db:drift -w
   @ems/backend` fails when the schema has changes with no migration.
 - **`yarn check:payload`** looks for code hidden after long runs of spaces (the September 2026
   incident). CI runs it before installing anything.
@@ -41,4 +47,4 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 No Docker on the development PC: `docker-compose.yml` is the documented path, but Postgres is run
 from a portable build on `127.0.0.1:5433`. The demo accounts are `superadmin@`, `hr@`, `manager@`
 and `employee@demo.selorax.test`. `yarn db:seed` sets their password from `SEED_PASSWORD`, which
-`apps/api/src/auth/password-policy.ts` requires to be 10+ characters.
+`apps/web/server/src/auth/password-policy.ts` requires to be 10+ characters.
