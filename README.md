@@ -8,21 +8,20 @@ API inside it, and the contracts package they share. It deploys as one app (one 
 |---|---|---|---|
 | `apps/web` | `@ems/frontend` | The web app, which serves the API at `/api/*` | Next.js 16, React 19, Tailwind 4, shadcn/ui |
 | `apps/web/server` | `@ems/backend` | The API at `/api/v1`, run inside the web app | NestJS 11, Prisma 7, PostgreSQL 16 |
-| `packages/contracts` | `@ems/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
+| `apps/web/contracts` | `@ems/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
 
 The folder and the workspace name differ, and commands take the name:
 `yarn workspace @ems/backend run test`.
 The web app reaches the API only through `src/lib/embedded-api.ts`, which starts it inside the same Node
 process on a private loopback port; `src/app/api/[...path]/route.ts` forwards every `/api/*` request to
 it unchanged. Nothing else in `apps/web/src` imports from `apps/web/server`; anything both sides need
-lives in `packages/contracts`.
+lives in `apps/web/contracts`.
 
 ```
 apps/
   web/      src/  test/  e2e/          the web app, its unit tests and its Playwright tests
     server/ src/  prisma/  test/       the API, its schema and migrations, its tests
-packages/
-  contracts/                           zod schemas, enums, PERMISSIONS, API types
+    contracts/ src/                    zod schemas, enums, PERMISSIONS, API types
 docs/                                  plan, architecture, API, security, database, deployment
 scripts/                               repository tooling: the payload check, Postgres init SQL
 .github/workflows/                     CI

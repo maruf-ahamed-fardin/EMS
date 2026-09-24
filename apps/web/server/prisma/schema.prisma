@@ -18,7 +18,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── Enums (values mirror packages/contracts/src/enums.ts) ──────────────────────────────────────
+// ─── Enums (values mirror apps/web/contracts/src/enums.ts) ──────────────────────────────────────
 
 enum UserStatus {
   ACTIVE

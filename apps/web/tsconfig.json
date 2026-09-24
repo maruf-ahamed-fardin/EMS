@@ -21,6 +21,6 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mts", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-  // The API (server/) has its own tsconfig: Nest needs decorators and CommonJS
-  "exclude": ["node_modules", "server"]
+  // The API (server/) and the shared contracts (contracts/) are packages with their own tsconfig
+  "exclude": ["node_modules", "server", "contracts"]
 }

@@ -21,7 +21,7 @@ version sooner.
 ```
 apps/web/            Next.js web app; serves the API at /api/*
 apps/web/server/     NestJS API at /api/v1, Prisma, PostgreSQL, run inside the web app
-packages/contracts/  enums, permissions, default roles and API types both sides import
+apps/web/contracts/  enums, permissions, default roles and API types both sides import
 docs/                architecture, API, security, database, permissions, deployment, plan
 scripts/             repository tooling (the hidden-payload check, Postgres init SQL)
 ```
@@ -37,7 +37,7 @@ yarn workspace @ems/frontend run dev
 The web app uses the API package in exactly one place, `apps/web/src/lib/embedded-api.ts`, which starts
 it; everything else talks to it over HTTP at `/api/v1`, as a browser does, so the API's guards apply to
 every call. Anything both sides need goes in
-`packages/contracts`, which has no runtime dependency beyond zod.
+`apps/web/contracts`, which has no runtime dependency beyond zod.
 
 ## Before you open a pull request
 
