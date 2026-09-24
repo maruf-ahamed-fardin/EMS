@@ -222,6 +222,6 @@ export class FilesController {
     DocumentExpiryReminders,
     { provide: DOCUMENT_STORAGE, inject: [APP_CONFIG], useFactory: (config: AppConfig) => createDocumentStorage(config) },
   ],
-  exports: [DocumentsService, DOCUMENT_STORAGE],
+  exports: [DocumentsService, DocumentExpiryReminders, DOCUMENT_STORAGE],
 })
 export class DocumentsModule {}

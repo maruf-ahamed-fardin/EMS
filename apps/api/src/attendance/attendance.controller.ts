@@ -122,6 +122,6 @@ export class AttendanceScheduler implements OnApplicationBootstrap {
 @Module({
   controllers: [AttendanceController],
   providers: [AttendanceService, AttendanceIngestService, AttendanceScheduler],
-  exports: [AttendanceIngestService],
+  exports: [AttendanceIngestService, AttendanceService],
 })
 export class AttendanceModule {}

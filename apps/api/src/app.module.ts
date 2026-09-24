@@ -25,6 +25,7 @@ import { DashboardModule } from './dashboard/dashboard.controller';
 import { DocumentsModule } from './documents/documents.controller';
 import { EmployeesModule } from './employees/employees.module';
 import { HealthModule } from './health/health.module';
+import { JobsModule } from './jobs/jobs.controller';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.controller';
 import { OrganizationModule } from './organization/organization.module';
@@ -65,6 +66,7 @@ import { UsersModule } from './users/users.controller';
     LeaveModule,
     DocumentsModule,
     ReportsModule,
+    JobsModule,
   ],
   providers: [
     // Every DTO made with createZodDto is validated before the handler runs
