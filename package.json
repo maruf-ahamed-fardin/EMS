@@ -5,9 +5,9 @@
   "description": "SeloraX Employee Management System",
   "packageManager": "yarn@4.18.0",
   "workspaces": [
-    "packages/*",
-    "apps/*",
-    "apps/web/server"
+    "apps/web",
+    "apps/web/server",
+    "apps/web/contracts"
   ],
   "engines": {
     "node": ">=22.12"

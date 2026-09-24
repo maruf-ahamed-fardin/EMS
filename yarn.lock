@@ -1006,9 +1006,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ems/contracts@npm:0.1.0, @ems/contracts@workspace:packages/contracts":
+"@ems/contracts@npm:0.1.0, @ems/contracts@workspace:apps/web/contracts":
   version: 0.0.0-use.local
-  resolution: "@ems/contracts@workspace:packages/contracts"
+  resolution: "@ems/contracts@workspace:apps/web/contracts"
   dependencies:
     typescript: "npm:6.0.3"
     vite: "npm:^8.0.0"

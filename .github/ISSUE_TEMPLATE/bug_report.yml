@@ -31,7 +31,7 @@ body:
       options:
         - apps/web/server (the API)
         - apps/web (the web app)
-        - packages/contracts
+        - apps/web/contracts
         - Database or migrations
         - Build, CI or Docker
         - Not sure

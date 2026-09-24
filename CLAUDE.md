@@ -1,8 +1,9 @@
 # SeloraX EMS
 
 The SeloraX Employee Management System, and nothing else: a Next.js app (`apps/web`) with a NestJS +
-Prisma + PostgreSQL API inside it (`apps/web/server`), and the contracts package they share, in one
-Yarn 4 workspace at the repository root. It deploys as one Vercel project with Root Directory `apps/web`.
+Prisma + PostgreSQL API inside it (`apps/web/server`) and the contracts package both share
+(`apps/web/contracts`), in one Yarn 4 workspace at the repository root. It deploys as one Vercel
+project with Root Directory `apps/web`; nothing else in the repository is deployable on its own.
 See `README.md` for setup and commands, and read `docs/plan.md` before starting work — it is the
 source of truth for scope, the order of work and the decisions taken.
 
@@ -16,8 +17,8 @@ this. Anything on `main` or in older commits still has the old layout, so paths 
 
 On 2026-09-24 the API moved again, from `apps/api` into `apps/web/server`, and stopped being a server of
 its own: `apps/web/src/lib/embedded-api.ts` starts it inside the Next.js process on a loopback port, and
-`apps/web/src/app/api/[...path]/route.ts` forwards `/api/*` to it unchanged. Older commits have
-`apps/api/`.
+`apps/web/src/app/api/[...path]/route.ts` forwards `/api/*` to it unchanged. The same day
+`packages/contracts` moved to `apps/web/contracts`. Older commits have `apps/api/` and `packages/`.
 
 | Document | What it covers |
 |---|---|

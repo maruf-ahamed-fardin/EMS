@@ -12,13 +12,12 @@ ENV NEXT_TELEMETRY_DISABLED=1 YARN_ENABLE_GLOBAL_CACHE=false
 # release the whole project uses; both must be in the image before any install runs.
 COPY .yarnrc.yml yarn.lock package.json ./
 COPY .yarn/releases .yarn/releases
-COPY packages/contracts/package.json packages/contracts/
 COPY apps/web/package.json apps/web/
 COPY apps/web/server/package.json apps/web/server/
+COPY apps/web/contracts/package.json apps/web/contracts/
 
 FROM base AS build
 RUN yarn workspaces focus @ems/contracts @ems/backend @ems/frontend
-COPY packages/contracts packages/contracts
 COPY apps/web apps/web
 ENV BUILD_STANDALONE=1 NODE_ENV=production
 RUN yarn workspace @ems/contracts run build \
