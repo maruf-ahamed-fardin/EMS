@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /** A KPI tile: label, one number, and a line of context (dataviz: a single value is a tile, not a chart). */
 export function StatTile({

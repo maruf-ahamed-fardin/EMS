@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { type PermissionKey, type PermissionMap, PERMISSIONS } from '@/lib/validations';
-import type { SessionUser } from './session';
+import type { SessionUser } from '@/lib/auth/session';
 
 /**
  * Sign-in without the API: one account, from LOGIN_EMAIL and LOGIN_PASSWORD, checked on this server.

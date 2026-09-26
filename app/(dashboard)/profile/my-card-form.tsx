@@ -17,17 +17,17 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { FormAlert } from '@/components/forms/form-alert';
-import { LINKS } from '@/components/team-profile/profile-links';
+import { LINKS } from '@/components/employee/profile-links';
 import { TextField } from '@/components/forms/text-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChanges';
 import { api } from '@/lib/client/api-client';
 import { applyApiError } from '@/lib/client/form-errors';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const NONE = '__none__';
 

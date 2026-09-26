@@ -2,7 +2,7 @@ import type { DocumentExpiry } from '@/lib/validations';
 import { CircleAlert, CircleCheck, Clock } from 'lucide-react';
 import { formatDate } from '@/lib/client/employees';
 import { EXPIRY_LABELS } from '@/lib/client/documents';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const STYLE: Record<DocumentExpiry, { icon: typeof Clock; className: string }> = {
   VALID: { icon: CircleCheck, className: 'bg-muted text-muted-foreground' },

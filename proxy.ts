@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { isPublicPath, SESSION_COOKIE } from '@/lib/client/auth-paths';
+import { isPublicPath, SESSION_COOKIE } from '@/lib/auth/constants';
 import { contentSecurityPolicy, newNonce } from '@/lib/client/csp';
 
 /**

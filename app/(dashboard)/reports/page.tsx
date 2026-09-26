@@ -21,8 +21,8 @@ import { ApiRequestError } from '@/lib/client/api-error';
 import { dhakaToday } from '@/lib/client/attendance';
 import { defaultRange, exportHref, FORMAT_LABELS, REPORT_DESCRIPTIONS, reportKey, reportParams, reportsHref } from '@/lib/client/reports';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 import { ReportFilters } from './report-filters';
 
 export const metadata: Metadata = { title: 'Reports' };

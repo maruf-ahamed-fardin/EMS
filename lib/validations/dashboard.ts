@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { AttendanceStatus, LeaveRequestStatus } from './enums';
-import type { EmployeeListItem } from './employees';
+import type { EmployeeListItem } from '@/lib/validations/employee';
 
 // ─── Working calendar (plan D6) ─────────────────────────────────────────────────────────────────
 

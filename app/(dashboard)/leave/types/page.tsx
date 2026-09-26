@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { StatePanel } from '@/components/shared/state-panel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { LeaveTypeDialog } from './leave-type-dialog';
 
 export const metadata: Metadata = { title: 'Leave types' };

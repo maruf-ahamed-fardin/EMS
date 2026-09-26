@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { MAX_PAGE_LIMIT } from './api';
-import { isoDate } from './employees';
+import { isoDate } from '@/lib/validations/employee';
 
 /**
  * Every action the audit log records (plan §8), with how the viewer describes it. A test compares this

@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['{app,components,hooks,lib}/**/*.test.{ts,tsx}', 'proxy.test.ts'],
+    include: ['tests/unit/**/*.test.{ts,tsx}'],
     setupFiles: ['./tests/setup/setup.ts'],
   },
 });

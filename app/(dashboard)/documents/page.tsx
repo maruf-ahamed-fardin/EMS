@@ -12,8 +12,8 @@ import { documentsHref } from '@/lib/client/documents';
 import { redirectPastLastPage } from '@/lib/client/pagination';
 import { parseSearchParams } from '@/lib/client/search-params';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 import { DocumentFilters } from './document-filters';
 
 export const metadata: Metadata = { title: 'Documents' };

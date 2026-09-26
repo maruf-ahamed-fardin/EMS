@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { api } from '@/lib/client/api-client';
 import { EMPLOYMENT_TYPE_HINTS, EMPLOYMENT_TYPE_LABELS, GENDER_LABELS } from '@/lib/client/employees';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /**
  * The field groups shared by the create wizard and the edit page. They read the surrounding

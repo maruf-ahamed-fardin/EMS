@@ -11,7 +11,7 @@ import { formatDateTime } from '@/lib/client/employees';
 import { redirectPastLastPage } from '@/lib/client/pagination';
 import { parseSearchParams } from '@/lib/client/search-params';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { AuditFilters } from './audit-filters';
 
 export const metadata: Metadata = { title: 'Audit log' };

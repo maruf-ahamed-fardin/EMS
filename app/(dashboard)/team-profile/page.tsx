@@ -11,11 +11,11 @@ import { Forbidden } from '@/components/shared/module-page';
 import { PageHeader } from '@/components/shared/page-header';
 import { Pagination } from '@/components/shared/pagination';
 import { StatePanel } from '@/components/shared/state-panel';
-import { ProfileCardTile } from '@/components/team-profile/profile-card-tile';
+import { ProfileCardTile } from '@/components/employee/profile-card-tile';
 import { redirectPastLastPage } from '@/lib/client/pagination';
 import { parseSearchParams } from '@/lib/client/search-params';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { teamProfileHref } from '@/lib/client/team-profile';
 import { TeamProfileFilters } from './team-profile-filters';
 

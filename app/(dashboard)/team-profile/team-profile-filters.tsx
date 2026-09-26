@@ -4,11 +4,11 @@ import type { TeamProfileFilters as Filters } from '@/lib/validations';
 import { LoaderCircle, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
-import { ScanDialog } from '@/components/team-profile/scan-dialog';
+import { ScanDialog } from '@/components/employee/scan-dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { teamProfileHref } from '@/lib/client/team-profile';
-import { SEARCH_MAX_LENGTH, useUrlSearch } from '@/lib/client/use-url-search';
+import { SEARCH_MAX_LENGTH, useUrlSearch } from '@/hooks/useUrlSearch';
 
 const ANY = '__any__';
 

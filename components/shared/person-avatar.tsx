@@ -1,4 +1,5 @@
-import { cn, initials } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
+import { initials } from '@/lib/utils/format';
 
 const SIZES = { sm: 'size-8 text-xs', md: 'size-10 text-sm', xl: 'size-16 text-xl md:size-20 md:text-2xl' } as const;
 

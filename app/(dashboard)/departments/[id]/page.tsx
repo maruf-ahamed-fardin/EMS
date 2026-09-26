@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ApiRequestError } from '@/lib/client/api-error';
 import { formatInstantDate } from '@/lib/client/employees';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { PositionFormDialog } from '../../positions/position-form-dialog';
 import { DepartmentFormDialog } from '../department-form-dialog';
 

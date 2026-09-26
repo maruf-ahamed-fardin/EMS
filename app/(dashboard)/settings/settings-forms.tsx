@@ -17,7 +17,7 @@ import { api } from '@/lib/client/api-client';
 import { WEEKDAY_NAMES } from '@/lib/client/attendance';
 import { formatDate } from '@/lib/client/employees';
 import { applyApiError } from '@/lib/client/form-errors';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /**
  * The screens show dates and times in Dhaka time, so that is the only zone offered: a different one

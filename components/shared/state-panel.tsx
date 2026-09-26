@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 type Tone = 'neutral' | 'brand' | 'danger' | 'warning';
 

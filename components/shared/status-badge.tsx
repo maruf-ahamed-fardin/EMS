@@ -1,7 +1,7 @@
 import type { EmployeeStatus } from '@/lib/validations';
 import { CircleCheck, CircleMinus } from 'lucide-react';
 import { STATUS_LABELS } from '@/lib/client/employees';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /** Status as icon + text + colour, never colour alone (plan §12, accessibility). */
 export function StatusBadge({ status, className }: { status: EmployeeStatus; className?: string }) {

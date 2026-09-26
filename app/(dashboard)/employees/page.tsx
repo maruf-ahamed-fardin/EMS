@@ -21,8 +21,8 @@ import { dhakaDateDaysAgo, EMPLOYMENT_TYPE_LABELS, employeesHref, formatDate } f
 import { redirectPastLastPage } from '@/lib/client/pagination';
 import { parseSearchParams } from '@/lib/client/search-params';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 import { EmployeeFilters } from './employee-filters';
 
 export const metadata: Metadata = { title: 'Employees' };

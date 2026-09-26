@@ -9,8 +9,8 @@ import { StatePanel } from '@/components/shared/state-panel';
 import { Tag } from '@/components/shared/status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 import { PositionFormDialog } from './position-form-dialog';
 
 export const metadata: Metadata = { title: 'Positions' };

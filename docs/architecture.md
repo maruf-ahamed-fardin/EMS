@@ -64,11 +64,11 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | `app/(auth)/` | Public pages: login, forgot password, reset password. |
 | `app/(dashboard)/` | Everything behind sign-in. The layout checks the session and renders `AppShell`. |
 | `components/ui/` | shadcn/ui primitives, generated, then imported from `@/lib/utils` for `cn`. |
-| `components/shell/` | App shell: sidebar rail, mobile drawer, header, user menu. |
+| `components/layout/` | App shell: sidebar rail, mobile drawer, header, user menu. |
 | `components/shared/` | `PageHeader`, `StatePanel` (empty, error, forbidden), `ModulePage` placeholder. |
 | `components/auth/permissions.tsx` | `PermissionsProvider`, `useCan`, `<Can>`. |
-| `lib/client/navigation.ts` | The single navigation config, filtered by permissions. |
-| `lib/client/session.ts` | `getSession()`: `GET /auth/me` with the visitor's cookies. Null on 401; throws otherwise. |
+| `config/navigation.ts` | The single navigation config, filtered by permissions. |
+| `lib/auth/session.ts` | `getSession()`: `GET /auth/me` with the visitor's cookies. Null on 401; throws otherwise. |
 | `lib/client/api-client.ts` | Browser calls through `/api`: CSRF token on writes, `ApiRequestError` on failure. |
 | `lib/client/server-api.ts` | Server component calls to the in-process API (`lib/server/nest.ts`), forwarding cookies. |
 | `components/forms/` | `TextField` and `SelectField` (label, input, error, ARIA) and `FormAlert`. |
@@ -81,7 +81,7 @@ Modules from later phases (`attendance/`, `leave/`, …) sit beside these, as in
 | `app/(dashboard)/audit-logs/` | The audit log: filters in the URL (action, record type, dates; person and record by clicking), and an entry page with what changed field by field. The employee Activity tab links to the record's full history. |
 | `components/notifications/` | The header bell (unread count every 60 s and on focus through TanStack Query, latest six in a popover), the shared list (opening one marks it read and follows its link) and "Mark all read". |
 | `components/documents/`, `app/(dashboard)/documents/` | Document list, download and delete actions, upload dialog (multipart through `apiUpload`), `/documents` with expiry views, `/documents/types`. |
-| `components/shell/command-search.tsx` | Ctrl/⌘K search dialog. cmdk's own filtering is off: the API already filtered and scoped the results. |
+| `components/layout/command-search.tsx` | Ctrl/⌘K search dialog. cmdk's own filtering is off: the API already filtered and scoped the results. |
 
 ### Charts
 

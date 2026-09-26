@@ -24,8 +24,8 @@ import { Button } from '@/components/ui/button';
 import { activitySentence, dhakaHour, greeting, headline, percent, relativeTime } from '@/lib/client/dashboard';
 import { formatDate } from '@/lib/client/employees';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 

@@ -6,7 +6,7 @@ import { CalendarCheck, FileWarning, KeyRound, Plane, UserPlus, type LucideIcon 
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/client/api-client';
 import { relativeTime } from '@/lib/client/dashboard';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const ICONS: Record<NotificationType, LucideIcon> = {
   'leave.requested': Plane,

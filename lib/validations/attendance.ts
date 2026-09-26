@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { MAX_PAGE_LIMIT } from './api';
 import { attendanceSettings } from './dashboard';
 import { AttendanceSource, AttendanceStatus } from './enums';
-import { isoDate } from './employees';
+import { isoDate } from '@/lib/validations/employee';
 
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm, e.g. 09:05');
 

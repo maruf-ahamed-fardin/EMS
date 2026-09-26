@@ -1,9 +1,9 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { PermissionsProvider } from '@/components/auth/permissions';
-import { AppShell } from '@/components/shell/app-shell';
-import { SIDEBAR_COOKIE } from '@/lib/client/auth-paths';
-import { getSession } from '@/lib/client/session';
+import { AppShell } from '@/components/layout/app-shell';
+import { SIDEBAR_COOKIE } from '@/lib/auth/constants';
+import { getSession } from '@/lib/auth/session';
 
 // Every page behind sign-in is per-user: never statically rendered or cached
 export const dynamic = 'force-dynamic';

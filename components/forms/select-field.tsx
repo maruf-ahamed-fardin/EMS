@@ -4,7 +4,7 @@ import { useId } from 'react';
 import { type Control, Controller, type FieldPath, type FieldValues } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /** Radix Select can't hold an empty value, so "none" stands in for null in optional selects. */
 export const NONE = '__none__';

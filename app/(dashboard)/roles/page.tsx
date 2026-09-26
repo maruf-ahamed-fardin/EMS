@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { Forbidden } from '@/components/shared/module-page';
 import { PageHeader } from '@/components/shared/page-header';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 import { RoleEditor } from './role-editor';
 
 export const metadata: Metadata = { title: 'Roles & permissions' };

@@ -1,7 +1,7 @@
 import type { PageMeta } from '@/lib/validations';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /** Page numbers to show: first, last, and two either side of the current page, with gaps. */
 export function pageWindow(page: number, totalPages: number): Array<number | 'gap'> {

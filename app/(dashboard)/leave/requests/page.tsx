@@ -15,8 +15,8 @@ import { daysLabel, formatLeaveRange } from '@/lib/client/leave';
 import { redirectPastLastPage } from '@/lib/client/pagination';
 import { parseSearchParams } from '@/lib/client/search-params';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
-import { cn } from '@/lib/client/utils';
+import { getSession } from '@/lib/auth/session';
+import { cn } from '@/lib/utils/cn';
 
 export const metadata: Metadata = { title: 'Leave requests' };
 

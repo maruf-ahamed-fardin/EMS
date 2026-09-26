@@ -4,14 +4,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Forbidden } from '@/components/shared/module-page';
-import { CardActions } from '@/components/team-profile/card-actions';
-import { ProfileAvatar } from '@/components/team-profile/profile-avatar';
-import { ProfileLinks } from '@/components/team-profile/profile-links';
-import { SaveContactButton } from '@/components/team-profile/save-contact-button';
+import { CardActions } from '@/components/employee/card-actions';
+import { ProfileAvatar } from '@/components/employee/profile-avatar';
+import { ProfileLinks } from '@/components/employee/profile-links';
+import { SaveContactButton } from '@/components/employee/save-contact-button';
 import { ApiRequestError } from '@/lib/client/api-error';
 import { formatDate } from '@/lib/client/employees';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 
 export const metadata: Metadata = { title: 'Team Profile' };
 

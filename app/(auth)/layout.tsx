@@ -1,4 +1,4 @@
-import { BrandMark } from '@/components/shell/brand-mark';
+import { BrandMark } from '@/components/layout/brand-mark';
 
 // Auth pages read cookies and search params; never render them statically
 export const dynamic = 'force-dynamic';

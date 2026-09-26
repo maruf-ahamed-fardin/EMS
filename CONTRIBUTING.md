@@ -19,20 +19,25 @@ version sooner.
 ## The shape of the repository
 
 ```
-app/                 pages (app/(auth), app/(dashboard)) and app/api/[...path]/route.ts, the API entry
-components/          React components (ui/ is shadcn/ui)
-hooks/               React hooks
+app/                 pages: (auth)/ sign-in, (dashboard)/ everything behind it; api/[...path]/route.ts, the API entry
+components/          React components: ui/ (shadcn/ui), layout/ (shell, sidebar, menus), employee/ (team
+                     profile cards, QR), shared/, and one folder per feature
+hooks/               React hooks (useBrowser, useUrlSearch, useUnsavedChanges)
 lib/
-  client/            frontend helpers: the API client, server-side API calls, formatting
   validations/       zod schemas, enums, PERMISSIONS and API types, shared by both sides
+  auth/              sessions, CSRF, permissions, passwords; session.ts and constants.ts for pages
+  services/          API modules: controllers and services per feature (employees, organization, …)
   server/            the NestJS app, started inside Next.js on a private loopback port
-  services/          API modules: controllers and services per feature
-  auth/              sessions, CSRF, permissions, passwords
   http/              errors, request context, logging
   db/                Prisma client (generated/ is built by yarn db:generate)
-config/              environment validation
+  qr/                QR code generation
+  utils/             cn.ts (class names), format.ts
+  client/            frontend helpers: the API client, server-side API calls, per-feature formatting
+types/               API types by area (employee, auth, department, api), re-exported from lib/validations
+config/              env.ts (environment validation), navigation.ts
 prisma/              schema, migrations and demo seed
-tests/               integration/ (API, Jest), e2e/ (Playwright), setup/ (Vitest)
+public/              static files: images/, icons/, logos/
+tests/               unit/ (mirrors the source tree), integration/ (API), e2e/ (Playwright), setup/
 docs/                plan, architecture, API, security, database, deployment
 scripts/             repository tooling: the payload check, Postgres init SQL
 ```

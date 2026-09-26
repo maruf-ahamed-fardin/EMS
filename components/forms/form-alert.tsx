@@ -1,5 +1,5 @@
 import { CircleCheck, TriangleAlert } from 'lucide-react';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /** A form-level message: announced to screen readers when it appears. */
 export function FormAlert({ tone, children }: { tone: 'error' | 'success'; children: React.ReactNode }) {

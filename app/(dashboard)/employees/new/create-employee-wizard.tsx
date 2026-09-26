@@ -21,11 +21,11 @@ import { PersonAvatar } from '@/components/shared/person-avatar';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChanges';
 import { api } from '@/lib/client/api-client';
 import { EMPLOYMENT_TYPE_LABELS, formatDate, formatPhone, GENDER_LABELS } from '@/lib/client/employees';
 import { applyApiError } from '@/lib/client/form-errors';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 import { ContactFields, EmploymentFields, PersonalFields } from '../employee-fields';
 
 type Values = CreateEmployeeInput;

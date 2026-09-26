@@ -9,7 +9,7 @@ import { ApiRequestError } from '@/lib/client/api-error';
 import { actionLabel, auditHref, entityHref, entityTypeLabel, fieldLabel, formatValue } from '@/lib/client/audit';
 import { formatDateTime } from '@/lib/client/employees';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 
 export const metadata: Metadata = { title: 'Audit entry' };
 

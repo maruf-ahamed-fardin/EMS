@@ -6,14 +6,14 @@ import { PageHeader } from '@/components/shared/page-header';
 import { PersonAvatar } from '@/components/shared/person-avatar';
 import { StatePanel } from '@/components/shared/state-panel';
 import { Tag } from '@/components/shared/status-badge';
-import { PhotoEditor } from '@/components/team-profile/photo-editor';
-import { ProfileCardTile } from '@/components/team-profile/profile-card-tile';
+import { PhotoEditor } from '@/components/employee/photo-editor';
+import { ProfileCardTile } from '@/components/employee/profile-card-tile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ApiRequestError } from '@/lib/client/api-error';
 import { EMPLOYMENT_TYPE_LABELS, formatDate } from '@/lib/client/employees';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { MyCardForm } from './my-card-form';
 import { MyContactForm } from './my-contact-form';
 

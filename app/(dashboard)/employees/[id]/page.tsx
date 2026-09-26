@@ -34,7 +34,7 @@ import { ApiRequestError } from '@/lib/client/api-error';
 import { describeActivity, EMPLOYMENT_TYPE_LABELS, formatDate, formatDateTime, formatPhone, GENDER_LABELS } from '@/lib/client/employees';
 import { daysLabel, formatLeaveRange } from '@/lib/client/leave';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { EmployeeActions } from './employee-actions';
 
 export const metadata: Metadata = { title: 'Employee' };

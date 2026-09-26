@@ -1,9 +1,9 @@
 import { Construction, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { HOME_PATH } from '@/lib/client/auth-paths';
-import { meetsAny, type Requirement } from '@/lib/client/navigation';
-import { getSession } from '@/lib/client/session';
+import { HOME_PATH } from '@/lib/auth/constants';
+import { meetsAny, type Requirement } from '@/config/navigation';
+import { getSession } from '@/lib/auth/session';
 import { PageHeader } from './page-header';
 import { StatePanel } from './state-panel';
 

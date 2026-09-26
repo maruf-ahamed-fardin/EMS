@@ -7,7 +7,7 @@ import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { api } from '@/lib/client/api-client';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const RANGES: Array<{ value: TrendRange; label: string }> = [
   { value: 'today', label: 'Today' },

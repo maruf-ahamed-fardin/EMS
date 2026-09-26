@@ -4,7 +4,7 @@ import { useId } from 'react';
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 /**
  * Label, input and inline error, wired for screen readers: the error is linked with

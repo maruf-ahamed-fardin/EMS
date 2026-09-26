@@ -29,7 +29,7 @@ module.exports = {
     {
       displayName: 'unit',
       testEnvironment: 'node',
-      roots: ['<rootDir>/lib', '<rootDir>/config'],
+      roots: ['<rootDir>/tests/unit'],
       testMatch: ['**/*.spec.ts'],
       transform: { '^.+\\.ts$': swc },
       moduleNameMapper,

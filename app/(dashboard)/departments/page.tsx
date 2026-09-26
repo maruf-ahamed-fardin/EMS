@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { PersonAvatar } from '@/components/shared/person-avatar';
 import { StatePanel } from '@/components/shared/state-panel';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { DepartmentFormDialog } from './department-form-dialog';
 
 export const metadata: Metadata = { title: 'Departments' };

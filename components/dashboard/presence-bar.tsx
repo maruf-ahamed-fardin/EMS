@@ -1,6 +1,6 @@
 import type { AttendanceToday } from '@/lib/validations';
 import { CircleCheck, Clock, Plane, UserRoundX } from 'lucide-react';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 export const PRESENCE_SEGMENTS = [
   { key: 'onTime', label: 'On time', icon: CircleCheck, bar: 'bg-success', text: 'text-success-text' },

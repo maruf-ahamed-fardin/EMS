@@ -2,7 +2,7 @@ import { SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { StatePanel } from '@/components/shared/state-panel';
 import { Button } from '@/components/ui/button';
-import { HOME_PATH } from '@/lib/client/auth-paths';
+import { HOME_PATH } from '@/lib/auth/constants';
 
 export default function NotFound() {
   return (

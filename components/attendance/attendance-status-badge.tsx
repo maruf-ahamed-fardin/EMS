@@ -1,7 +1,7 @@
 import type { AttendanceStatus } from '@/lib/validations';
 import { CalendarOff, CircleCheck, CircleX, Clock, Plane, Sun } from 'lucide-react';
 import { ATTENDANCE_STATUS_LABELS } from '@/lib/client/attendance';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const STYLE: Record<AttendanceStatus, { icon: typeof Clock; className: string }> = {
   PRESENT: { icon: CircleCheck, className: 'bg-success/12 text-success-text' },

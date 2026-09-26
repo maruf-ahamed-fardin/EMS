@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Forbidden } from '@/components/shared/module-page';
 import { PageHeader } from '@/components/shared/page-header';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { CreateEmployeeWizard } from './create-employee-wizard';
 
 export const metadata: Metadata = { title: 'Add employee' };

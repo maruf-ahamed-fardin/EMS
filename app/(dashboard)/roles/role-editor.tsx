@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/client/api-client';
 import { ApiRequestError } from '@/lib/client/api-error';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const NONE = 'NONE';
 export const SCOPE_LABELS: Record<PermissionScope | typeof NONE, string> = { NONE: 'No access', OWN: 'Own', TEAM: 'Team', ALL: 'Everyone' };

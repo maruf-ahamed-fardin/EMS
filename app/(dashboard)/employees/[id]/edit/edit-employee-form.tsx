@@ -17,7 +17,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { FormAlert } from '@/components/forms/form-alert';
 import { Button } from '@/components/ui/button';
-import { useUnsavedChangesWarning } from '@/hooks/use-unsaved-changes';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChanges';
 import { api } from '@/lib/client/api-client';
 import { applyApiError } from '@/lib/client/form-errors';
 import { ContactFields, EmploymentFields, PersonalFields } from '../../employee-fields';

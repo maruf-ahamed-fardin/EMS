@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { PageMeta } from './api';
-import { isoDate } from './employees';
+import { isoDate } from '@/lib/validations/employee';
 import { AttendanceStatus, EmployeeStatus, EmploymentType, LeaveRequestStatus } from './enums';
 
 export const REPORT_KEYS = ['employees', 'attendance', 'leave', 'departments'] as const;

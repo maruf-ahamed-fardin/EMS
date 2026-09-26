@@ -11,7 +11,7 @@ import { dhakaToday } from '@/lib/client/attendance';
 import { formatDate } from '@/lib/client/employees';
 import { daysLabel, formatLeaveRange } from '@/lib/client/leave';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { LeaveRequestForm } from './leave-request-form';
 
 export const metadata: Metadata = { title: 'Leave' };

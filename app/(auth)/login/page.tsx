@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { safeNextPath } from '@/lib/client/auth-paths';
+import { safeNextPath } from '@/lib/auth/constants';
 import { localLoginEnabled } from '@/lib/client/local-auth';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { LoginForm } from './login-form';
 
 export const metadata: Metadata = { title: 'Sign in' };

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { MAX_PAGE_LIMIT } from './api';
 import { LeaveRequestStatus } from './enums';
-import { isoDate } from './employees';
+import { isoDate } from '@/lib/validations/employee';
 
 const days = (label: string) =>
   z.coerce

@@ -4,7 +4,7 @@ import { Forbidden } from '@/components/shared/module-page';
 import { PageHeader } from '@/components/shared/page-header';
 import { dhakaToday } from '@/lib/client/attendance';
 import { serverApiJson } from '@/lib/client/server-api';
-import { getSession } from '@/lib/client/session';
+import { getSession } from '@/lib/auth/session';
 import { AttendanceSettingsForm, HolidaysCard } from './settings-forms';
 
 export const metadata: Metadata = { title: 'Settings' };

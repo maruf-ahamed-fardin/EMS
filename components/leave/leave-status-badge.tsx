@@ -1,7 +1,7 @@
 import type { LeaveRequestStatus } from '@/lib/validations';
 import { Ban, CircleCheck, CircleX, Hourglass } from 'lucide-react';
 import { LEAVE_STATUS_LABELS } from '@/lib/client/leave';
-import { cn } from '@/lib/client/utils';
+import { cn } from '@/lib/utils/cn';
 
 const STYLE: Record<LeaveRequestStatus, { icon: typeof Ban; className: string }> = {
   PENDING: { icon: Hourglass, className: 'bg-warning/15 text-warning-text' },

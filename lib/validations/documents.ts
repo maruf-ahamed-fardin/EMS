@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { MAX_PAGE_LIMIT } from './api';
-import { isoDate } from './employees';
+import { isoDate } from '@/lib/validations/employee';
 
 /** Plan §7: 10 MB per file. */
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
