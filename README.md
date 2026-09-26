@@ -8,7 +8,8 @@ Pages never import API modules (`lib/server`, `lib/services`, `lib/auth`, `lib/h
 `/api/v1` like any client. Anything both sides need lives in `lib/validations`.
 
 ```
-app/                 pages: (auth)/ sign-in, (dashboard)/ everything behind it; api/[...path]/route.ts, the API entry
+app/                 pages: (auth)/ sign-in, (dashboard)/ everything behind it
+  api/v1/            one route.ts per endpoint, generated from the controllers (yarn api:routes)
 components/          React components: ui/ (shadcn/ui), layout/ (shell, sidebar, menus), employee/ (team
                      profile cards, QR), shared/, and one folder per feature
 hooks/               React hooks (useBrowser, useUrlSearch, useUnsavedChanges)

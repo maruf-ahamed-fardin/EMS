@@ -2,7 +2,7 @@
 
 How to run the EMS in production (plan D5, §12). It is one Next.js app with the API inside it: `lib/server/nest.ts`
 starts the NestJS modules on a private loopback port the first time a request needs them, and
-`app/api/[...path]/route.ts` forwards `/api/*` there. The browser only ever talks to the app, so CORS stays closed.
+the route files under `app/api/v1` (one per endpoint, `yarn api:routes`) forward to it. The browser only ever talks to the app, so CORS stays closed.
 
 ## What runs
 

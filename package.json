@@ -20,6 +20,8 @@
     "test:integration": "jest --selectProjects integration --runInBand",
     "e2e": "playwright test",
     "check:payload": "node scripts/check-payload.mjs",
+    "api:routes": "node scripts/api-routes.mjs",
+    "check:routes": "node scripts/api-routes.mjs --check",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

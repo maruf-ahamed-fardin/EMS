@@ -47,6 +47,8 @@ jobs:
       - name: Known vulnerabilities in dependencies
         run: yarn npm audit --environment production --severity high --recursive
       - run: yarn db:generate
+      - name: Every API endpoint has its route file
+        run: yarn check:routes
       - run: yarn typecheck
       - run: yarn lint
       - name: Create the shadow database

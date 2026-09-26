@@ -11,9 +11,9 @@ import { configureApp } from './configure-app';
 
 /**
  * The API (the NestJS modules in lib/services, lib/auth and lib/http) runs inside the Next.js server:
- * started once per server process on a private loopback port, and reached through
- * app/api/[...path]/route.ts and lib/client/server-api.ts. Nothing outside this process can connect
- * to it: it listens on 127.0.0.1 with a port the OS picks.
+ * started once per server process on a private loopback port, and reached through the route files
+ * under app/api/v1 (lib/server/forward.ts) and lib/client/server-api.ts. Nothing outside this process
+ * can connect to it: it listens on 127.0.0.1 with a port the OS picks.
  */
 async function start(): Promise<string> {
   // Local development reads the repository's .env; Vercel and CI pass real environment variables.
