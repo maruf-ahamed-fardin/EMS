@@ -13,8 +13,10 @@ import { TextField } from '@/components/forms/text-field';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api-client';
 import { applyApiError } from '@/lib/form-errors';
+import { localSignIn } from '@/lib/local-auth-actions';
 
-export function LoginForm({ next, passwordWasReset }: { next: string; passwordWasReset: boolean }) {
+/** `local`: sign in on this server (LOGIN_EMAIL / LOGIN_PASSWORD) instead of the API, with no password reset. */
+export function LoginForm({ next, passwordWasReset, local = false }: { next: string; passwordWasReset: boolean; local?: boolean }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
@@ -27,11 +29,19 @@ export function LoginForm({ next, passwordWasReset }: { next: string; passwordWa
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    try {
-      await api('/auth/login', { method: 'POST', body: values });
-    } catch (error) {
-      setFormError(applyApiError(error, setError, ['email', 'password']));
-      return;
+    if (local) {
+      const error = await localSignIn(values);
+      if (error) {
+        setFormError(error);
+        return;
+      }
+    } else {
+      try {
+        await api('/auth/login', { method: 'POST', body: values });
+      } catch (error) {
+        setFormError(applyApiError(error, setError, ['email', 'password']));
+        return;
+      }
     }
     // A fresh start for the new person, whatever the last one left in this tab
     queryClient.clear();
@@ -63,11 +73,13 @@ export function LoginForm({ next, passwordWasReset }: { next: string; passwordWa
         error={errors.password}
       />
 
-      <div className="-mt-1 flex justify-end">
-        <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
-          Forgot password?
-        </Link>
-      </div>
+      {!local && (
+        <div className="-mt-1 flex justify-end">
+          <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+      )}
 
       <Button type="submit" size="lg" className="h-11" disabled={isSubmitting}>
         {isSubmitting && <LoaderCircle className="animate-spin" aria-hidden />}

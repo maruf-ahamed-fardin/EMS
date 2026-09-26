@@ -91,6 +91,12 @@ Create these on throwaway accounts, and paste every secret straight into the pla
    a warning, but `/api/*` goes nowhere and nobody can sign in. `apps/web/vercel.json` runs the Yarn pinned in
    `.yarn/releases`, so Vercel's own Yarn version does not matter.
 
+**Web on its own, no API.** Set `LOGIN_EMAIL` and `LOGIN_PASSWORD` in Vercel (server-side variables, never
+`NEXT_PUBLIC_`) and the login page checks that one account on the Next.js server instead of calling the API
+(`apps/web/src/lib/local-auth.ts`): a signed, `httpOnly` cookie for 12 hours, every permission, no sign-up and
+no password reset. Changing `LOGIN_PASSWORD` signs everyone out. Pages that load data still need the API and
+show an error without it. Remove both variables to go back to the API's sign-in.
+
 Render's free plan sleeps after 15 idle minutes, so the first request after that takes about a minute, and the
 background jobs only run while it is awake.
 

@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { api } from '@/lib/api-client';
+import { clearSessionCookie } from '@/lib/local-auth-actions';
 import { initials } from '@/lib/utils';
 
 export interface ShellUser {
@@ -40,6 +41,8 @@ export function UserMenu({ user }: { user: ShellUser }) {
     } catch {
       // Already signed out or the session expired: the login page is still the right place
     }
+    // Without the API (lib/local-auth.ts) the cookie is the whole session
+    await clearSessionCookie();
     // Nothing of this person's (notifications, say) may show to whoever signs in next on this browser
     queryClient.clear();
     router.replace('/login');
