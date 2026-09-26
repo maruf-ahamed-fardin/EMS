@@ -25,14 +25,14 @@ out/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
-apps/api/src/generated/
+lib/db/generated/
 
 # Local configuration and data
 .env
 .env.*
 !.env.example
-apps/api/storage/
+storage/
 
 # Playwright output
-apps/web/test-results/
-apps/web/playwright-report/
+test-results/
+playwright-report/

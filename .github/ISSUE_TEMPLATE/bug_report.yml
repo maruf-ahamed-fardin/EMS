@@ -29,8 +29,8 @@ body:
     attributes:
       label: Where
       options:
-        - apps/api (the API)
-        - apps/web (the web app)
+        - the API (app/api, lib/services)
+        - the web app (pages and components)
         - packages/contracts
         - Database or migrations
         - Build, CI or Docker

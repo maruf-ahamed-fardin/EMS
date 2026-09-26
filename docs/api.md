@@ -17,7 +17,7 @@ follows, and it lists what exists today.
 { "statusCode": 422, "message": "Validation failed", "errors": { "email": "Invalid email address" }, "requestId": "0192…" }
 ```
 
-Types for all three are in `@ems/contracts` (`DataResponse`, `ListResponse`, `ApiError`).
+Types for all three are in `lib/validations` (`DataResponse`, `ListResponse`, `ApiError`).
 
 | Status | When | `message` |
 |---|---|---|

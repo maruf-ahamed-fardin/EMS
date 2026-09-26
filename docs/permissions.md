@@ -1,6 +1,6 @@
 # Roles and permissions
 
-The catalogue and the default matrix are code in `packages/contracts` (`permissions.ts`, `roles.ts`)
+The catalogue and the default matrix are code in `lib/validations` (`permissions.ts`, `roles.ts`)
 and are described in [plan.md §4](plan.md). At runtime the database is the source of truth: the
 defaults are created by `syncCatalogue()` (release step and dev seed) and then changed in Roles & permissions.
 
@@ -71,6 +71,6 @@ lets a person edit their own card and nobody else's; editing someone else's is `
 | Manager | Own record plus direct reports: employees, attendance, leave approval, team documents (non-sensitive), team reports |
 | Employee | Own record: attendance check-in, leave requests, own documents |
 
-Tests in `packages/contracts/src/permissions.test.ts` and `frontend/src/lib/navigation.test.ts` pin the
+Tests in `lib/validations/permissions.test.ts` and `frontend/src/lib/navigation.test.ts` pin the
 important edges (only Super Admin manages roles; managers never see private fields or settings; an
 employee's menu). Extend them when the matrix changes.

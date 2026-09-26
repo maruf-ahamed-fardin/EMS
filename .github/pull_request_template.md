@@ -16,9 +16,9 @@
 
 - [ ] Schema changes come with the generated migration (`yarn db:migrate`)
 - [ ] New or changed rules are enforced in the API, not only hidden in the UI, and a test proves it
-- [ ] New permissions are in the catalogue in `packages/contracts` and given to the right roles
+- [ ] New permissions are in the catalogue in `lib/validations` and given to the right roles
 - [ ] Writes are audited
-- [ ] New configuration goes through `apps/api/src/config/env.ts`, and errors name the variable,
+- [ ] New configuration goes through `config/env.ts`, and errors name the variable,
       never its value
 - [ ] No real credentials or HR data (plan D8) — seed data only
 - [ ] `docs/` updated when behaviour, API or security controls changed

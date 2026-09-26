@@ -1,28 +1,29 @@
 # SeloraX EMS
 
 The SeloraX employee management system: employees, departments, attendance, leave, documents,
-notifications, reports and audit. The repository is one Yarn workspace: a NestJS API, a Next.js web app
-and the contracts package they share.
+notifications, reports and audit. It is one Next.js 16 app (React 19, Tailwind 4, shadcn/ui) with the API built in: NestJS 11 modules,
+Prisma 7 and PostgreSQL 16, served at `/api/v1` by the same server. One `package.json`, one deploy.
 
-| Folder | Workspace | What | Stack |
-|---|---|---|---|
-| `apps/api` | `@ems/backend` | The API at `/api/v1` | NestJS 11, Prisma 7, PostgreSQL 16 |
-| `apps/web` | `@ems/frontend` | The web app | Next.js 16, React 19, Tailwind 4, shadcn/ui |
-| `packages/contracts` | `@ems/contracts` | Enums, the permission catalogue, default roles and API shapes shared by both sides | TypeScript + zod |
-
-The folder and the workspace name differ, and commands take the name:
-`yarn workspace @ems/backend run test`.
-`apps/web` never imports from `apps/api`; anything both sides need lives in `packages/contracts`.
+Pages never import API modules (`lib/server`, `lib/services`, `lib/auth`, `lib/http`); they call
+`/api/v1` like any client. Anything both sides need lives in `lib/validations`.
 
 ```
-apps/
-  api/      src/  prisma/  test/       the API, its schema and migrations, its tests
-  web/      src/  test/  e2e/          the web app, its unit tests and its Playwright tests
-packages/
-  contracts/                           zod schemas, enums, PERMISSIONS, API types
-docs/                                  plan, architecture, API, security, database, deployment
-scripts/                               repository tooling: the payload check, Postgres init SQL
-.github/workflows/                     CI
+app/                 pages (app/(auth), app/(dashboard)) and app/api/[...path]/route.ts, the API entry
+components/          React components (ui/ is shadcn/ui)
+hooks/               React hooks
+lib/
+  client/            frontend helpers: the API client, server-side API calls, formatting
+  validations/       zod schemas, enums, PERMISSIONS and API types, shared by both sides
+  server/            the NestJS app, started inside Next.js on a private loopback port
+  services/          API modules: controllers and services per feature
+  auth/              sessions, CSRF, permissions, passwords
+  http/              errors, request context, logging
+  db/                Prisma client (generated/ is built by yarn db:generate)
+config/              environment validation
+prisma/              schema, migrations and demo seed
+tests/               integration/ (API, Jest), e2e/ (Playwright), setup/ (Vitest)
+docs/                plan, architecture, API, security, database, deployment
+scripts/             repository tooling: the payload check, Postgres init SQL
 ```
 
 Start with [`docs/plan.md`](docs/plan.md). It is the source of truth for scope, the order of work and
@@ -71,11 +72,11 @@ set `MAIL_DRIVER=smtp` and `SMTP_URL=smtp://127.0.0.1:1025` and open Mailpit at 
 |---|---|
 | `yarn dev` | Everything in watch mode |
 | `yarn typecheck` / `lint` / `test` / `build` | Across all three workspaces |
-| `yarn db:migrate` | Create a migration after editing `apps/api/prisma/schema.prisma` |
+| `yarn db:migrate` | Create a migration after editing `prisma/schema.prisma` |
 | `yarn db:deploy` | Apply migrations (the release step in production, never at app start) |
-| `yarn workspace @ems/backend run catalogue:sync` | Align permissions and system roles with this build (release step, after `db:deploy`) |
+| `yarn catalogue:sync` | Align permissions and system roles with this build (release step, after `db:deploy`) |
 | `yarn db:seed` | Development demo data. Refuses production. |
-| `yarn workspace @ems/backend run db:drift` | Fails when the schema has changes with no migration |
+| `yarn db:drift` | Fails when the schema has changes with no migration |
 | `yarn check:payload` | Looks for code hidden after long runs of spaces (the September 2026 incident) |
 | `yarn install --immutable` | Install without letting `yarn.lock` change, as CI does |
 
@@ -89,7 +90,7 @@ The compose file creates `ems_test` for this.
 - **Installs are age-gated.** `.npmrc` refuses package versions younger than 7 days and never runs
   install scripts. Don't override it to get a newer version faster.
 - **Configuration is validated at startup.** The backend reads every variable through
-  `apps/api/src/config/env.ts`, and its errors name the variable, never the value.
+  `config/env.ts`, and its errors name the variable, never the value.
 - **The frontend hides; the backend enforces.** Permission checks in the UI are presentation only.
 
 More detail: [architecture](docs/architecture.md) · [database](docs/database.md) · [API](docs/api.md) ·

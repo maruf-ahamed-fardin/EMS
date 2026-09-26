@@ -102,7 +102,7 @@ Each of these gets an extension point, not code:
 
 - **Same-origin proxy.** Next.js `rewrites` send `/api/:path*` to the Nest server. The browser only ever talks to one origin, so SameSite cookies work and CORS stays closed. CORS is still configured with an allow-list for local development.
 - **Server components fetch through a small `serverApi()` helper.** It forwards the incoming cookie to Nest, so first paint already has data with no loading flash. Mutations and filtered tables use TanStack Query on the client.
-- **One contract package.** `packages/contracts` holds the zod schemas, enums, permission keys and response types. The backend turns those schemas into DTOs with `nestjs-zod`, and the frontend uses the same schemas in React Hook Form. Validation is written once and enforced on both sides (§36). The backend never trusts the frontend's check.
+- **One contract package.** `lib/validations` holds the zod schemas, enums, permission keys and response types. The backend turns those schemas into DTOs with `nestjs-zod`, and the frontend uses the same schemas in React Hook Form. Validation is written once and enforced on both sides (§36). The backend never trusts the frontend's check.
 - **Business rules live in services** (`LeaveService.approve`, `AttendanceService.checkIn`). Controllers only parse input, check permission and call the service. React components contain no business rules.
 - **Transactions** wrap every multi-step write: approving leave (balance, request, notification, audit), creating an employee (employee, user, documents, audit), and check-in (record plus daily row).
 
@@ -221,7 +221,7 @@ The **scope** column is what makes permissions data instead of code. A Manager h
 
 ## 4. Roles and permissions
 
-### Permission catalogue (`packages/contracts/src/permissions.ts`)
+### Permission catalogue (`lib/validations/permissions.ts`)
 
 ```
 employee.view  employee.view_private  employee.create  employee.update  employee.delete
