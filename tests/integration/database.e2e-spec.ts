@@ -19,7 +19,7 @@ describeDb('database migrations', () => {
     }
     const cli = path.join(path.dirname(require.resolve('prisma/package.json')), 'build', 'index.js');
     execFileSync(process.execPath, [cli, 'migrate', 'reset', '--force'], {
-      cwd: path.join(__dirname, '..'),
+      cwd: path.join(__dirname, '..', '..'), // the repository root, where prisma.config.ts is
       env: { ...process.env, DATABASE_URL: url, PRISMA_HIDE_UPDATE_MESSAGE: '1' },
       stdio: 'pipe',
     });
