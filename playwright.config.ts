@@ -11,7 +11,7 @@ import { defineConfig } from '@playwright/test';
  * CI runs them on a freshly seeded database with a random demo password (`.github/workflows/ems.yml`).
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests/e2e',
   // The flows share one database and build on each other
   workers: 1,
   fullyParallel: false,
