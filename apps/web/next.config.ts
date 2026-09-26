@@ -3,12 +3,14 @@ import type { NextConfig } from 'next';
 /**
  * Where /api/* is forwarded. The browser only ever talks to this app's origin, so the session
  * cookie stays first-party and the API needs no CORS (plan §2).
+ * A missing API_ORIGIN warns rather than fails, so a Vercel build succeeds before the API is up;
+ * set it and redeploy, since rewrites are baked in at build time.
  */
 function apiOrigin(): string {
   const value = process.env.API_ORIGIN;
   if (!value) {
-    if (process.env.NODE_ENV === 'production' && process.env.CI !== 'true') {
-      throw new Error('API_ORIGIN is required for a production build (for example http://api:4000)');
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('API_ORIGIN is not set: /api/* goes to http://127.0.0.1:4000 and sign-in will not work');
     }
     return 'http://127.0.0.1:4000';
   }

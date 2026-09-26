@@ -87,7 +87,9 @@ Create these on throwaway accounts, and paste every secret straight into the pla
 6. **Deploy:** Actions → Deploy API → Run workflow, with *Reset the demo data* ticked the first time. It
    migrates, syncs the catalogue, seeds, then triggers Render. Check `https://<service>.onrender.com/api/v1/health/ready`.
 7. **Vercel:** Root Directory `apps/web` with files outside it included, preset Next.js, and `API_ORIGIN` set to
-   the Render URL. Redeploy, since `API_ORIGIN` is read at build time.
+   the Render URL. Redeploy, since `API_ORIGIN` is read at build time. Without it the build still passes, with
+   a warning, but `/api/*` goes nowhere and nobody can sign in. `apps/web/vercel.json` runs the Yarn pinned in
+   `.yarn/releases`, so Vercel's own Yarn version does not matter.
 
 Render's free plan sleeps after 15 idle minutes, so the first request after that takes about a minute, and the
 background jobs only run while it is awake.
