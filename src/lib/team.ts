@@ -1,5 +1,5 @@
 import 'server-only';
-import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
+import { put, head, del } from '@vercel/blob';
 
 export type Department = 'Engineering' | 'Operations' | 'Design' | 'Executive' | 'All';
 
@@ -43,25 +43,37 @@ export interface ProfileData {
 }
 
 export interface TeamMember {
-  /** Set when matched by employee ID, so callers can send visitors to the username URL */
   redirectTo: string | null;
   user: PublicUser;
   profilePic: string | null;
   profileData: ProfileData | null;
 }
 
-// Raw user records also hold private fields (passwords, salaries, etc.)
 type StoredUser = PublicUser & Record<string, unknown>;
 
 interface TeamData {
-  sharedUsers?: unknown;
-  profilePics?: unknown;
-  sharedProfiles?: unknown;
+  sharedUsers: StoredUser[];
+  profilePics: Record<string, string | null>;
+  sharedProfiles: Record<string, ProfileData>;
 }
 
-interface KvRow extends RowDataPacket {
-  k: string;
-  v: string;
+export interface PublicMemberSummary {
+  username: string;
+  name: string;
+  role?: string;
+  designation?: string;
+  employeeId?: string;
+  department?: string;
+  skills?: string[];
+  status?: UserStatus;
+  profilePic?: string | null;
+  verified?: boolean;
+}
+
+export interface FullAdminMember {
+  user: PublicUser;
+  profilePic?: string | null;
+  profileData?: ProfileData | null;
 }
 
 // Fields safe to expose publicly (no passwords, salaries, etc.)
@@ -79,185 +91,156 @@ const PUBLIC_USER_FIELDS = [
   'calendlyUrl',
 ] as const;
 
-// ── Built-in fallback demo data (used when database is unreachable or unset) ──
-const FALLBACK_TEAM_DATA: TeamData = {
-  sharedUsers: [
-    {
-      username: 'ashekrabbani',
-      name: 'Ashek Rabbani',
-      role: 'Software Engineer',
-      designation: 'Lead Full Stack Engineer',
-      employeeId: 'SX-001',
-      department: 'Engineering',
-      skills: ['Next.js', 'React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Docker', 'GraphQL'],
-      timezone: 'Asia/Dhaka',
-      status: { available: true, text: 'Available' },
-      verified: true,
-      calendlyUrl: 'https://cal.com/ashekrabbani',
-    },
-    {
-      username: 'fardin',
-      name: 'Maruf Ahamed Fardin',
-      role: 'Frontend Engineer',
-      designation: 'UI/UX & Frontend Specialist',
-      employeeId: 'SX-002',
-      department: 'Design',
-      skills: ['UI/UX Design', 'Figma', 'Next.js', 'Tailwind CSS', 'Framer Motion', 'Design Systems'],
-      timezone: 'Asia/Dhaka',
-      status: { available: true, text: 'In Flow' },
-      verified: true,
-      calendlyUrl: 'https://cal.com/fardin',
-    },
-    {
-      username: 'selorax-admin',
-      name: 'SeloraX Operations',
-      role: 'Admin',
-      designation: 'Global Operations Desk',
-      employeeId: 'SX-000',
-      department: 'Operations',
-      skills: ['DevOps', 'Infrastructure', 'Security', 'Incident Response', 'Cloud Systems'],
-      timezone: 'Asia/Dhaka',
-      status: { available: true, text: '24/7 Monitoring' },
-      verified: true,
-      calendlyUrl: 'https://cal.com/selorax',
-    },
-    {
-      username: 'tanvir',
-      name: 'Tanvir Hossain',
-      role: 'Chief Executive Officer',
-      designation: 'Founder & CEO',
-      employeeId: 'SX-100',
-      department: 'Executive',
-      skills: ['Leadership', 'Product Strategy', 'Venture Capital', 'Architecture', 'Enterprise'],
-      timezone: 'Asia/Dhaka',
-      status: { available: true, text: 'Available for Meetings' },
-      verified: true,
-      calendlyUrl: 'https://cal.com/tanvir-selorax',
-    },
-  ],
-  profilePics: {
-    ashekrabbani: 'https://avatars.githubusercontent.com/u/101377810?v=4',
-    fardin: 'https://avatars.githubusercontent.com/u/89617260?v=4',
-    'selorax-admin': null,
-    tanvir: null,
-  },
-  sharedProfiles: {
-    ashekrabbani: {
-      email: 'ashekrabbani@selorax.io',
-      personalPhone: '+8801700000001',
-      businessPhone: '+8801606606204',
-      whatsapp: '+8801606606204',
-      location: 'Dhaka, Bangladesh',
-      calendlyUrl: 'https://cal.com/ashekrabbani',
-      socials: {
-        github: 'https://github.com/ashekrabbani',
-        linkedin: 'https://linkedin.com/in/ashekrabbani',
-        facebook: 'https://www.facebook.com/selorax.io/',
-        portfolio: 'https://selorax.io',
-      },
-    },
-    fardin: {
-      email: 'fardin@selorax.io',
-      personalPhone: '+8801700000002',
-      businessPhone: '+8801606606204',
-      whatsapp: '+8801606606204',
-      location: 'Dhaka, Bangladesh',
-      calendlyUrl: 'https://cal.com/fardin',
-      socials: {
-        github: 'https://github.com/maruf-ahamed-fardin',
-        linkedin: 'https://linkedin.com/in/maruf-ahamed-fardin',
-        facebook: 'https://www.facebook.com/selorax.io/',
-        portfolio: 'https://selorax.io',
-      },
-    },
-    'selorax-admin': {
-      email: 'contact@selorax.io',
-      businessPhone: '+8801606606204',
-      whatsapp: '+8801606606204',
-      location: 'Dhaka HQ, Bangladesh',
-      calendlyUrl: 'https://cal.com/selorax',
-      socials: {
-        github: 'https://github.com/SeloraX-io',
-        facebook: 'https://www.facebook.com/selorax.io/',
-        portfolio: 'https://selorax.io',
-      },
-    },
-    tanvir: {
-      email: 'tanvir@selorax.io',
-      businessPhone: '+8801606606204',
-      whatsapp: '+8801606606204',
-      location: 'Dhaka HQ, Bangladesh',
-      calendlyUrl: 'https://cal.com/tanvir-selorax',
-      socials: {
-        linkedin: 'https://linkedin.com/company/selorax',
-        github: 'https://github.com/SeloraX-io',
-        facebook: 'https://www.facebook.com/selorax.io/',
-        portfolio: 'https://selorax.io',
-      },
-    },
-  },
+const BLOB_PATHNAME = 'selorax-team-data.json';
+
+// ── Empty initial state (no hardcoded members) ──
+const EMPTY_TEAM_DATA: TeamData = {
+  sharedUsers: [],
+  profilePics: {},
+  sharedProfiles: {},
 };
 
-// ── In-memory cache (survives warm function invocations) ────────
-const CACHE_TTL = 30 * 1000; // 30 seconds
-let cache: { promise: Promise<TeamData> | null; ts: number } = { promise: null, ts: 0 };
+// ── In-memory cache (survives warm function invocations) ──
+const CACHE_TTL = 15 * 1000; // 15 seconds
+let cache: { data: TeamData; ts: number } | null = null;
 
-let pool: Pool | null = null;
-
-function getPool(): Pool {
-  if (!pool) {
-    pool = mysql.createPool({
-      host: process.env.MYSQL_HOST || 'localhost',
-      port: parseInt(process.env.MYSQL_PORT || '3306', 10),
-      user: process.env.MYSQL_USER || 'root',
-      password: process.env.MYSQL_PASSWORD || '',
-      database: process.env.MYSQL_DATABASE || 'selorax',
-      waitForConnections: true,
-      connectionLimit: 5,
-      ssl: process.env.MYSQL_SSL === 'false' ? undefined : { rejectUnauthorized: false },
-    });
-  }
-  return pool;
-}
-
-// Single query for all 3 keys instead of 3 separate queries
+/**
+ * Load team data from Vercel Blob (or MySQL fallback).
+ * Falls back to empty data if neither is configured.
+ */
 async function loadTeamData(): Promise<TeamData> {
-  if (!process.env.MYSQL_HOST) {
-    return FALLBACK_TEAM_DATA;
+  // Try Vercel Blob first (preferred)
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      // Try to get the blob by listing or fetching directly
+      const blobUrl = process.env.TEAM_DATA_BLOB_URL;
+      if (blobUrl) {
+        const res = await fetch(blobUrl, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json() as TeamData;
+          return {
+            sharedUsers: Array.isArray(json.sharedUsers) ? json.sharedUsers : [],
+            profilePics: (json.profilePics && typeof json.profilePics === 'object') ? json.profilePics as Record<string, string | null> : {},
+            sharedProfiles: (json.sharedProfiles && typeof json.sharedProfiles === 'object') ? json.sharedProfiles as Record<string, ProfileData> : {},
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('[SeloraX Team] Blob read failed, using empty data:', err);
+    }
+    return { ...EMPTY_TEAM_DATA, sharedUsers: [], profilePics: {}, sharedProfiles: {} };
   }
 
-  try {
-    const [rows] = await getPool().execute<KvRow[]>(
-      'SELECT k, v FROM kv_store WHERE k IN (?, ?, ?)',
-      ['sharedUsers', 'profilePics', 'sharedProfiles']
-    );
-
-    const parsed: Record<string, unknown> = {};
-    for (const row of rows) {
-      try { parsed[row.k] = JSON.parse(row.v); }
-      catch { parsed[row.k] = row.v; }
+  // MySQL fallback
+  if (process.env.MYSQL_HOST) {
+    try {
+      const mysql = await import('mysql2/promise');
+      interface KvRow { k: string; v: string; }
+      const pool = mysql.createPool({
+        host: process.env.MYSQL_HOST,
+        port: parseInt(process.env.MYSQL_PORT || '3306', 10),
+        user: process.env.MYSQL_USER || 'root',
+        password: process.env.MYSQL_PASSWORD || '',
+        database: process.env.MYSQL_DATABASE || 'selorax',
+        connectionLimit: 3,
+        ssl: process.env.MYSQL_SSL === 'false' ? undefined : { rejectUnauthorized: false },
+      });
+      const [rows] = await pool.execute<(KvRow & import('mysql2').RowDataPacket)[]>(
+        'SELECT k, v FROM kv_store WHERE k IN (?, ?, ?)',
+        ['sharedUsers', 'profilePics', 'sharedProfiles']
+      );
+      await pool.end();
+      const parsed: Record<string, unknown> = {};
+      for (const row of rows) {
+        try { parsed[row.k] = JSON.parse(row.v); } catch { parsed[row.k] = row.v; }
+      }
+      return {
+        sharedUsers: Array.isArray(parsed.sharedUsers) ? parsed.sharedUsers as StoredUser[] : [],
+        profilePics: (parsed.profilePics && typeof parsed.profilePics === 'object') ? parsed.profilePics as Record<string, string | null> : {},
+        sharedProfiles: (parsed.sharedProfiles && typeof parsed.sharedProfiles === 'object') ? parsed.sharedProfiles as Record<string, ProfileData> : {},
+      };
+    } catch (err) {
+      console.warn('[SeloraX Team] MySQL read failed:', err);
     }
-
-    if (!parsed.sharedUsers) {
-      return FALLBACK_TEAM_DATA;
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn('[SeloraX Team] Database query failed or unavailable. Serving fallback team data.', error);
-    return FALLBACK_TEAM_DATA;
   }
+
+  return { ...EMPTY_TEAM_DATA };
 }
 
-function getTeamData(): Promise<TeamData> {
-  if (cache.promise && Date.now() - cache.ts < CACHE_TTL) return cache.promise;
+function getCache(): TeamData | null {
+  if (cache && Date.now() - cache.ts < CACHE_TTL) return cache.data;
+  return null;
+}
 
-  const promise = loadTeamData();
-  cache = { promise, ts: Date.now() };
-  promise.catch(() => {
-    if (cache.promise === promise) cache = { promise: null, ts: 0 };
-  });
-  return promise;
+function setCache(data: TeamData) {
+  cache = { data, ts: Date.now() };
+}
+
+async function getTeamData(): Promise<TeamData> {
+  const cached = getCache();
+  if (cached) return cached;
+  const data = await loadTeamData();
+  setCache(data);
+  return data;
+}
+
+/**
+ * Persist team data to Vercel Blob (or MySQL).
+ * Also updates in-memory cache immediately.
+ */
+export async function saveTeamData(newData: TeamData): Promise<void> {
+  setCache(newData);
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const json = JSON.stringify(newData, null, 0);
+      const blob = await put(BLOB_PATHNAME, json, {
+        access: 'public',
+        contentType: 'application/json',
+        allowOverwrite: true,
+      });
+      // Store the blob URL in environment for future reads
+      // Since we can't set env vars at runtime, we store it and read from the known pathname
+      console.log('[SeloraX Team] Data saved to Blob:', blob.url);
+      // Update cache with the blob URL so same server instance can re-read
+      (process.env as Record<string, string>).TEAM_DATA_BLOB_URL = blob.url;
+    } catch (err) {
+      console.error('[SeloraX Team] Blob write failed:', err);
+      throw new Error('Failed to save team data. Check BLOB_READ_WRITE_TOKEN.');
+    }
+    return;
+  }
+
+  if (process.env.MYSQL_HOST) {
+    try {
+      const mysql = await import('mysql2/promise');
+      const pool = mysql.createPool({
+        host: process.env.MYSQL_HOST,
+        port: parseInt(process.env.MYSQL_PORT || '3306', 10),
+        user: process.env.MYSQL_USER || 'root',
+        password: process.env.MYSQL_PASSWORD || '',
+        database: process.env.MYSQL_DATABASE || 'selorax',
+        connectionLimit: 3,
+        ssl: process.env.MYSQL_SSL === 'false' ? undefined : { rejectUnauthorized: false },
+      });
+      await pool.execute(`CREATE TABLE IF NOT EXISTS kv_store (k VARCHAR(64) PRIMARY KEY, v LONGTEXT NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+      const keys: (keyof TeamData)[] = ['sharedUsers', 'profilePics', 'sharedProfiles'];
+      for (const key of keys) {
+        await pool.execute(
+          'INSERT INTO kv_store (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)',
+          [key, JSON.stringify(newData[key] ?? (key === 'sharedUsers' ? [] : {}))]
+        );
+      }
+      await pool.end();
+    } catch (err) {
+      console.error('[SeloraX Team] MySQL write failed:', err);
+      throw new Error('Database write failed.');
+    }
+    return;
+  }
+
+  // No storage configured — data lives only in memory (lost on cold start)
+  console.warn('[SeloraX Team] No persistent storage configured. Data will be lost on server restart. Set BLOB_READ_WRITE_TOKEN for persistence.');
 }
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -265,22 +248,23 @@ const asRecord = (value: unknown): Record<string, unknown> =>
 
 const lower = (value: unknown) => String(value ?? '').toLowerCase();
 
-export interface PublicMemberSummary {
-  username: string;
-  name: string;
-  role?: string;
-  designation?: string;
-  employeeId?: string;
-  department?: string;
-  skills?: string[];
-  status?: UserStatus;
-  profilePic?: string | null;
-  verified?: boolean;
+/**
+ * Slugify a string into a valid lowercase username (no spaces, only a-z0-9 and hyphens).
+ */
+export function slugifyUsername(raw: string): string {
+  return raw
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    .replace(/[^a-z0-9-]/g, '')      // only allow a-z, 0-9, hyphen
+    .replace(/-{2,}/g, '-')           // collapse multiple hyphens
+    .replace(/^-+|-+$/g, '')          // trim leading/trailing hyphens
+    .slice(0, 32);
 }
 
 /**
  * Looks up a team member by username, employee ID, or name (all case-insensitive).
- * Returns null when nobody matches.
  */
 export async function findTeamMember(id: string): Promise<TeamMember | null> {
   let raw = id;
@@ -289,25 +273,21 @@ export async function findTeamMember(id: string): Promise<TeamMember | null> {
   if (!key) return null;
 
   const data = await getTeamData();
-  const allUsers = (Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[];
+  const allUsers = data.sharedUsers;
 
-  // 1. Exact username match (case-insensitive)
   let user = allUsers.find(u => lower(u.username) === key);
   let redirectTo: string | null = null;
 
-  // 2. Exact employee ID match (e.g. "sx-001")
   if (!user) {
     user = allUsers.find(u => lower(u.employeeId) === key);
     if (user) redirectTo = user.username ?? null;
   }
 
-  // 3. Exact full name match (case-insensitive)
   if (!user) {
     user = allUsers.find(u => lower(u.name) === key);
     if (user) redirectTo = user.username ?? null;
   }
 
-  // 4. Partial name match (e.g. "ashek", "rabbani", "maruf", "fardin")
   if (!user) {
     user = allUsers.find(u => {
       const name = lower(u.name);
@@ -324,10 +304,8 @@ export async function findTeamMember(id: string): Promise<TeamMember | null> {
   }
 
   const username = String(user.username);
-  const profiles = asRecord(data.sharedProfiles);
-  const userProfile = asRecord(profiles[username]) as ProfileData;
+  const userProfile = (data.sharedProfiles[username] || null) as ProfileData | null;
 
-  // Defaults if missing
   if (!publicUser.department) publicUser.department = 'Engineering';
   if (!publicUser.timezone) publicUser.timezone = 'Asia/Dhaka';
   if (!publicUser.status) publicUser.status = { available: true, text: 'Available' };
@@ -336,128 +314,62 @@ export async function findTeamMember(id: string): Promise<TeamMember | null> {
   return {
     redirectTo,
     user: publicUser,
-    profilePic: (asRecord(data.profilePics)[username] as string | undefined) || null,
-    profileData: userProfile || null,
+    profilePic: data.profilePics[username] ?? null,
+    profileData: userProfile,
   };
 }
 
 /**
- * Returns a list of public team members for directory/demo display.
- */
-export async function getFeaturedMembers(): Promise<PublicUser[]> {
-  const data = await getTeamData();
-  const allUsers = (Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[];
-
-  return allUsers.map(user => {
-    const pub: PublicUser = {};
-    for (const f of PUBLIC_USER_FIELDS) {
-      if (user[f] !== undefined) (pub as Record<string, unknown>)[f] = user[f];
-    }
-    return pub;
-  });
-}
-
-/**
- * Returns all team members with summaries and profile pictures for real-time search.
+ * Returns all team members with summaries for the public directory.
  */
 export async function getAllTeamMembers(): Promise<PublicMemberSummary[]> {
   const data = await getTeamData();
-  const allUsers = (Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[];
-  const pics = asRecord(data.profilePics);
-
-  return allUsers.map(user => {
+  return data.sharedUsers.map(user => {
     const username = String(user.username || '');
     return {
       username,
       name: String(user.name || ''),
-      role: user.role,
-      designation: user.designation,
-      employeeId: user.employeeId,
+      role: user.role as string | undefined,
+      designation: user.designation as string | undefined,
+      employeeId: user.employeeId as string | undefined,
       department: (user.department as string) || 'Engineering',
       skills: (user.skills as string[]) || [],
       status: (user.status as UserStatus) || { available: true, text: 'Available' },
-      verified: user.verified ?? true,
-      profilePic: (pics[username] as string | undefined) || null,
+      verified: (user.verified as boolean) ?? true,
+      profilePic: data.profilePics[username] ?? null,
     };
   });
 }
 
-export interface FullAdminMember {
-  user: PublicUser;
-  profilePic?: string | null;
-  profileData?: ProfileData | null;
-}
-
 /**
- * Returns full member details including contact and picture for the Admin dashboard.
+ * Returns full member details for the Admin dashboard.
  */
 export async function getFullAdminMembers(): Promise<FullAdminMember[]> {
   const data = await getTeamData();
-  const allUsers = (Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[];
-  const pics = asRecord(data.profilePics);
-  const profiles = asRecord(data.sharedProfiles);
-
-  return allUsers.map(user => {
+  return data.sharedUsers.map(user => {
     const username = String(user.username || '');
     return {
       user: {
         username,
-        name: user.name,
-        role: user.role,
-        designation: user.designation,
-        employeeId: user.employeeId,
-        department: user.department,
-        skills: user.skills || [],
-        status: user.status || { available: true, text: 'Available' },
-        timezone: user.timezone || 'Asia/Dhaka',
-        verified: user.verified ?? true,
-        calendlyUrl: user.calendlyUrl,
+        name: user.name as string | undefined,
+        role: user.role as string | undefined,
+        designation: user.designation as string | undefined,
+        employeeId: user.employeeId as string | undefined,
+        department: user.department as string | undefined,
+        skills: (user.skills as string[]) || [],
+        status: (user.status as UserStatus) || { available: true, text: 'Available' },
+        timezone: (user.timezone as string) || 'Asia/Dhaka',
+        verified: (user.verified as boolean) ?? true,
+        calendlyUrl: user.calendlyUrl as string | undefined,
       },
-      profilePic: (pics[username] as string | undefined) || null,
-      profileData: (profiles[username] as ProfileData | undefined) || null,
+      profilePic: data.profilePics[username] ?? null,
+      profileData: data.sharedProfiles[username] ?? null,
     };
   });
 }
 
 /**
- * Saves team data to MySQL if configured, and keeps the in-memory cache updated.
- */
-export async function saveTeamData(newData: TeamData): Promise<void> {
-  cache = { promise: Promise.resolve(newData), ts: Date.now() };
-
-  FALLBACK_TEAM_DATA.sharedUsers = newData.sharedUsers;
-  FALLBACK_TEAM_DATA.profilePics = newData.profilePics;
-  FALLBACK_TEAM_DATA.sharedProfiles = newData.sharedProfiles;
-
-  if (!process.env.MYSQL_HOST) {
-    return;
-  }
-
-  try {
-    const p = getPool();
-    await p.execute(
-      `CREATE TABLE IF NOT EXISTS kv_store (
-        k VARCHAR(64) PRIMARY KEY,
-        v LONGTEXT NOT NULL
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-    );
-
-    const keys: (keyof TeamData)[] = ['sharedUsers', 'profilePics', 'sharedProfiles'];
-    for (const key of keys) {
-      const val = JSON.stringify(newData[key] ?? (key === 'sharedUsers' ? [] : {}));
-      await p.execute(
-        'INSERT INTO kv_store (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)',
-        [key, val]
-      );
-    }
-  } catch (error) {
-    console.error('[SeloraX Team] Failed to write to MySQL database:', error);
-    throw new Error('Database write operation failed. Please verify MySQL configuration.');
-  }
-}
-
-/**
- * Creates a new team member and saves it.
+ * Creates a new team member.
  */
 export async function createTeamMember(member: {
   user: PublicUser;
@@ -465,15 +377,15 @@ export async function createTeamMember(member: {
   profileData?: ProfileData | null;
 }): Promise<void> {
   const data = await getTeamData();
-  const allUsers = [...((Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[])];
-  const pics = { ...asRecord(data.profilePics) };
-  const profiles = { ...asRecord(data.sharedProfiles) };
+  const allUsers = [...data.sharedUsers];
+  const pics = { ...data.profilePics };
+  const profiles = { ...data.sharedProfiles };
 
-  const username = String(member.user.username || '').toLowerCase().trim();
+  const username = slugifyUsername(String(member.user.username || ''));
   if (!username) throw new Error('Username is required');
 
   if (allUsers.some(u => String(u.username).toLowerCase() === username)) {
-    throw new Error(`Username "${username}" already exists.`);
+    throw new Error(`Username "${username}" is already taken.`);
   }
 
   allUsers.push({
@@ -483,21 +395,12 @@ export async function createTeamMember(member: {
     status: member.user.status || { available: true, text: 'Available' },
     verified: member.user.verified ?? true,
     timezone: member.user.timezone || 'Asia/Dhaka',
-  });
+  } as StoredUser);
 
-  if (member.profilePic) {
-    pics[username] = member.profilePic;
-  }
+  if (member.profilePic) pics[username] = member.profilePic;
+  if (member.profileData) profiles[username] = member.profileData;
 
-  if (member.profileData) {
-    profiles[username] = member.profileData;
-  }
-
-  await saveTeamData({
-    sharedUsers: allUsers,
-    profilePics: pics,
-    sharedProfiles: profiles,
-  });
+  await saveTeamData({ sharedUsers: allUsers, profilePics: pics, sharedProfiles: profiles });
 }
 
 /**
@@ -512,9 +415,9 @@ export async function updateTeamMember(
   }
 ): Promise<void> {
   const data = await getTeamData();
-  const allUsers = [...((Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[])];
-  const pics = { ...asRecord(data.profilePics) };
-  const profiles = { ...asRecord(data.sharedProfiles) };
+  const allUsers = [...data.sharedUsers];
+  const pics = { ...data.profilePics };
+  const profiles = { ...data.sharedProfiles };
 
   const key = username.toLowerCase().trim();
   const index = allUsers.findIndex(u => String(u.username).toLowerCase() === key);
@@ -523,48 +426,37 @@ export async function updateTeamMember(
   allUsers[index] = {
     ...allUsers[index],
     ...updated.user,
-    username: allUsers[index].username,
+    username: allUsers[index].username, // never change username
   };
 
   if (updated.profilePic !== undefined) {
-    if (updated.profilePic === null || updated.profilePic === '') {
+    if (!updated.profilePic) {
       delete pics[key];
     } else {
       pics[key] = updated.profilePic;
     }
   }
 
-  if (updated.profileData !== undefined) {
+  if (updated.profileData !== undefined && updated.profileData !== null) {
     profiles[key] = {
-      ...asRecord(profiles[key]),
+      ...asRecord(profiles[key]) as ProfileData,
       ...updated.profileData,
     };
   }
 
-  await saveTeamData({
-    sharedUsers: allUsers,
-    profilePics: pics,
-    sharedProfiles: profiles,
-  });
+  await saveTeamData({ sharedUsers: allUsers, profilePics: pics, sharedProfiles: profiles });
 }
 
 /**
- * Deletes a team member.
+ * Deletes a team member permanently.
  */
 export async function deleteTeamMember(username: string): Promise<void> {
   const data = await getTeamData();
-  const allUsers = ((Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[])
-    .filter(u => String(u.username).toLowerCase() !== username.toLowerCase().trim());
-  const pics = { ...asRecord(data.profilePics) };
-  const profiles = { ...asRecord(data.sharedProfiles) };
-
   const key = username.toLowerCase().trim();
+  const allUsers = data.sharedUsers.filter(u => String(u.username).toLowerCase() !== key);
+  const pics = { ...data.profilePics };
+  const profiles = { ...data.sharedProfiles };
   delete pics[key];
   delete profiles[key];
-
-  await saveTeamData({
-    sharedUsers: allUsers,
-    profilePics: pics,
-    sharedProfiles: profiles,
-  });
+  await saveTeamData({ sharedUsers: allUsers, profilePics: pics, sharedProfiles: profiles });
 }
