@@ -91,12 +91,12 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
       const img = new Image();
 
       img.onload = () => {
-        // Dark background matching t-shirt
-        ctx.fillStyle = '#0A0A0C';
+        // Pure White canvas for optimal contrast and print precision
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, size, size);
         ctx.drawImage(img, 0, 0, size, size);
 
-        // Center circular white shield with SeloraX emblem matching t-shirt
+        // Center circular white shield with SeloraX emblem
         const logo = new Image();
         logo.onload = () => {
           const center = size / 2;
@@ -105,18 +105,15 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           ctx.arc(center, center, shieldRadius, 0, Math.PI * 2);
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
-          ctx.lineWidth = size * 0.008;
-          ctx.strokeStyle = '#FF7A00';
-          ctx.stroke();
 
-          const logoSize = shieldRadius * 1.4;
+          const logoSize = shieldRadius * 1.45;
           const logoPos = center - logoSize / 2;
           ctx.drawImage(logo, logoPos, logoPos, logoSize, logoSize);
 
           const pngUrl = canvas.toDataURL('image/png');
           const downloadLink = document.createElement('a');
           downloadLink.href = pngUrl;
-          downloadLink.download = `${(user.username || 'selorax').toLowerCase()}-tshirt-qr.png`;
+          downloadLink.download = `${(user.username || 'selorax').toLowerCase()}-qr.png`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
@@ -209,7 +206,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         </a>
       )}
 
-      {/* Branded SeloraX QR Modal (Official T-Shirt Edition) */}
+      {/* Branded SeloraX QR Modal (Exact Reference Edition) */}
       {showQR && (
         <div
           role="dialog"
@@ -260,22 +257,16 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               </div>
             </div>
 
-            {/* T-Shirt Header Slogan */}
+            {/* Slogan Header */}
             <div className="mb-2.5">
               <span className="text-sm font-bold tracking-tight text-white">
                 Sell বাড়ায় Selora<span className="text-orange-500">X</span>
               </span>
             </div>
 
-            {/* Custom Branded SeloraX QR Container (Official T-Shirt Edition) */}
-            <div className="relative mx-auto flex h-48 w-48 sm:h-52 sm:w-52 items-center justify-center rounded-2xl border-2 border-orange-500/40 bg-[#0A0A0C] p-2.5 shadow-[0_0_35px_-5px_rgba(255,122,0,0.35)]">
-              {/* Tech Corner Brackets in SeloraX Orange */}
-              <div className="pointer-events-none absolute -top-1 -left-1 h-3.5 w-3.5 border-t-2 border-l-2 border-orange-500 rounded-tl" />
-              <div className="pointer-events-none absolute -top-1 -right-1 h-3.5 w-3.5 border-t-2 border-r-2 border-orange-500 rounded-tr" />
-              <div className="pointer-events-none absolute -bottom-1 -left-1 h-3.5 w-3.5 border-b-2 border-l-2 border-orange-500 rounded-bl" />
-              <div className="pointer-events-none absolute -bottom-1 -right-1 h-3.5 w-3.5 border-b-2 border-r-2 border-orange-500 rounded-br" />
-
-              {/* QR Vector SVG with White Modules & Orange Eyes */}
+            {/* Custom Branded SeloraX QR Container (Exact Reference Design) */}
+            <div className="relative mx-auto flex h-52 w-52 sm:h-56 sm:w-56 items-center justify-center rounded-2xl bg-white p-2.5 shadow-[0_0_40px_-5px_rgba(255,160,0,0.35)] ring-1 ring-zinc-200">
+              {/* QR Vector SVG with Perfect Square Modules & SeloraX Orange Eyes */}
               {qrSvg ? (
                 <div
                   className="h-full w-full [&_svg]:h-full [&_svg]:w-full overflow-hidden rounded-xl"
@@ -287,9 +278,9 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                 </div>
               )}
 
-              {/* Center SeloraX Circular Logo Shield (Matching T-Shirt) */}
+              {/* Center SeloraX Circular Logo Shield with White Quiet Zone */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white p-1 shadow-lg ring-2 ring-orange-500/70">
+                <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white p-1 shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icon.png"

@@ -1,15 +1,17 @@
 import QRCode from 'qrcode';
 
 export function generateBrandedQrSvg(url: string): string {
-  // Use Error Correction Level 'H' (30% error recovery)
+  // 1. Actual QR Code Algorithm with Error Correction Level 'H' (30% recovery capability)
   const qr = QRCode.create(url, { errorCorrectionLevel: 'H' });
   const size = qr.modules.size;
-  const margin = 2.5;
+
+  // 2. Sufficient white margin (quiet zone of ~ 3.5 modules)
+  const margin = 3.5;
   const totalSize = size + margin * 2;
 
-  // Center clearance for the circular emblem (matches the SeloraX t-shirt design)
+  // 3. Center logo clearance zone (proper white quiet zone for error correction)
   const centerMid = size / 2;
-  const centerRadius = 3.6;
+  const centerRadius = 3.8;
 
   const isCornerEye = (r: number, c: number) => {
     if (r < 7 && c < 7) return true; // Top-left
@@ -24,8 +26,14 @@ export function generateBrandedQrSvg(url: string): string {
     return Math.sqrt(dr * dr + dc * dc) <= centerRadius;
   };
 
-  const dots: string[] = [];
+  const modules: string[] = [];
 
+  // Dark charcoal / near-black color for optimal contrast without harsh pure black
+  const darkCharcoal = '#181A22';
+  // Authentic SeloraX Orange for outer finder pattern
+  const seloraxOrange = '#FFA000';
+
+  // 4. Each data module is a perfect flat square (shape-rendering: crispEdges)
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       if (qr.modules.get(r, c)) {
@@ -34,25 +42,26 @@ export function generateBrandedQrSvg(url: string): string {
         }
         const x = c + margin;
         const y = r + margin;
-        // Crisp white modules on dark background, exactly like the SeloraX t-shirt
-        dots.push(
-          `<rect x="${(x + 0.05).toFixed(2)}" y="${(y + 0.05).toFixed(2)}" width="0.9" height="0.9" rx="0.22" fill="#FFFFFF" />`
+        modules.push(
+          `<rect x="${x}" y="${y}" width="1" height="1" fill="${darkCharcoal}" />`
         );
       }
     }
   }
 
-  // Draw the 3 Bold Electric Orange Corner Eyes matching the official SeloraX T-Shirt
+  // 5. 3 Finder patterns: Exact position/size (7x7), outer part in SeloraX Orange, white separator, dark charcoal pupil
   const renderEye = (cornerX: number, cornerY: number) => {
     const ox = cornerX + margin;
     const oy = cornerY + margin;
 
     return `
       <g>
-        <!-- Outer Dark Backing + Bold Electric Orange Rounded Frame -->
-        <rect x="${ox}" y="${oy}" width="7" height="7" rx="2" fill="#0A0A0C" stroke="#FF7A00" stroke-width="1.3" />
-        <!-- Inner Bold Electric Orange Rounded Pupil -->
-        <rect x="${ox + 1.85}" y="${oy + 1.85}" width="3.3" height="3.3" rx="1.1" fill="#FF7A00" />
+        <!-- Outer Frame: SeloraX Orange (7x7 modules, 1 module thick) -->
+        <rect x="${ox}" y="${oy}" width="7" height="7" rx="0.75" fill="${seloraxOrange}" />
+        <!-- Inner Separation White Buffer (5x5 modules) -->
+        <rect x="${ox + 1}" y="${oy + 1}" width="5" height="5" rx="0.35" fill="#FFFFFF" />
+        <!-- Center Pupil: Dark Charcoal (3x3 modules) -->
+        <rect x="${ox + 2}" y="${oy + 2}" width="3" height="3" rx="0.3" fill="${darkCharcoal}" />
       </g>
     `;
   };
@@ -62,26 +71,26 @@ export function generateBrandedQrSvg(url: string): string {
   const eyeBL = renderEye(0, size - 7);
 
   const midCoord = (size / 2 + margin).toFixed(2);
-  const imgCoord = (parseFloat(midCoord) - 2.8).toFixed(2);
+  const imgCoord = (parseFloat(midCoord) - 2.7).toFixed(2);
 
   return `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" shape-rendering="geometricPrecision" class="h-full w-full">
-      <!-- Dark Obsidian Background matching the T-Shirt Fabric -->
-      <rect x="0" y="0" width="${totalSize}" height="${totalSize}" fill="#0A0A0C" rx="4" />
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" shape-rendering="crispEdges" class="h-full w-full">
+      <!-- 100% Flat, Crisp White Canvas with Quiet Zone Margin -->
+      <rect x="0" y="0" width="${totalSize}" height="${totalSize}" fill="#FFFFFF" rx="2" />
 
-      <!-- QR Crisp White Data Modules -->
-      ${dots.join('\n')}
+      <!-- Perfect Square Data Modules (Dark Charcoal) -->
+      ${modules.join('\n')}
 
-      <!-- 3 T-Shirt Style Bold Electric Orange Corner Eyes -->
+      <!-- 3 Finder Patterns with SeloraX Orange Outer Frame -->
       ${eyeTL}
       ${eyeTR}
       ${eyeBL}
 
-      <!-- Center White Circular Emblem Shield matching T-Shirt -->
-      <circle cx="${midCoord}" cy="${midCoord}" r="4.2" fill="#FFFFFF" stroke="#FF7A00" stroke-width="0.35" />
+      <!-- Center Logo Proper White Quiet Zone -->
+      <circle cx="${midCoord}" cy="${midCoord}" r="4.2" fill="#FFFFFF" shape-rendering="geometricPrecision" />
 
-      <!-- Embedded SeloraX 'X' Emblem -->
-      <image href="/icon.png" x="${imgCoord}" y="${imgCoord}" width="5.6" height="5.6" preserveAspectRatio="xMidYMid meet" />
+      <!-- Center SeloraX 'X' Emblem -->
+      <image href="/icon.png" x="${imgCoord}" y="${imgCoord}" width="5.4" height="5.4" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" />
     </svg>
   `;
 }
