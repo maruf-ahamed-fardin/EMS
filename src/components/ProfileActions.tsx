@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Download, QrCode, Share2, Copy, Check, X, BadgeCheck } from 'lucide-react';
 import type { PublicUser, ProfileData } from '@/lib/team';
 import { generateBrandedQrSvg } from '@/lib/branded-qr';
+import { recordRecentView } from '@/lib/recent-views';
 import { useToast } from './Toast';
 
 interface ProfileActionsProps {
@@ -16,6 +17,12 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
   const [qrSvg, setQrSvg] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user?.username) {
+      recordRecentView(user.username);
+    }
+  }, [user?.username]);
 
   const currentUrl = typeof window !== 'undefined'
     ? window.location.href
@@ -100,13 +107,13 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         const logo = new Image();
         logo.onload = () => {
           const center = size / 2;
-          const shieldRadius = size * 0.11;
+          const shieldRadius = size * 0.128;
           ctx.beginPath();
           ctx.arc(center, center, shieldRadius, 0, Math.PI * 2);
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
 
-          const logoSize = shieldRadius * 1.45;
+          const logoSize = shieldRadius * 0.565;
           const logoPos = center - logoSize / 2;
           ctx.drawImage(logo, logoPos, logoPos, logoSize, logoSize);
 
@@ -176,7 +183,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         <button
           type="button"
           onClick={handleDownloadVCard}
-          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-orange-500/20 transition-all hover:from-orange-400 hover:to-amber-500 active:scale-[0.98] dark:from-orange-500 dark:to-amber-600 dark:text-white dark:shadow-orange-500/25"
         >
           <Download className="h-3.5 w-3.5" />
           Save Contact
@@ -185,7 +192,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         <button
           type="button"
           onClick={() => setShowQR(true)}
-          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-2xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
+          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white/90 px-3 py-2 text-xs font-semibold text-zinc-800 shadow-2xs transition-all hover:bg-zinc-100 active:scale-[0.98] dark:border-white/10 dark:bg-white/[0.06] dark:text-zinc-200 dark:hover:bg-white/[0.10] dark:hover:border-white/15"
           title="Show Branded QR Code & Share"
         >
           <QrCode className="h-3.5 w-3.5 text-orange-500" />
@@ -199,7 +206,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           href={calendlyUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20"
+          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20 outline-none"
         >
           <Calendar className="h-3 w-3" />
           Book a 1:1 Meeting (Cal.com)
@@ -257,13 +264,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               </div>
             </div>
 
-            {/* Slogan Header */}
-            <div className="mb-2.5">
-              <span className="text-sm font-bold tracking-tight text-white">
-                Sell বাড়ায় Selora<span className="text-orange-500">X</span>
-              </span>
-            </div>
-
             {/* Custom Branded SeloraX QR Container (Exact Reference Design) */}
             <div className="relative mx-auto flex h-52 w-52 sm:h-56 sm:w-56 items-center justify-center rounded-2xl bg-white p-2.5 shadow-[0_0_40px_-5px_rgba(255,160,0,0.35)] ring-1 ring-zinc-200">
               {/* QR Vector SVG with Perfect Square Modules, Orange Eyes & Smooth Center Quiet Zone */}
@@ -277,13 +277,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                   Generating QR…
                 </div>
               )}
-            </div>
-
-            {/* T-Shirt Footer Slogan */}
-            <div className="mt-2.5">
-              <span className="text-xs font-bold tracking-tight text-zinc-200">
-                Talk With Selora<span className="text-orange-500">X</span> <span className="text-orange-500 font-extrabold">AI</span>
-              </span>
             </div>
 
             {/* Action Buttons: Download QR + Copy Link + Share */}

@@ -61,10 +61,10 @@ export function generateBrandedQrSvg(url: string): string {
   const eyeBL = renderEye(0, size - 7);
 
   const mid = size / 2 + margin;
-  // Center Circular Quiet Zone: Smooth white disc covering center modules
-  const circleRadius = 4.2;
-  // Center logo: 5.0 modules (leaves 1.7 module clean rounded circular gap on all 4 sides!)
-  const logoSize = 5.0;
+  // Center Circular Quiet Zone: Smooth white disc covering center modules with ample round blank space around logo
+  const circleRadius = 4.6;
+  // Center logo: 2.6 modules (leaves ~3.3 modules of clean round blank space on all 4 sides)
+  const logoSize = 2.6;
   const logoPos = mid - logoSize / 2;
 
   return `
@@ -80,8 +80,8 @@ export function generateBrandedQrSvg(url: string): string {
       ${eyeTR}
       ${eyeBL}
 
-      <!-- Center Logo Proper White Quiet Zone: Smooth circular disc covering center modules -->
-      <circle cx="${mid.toFixed(2)}" cy="${mid.toFixed(2)}" r="${circleRadius.toFixed(2)}" fill="#FFFFFF" shape-rendering="geometricPrecision" />
+      <!-- Center Logo Proper White Quiet Zone: Smooth circular disc covering center modules with ample blank space -->
+      <circle cx="${mid.toFixed(2)}" cy="${mid.toFixed(2)}" r="${circleRadius.toFixed(2)}" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0.3" shape-rendering="geometricPrecision" />
 
       <!-- Center SeloraX 'X' Emblem with uniform rounded gap on all 4 sides -->
       <image href="/icon.png" x="${logoPos.toFixed(2)}" y="${logoPos.toFixed(2)}" width="${logoSize.toFixed(2)}" height="${logoSize.toFixed(2)}" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" />

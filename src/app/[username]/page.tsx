@@ -107,7 +107,7 @@ function ContactDetails({ profileData }: { profileData: ProfileData | null }) {
   const waDigits = digits(whatsapp);
 
   return (
-    <div className="divide-y divide-slate-200/60 rounded-xl border border-slate-200/80 bg-white/70 p-0.5 shadow-2xs dark:divide-white/[0.06] dark:border-white/[0.08] dark:bg-black/25">
+    <div className="divide-y divide-slate-200/60 rounded-xl border border-slate-200/80 bg-white/70 p-0.5 shadow-2xs dark:divide-white/[0.06] dark:border-white/[0.08] dark:bg-black/35">
       {email && (
         <ContactRow
           href={`mailto:${email}`}
@@ -178,7 +178,7 @@ function SocialLinks({ socials }: { socials?: Socials }) {
           rel="noopener noreferrer"
           aria-label={label}
           title={label}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-600 hover:text-orange-500 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-orange-400 dark:hover:border-zinc-700 shadow-2xs transition active:scale-95"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-600 hover:text-orange-500 hover:border-zinc-300 dark:border-white/10 dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:text-orange-400 dark:hover:border-orange-500/40 dark:hover:bg-white/[0.10] shadow-2xs transition active:scale-95"
         >
           <IconComponent className="h-3.5 w-3.5" />
         </a>
@@ -293,7 +293,7 @@ export default async function TeamProfilePage({ params }: PageParams) {
               {skills.map((skill: string) => (
                 <span
                   key={skill}
-                  className="rounded-md border border-zinc-200/80 bg-zinc-100/80 px-2 py-0.5 text-[10px] font-medium text-zinc-700 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300 dark:hover:border-zinc-700"
+                  className="rounded-md border border-zinc-200/80 bg-zinc-100/80 px-2 py-0.5 text-[10px] font-medium text-zinc-700 transition hover:border-zinc-300 dark:border-white/[0.08] dark:bg-white/[0.05] dark:text-zinc-300 dark:hover:border-white/15 dark:hover:bg-white/[0.08]"
                 >
                   {skill}
                 </span>

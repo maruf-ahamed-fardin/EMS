@@ -26,12 +26,12 @@ export default function AppLayoutShell({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="relative min-h-dvh md:h-dvh flex flex-col justify-between items-center selection:bg-orange-500/20 selection:text-orange-500">
+    <div className="relative min-h-dvh w-full flex flex-col justify-between items-center selection:bg-orange-500/20 selection:text-orange-500">
       {/* Engineering micro-dot background with radial gradient mask */}
       <div className="pointer-events-none fixed inset-0 bg-grid-dots opacity-70 [mask-image:radial-gradient(ellipse_75%_65%_at_50%_0%,#000_50%,transparent_100%)] z-0" />
 
       {/* Compact Navigation Bar / Top Bar */}
-      <header className="relative z-10 w-full max-w-4xl px-4 py-2 sm:py-3 shrink-0 flex items-center justify-between">
+      <header className="relative z-20 w-full max-w-4xl px-4 py-3 shrink-0 flex items-center justify-between">
         <Link
           href="/"
           className="group flex items-center gap-2 rounded-xl px-1 py-0.5 transition-all hover:opacity-95"
@@ -80,7 +80,7 @@ export default function AppLayoutShell({ children }: { children: React.ReactNode
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 w-full max-w-4xl px-3 sm:px-4 py-1 sm:py-2 flex-1 flex flex-col items-center justify-center min-h-0">
+      <main className="relative z-10 w-full max-w-4xl px-3 sm:px-4 py-2 sm:py-4 flex-1 flex flex-col items-center justify-center">
         {children}
       </main>
 
