@@ -1,5 +1,5 @@
 import 'server-only';
-import { put, head, del } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
 
 export type Department = 'Engineering' | 'Operations' | 'Design' | 'Executive' | 'All';
 
@@ -104,6 +104,9 @@ const EMPTY_TEAM_DATA: TeamData = {
 const CACHE_TTL = 15 * 1000; // 15 seconds
 let cache: { data: TeamData; ts: number } | null = null;
 
+// Module-level blob URL cache (set after first save or load)
+let cachedBlobUrl: string | null = null;
+
 /**
  * Load team data from Vercel Blob (or MySQL fallback).
  * Falls back to empty data if neither is configured.
@@ -112,10 +115,22 @@ async function loadTeamData(): Promise<TeamData> {
   // Try Vercel Blob first (preferred)
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     try {
-      // Try to get the blob by listing or fetching directly
-      const blobUrl = process.env.TEAM_DATA_BLOB_URL;
+      // Use cached URL from last save, or find via list()
+      let blobUrl = cachedBlobUrl;
+
+      if (!blobUrl) {
+        const { blobs } = await list({ prefix: BLOB_PATHNAME, limit: 1 });
+        if (blobs.length > 0) {
+          blobUrl = blobs[0].url;
+          cachedBlobUrl = blobUrl;
+        }
+      }
+
       if (blobUrl) {
-        const res = await fetch(blobUrl, { cache: 'no-store' });
+        const res = await fetch(blobUrl, {
+          headers: { 'Cache-Control': 'no-store' },
+          cache: 'no-store',
+        });
         if (res.ok) {
           const json = await res.json() as TeamData;
           return {
@@ -125,10 +140,12 @@ async function loadTeamData(): Promise<TeamData> {
           };
         }
       }
+      // No blob found yet — return empty (first time)
+      return { sharedUsers: [], profilePics: {}, sharedProfiles: {} };
     } catch (err) {
-      console.warn('[SeloraX Team] Blob read failed, using empty data:', err);
+      console.warn('[SeloraX Team] Blob read failed:', err);
+      return { sharedUsers: [], profilePics: {}, sharedProfiles: {} };
     }
-    return { ...EMPTY_TEAM_DATA, sharedUsers: [], profilePics: {}, sharedProfiles: {} };
   }
 
   // MySQL fallback
@@ -199,11 +216,9 @@ export async function saveTeamData(newData: TeamData): Promise<void> {
         contentType: 'application/json',
         allowOverwrite: true,
       });
-      // Store the blob URL in environment for future reads
-      // Since we can't set env vars at runtime, we store it and read from the known pathname
+      // Cache the blob URL at module level for fast re-reads
+      cachedBlobUrl = blob.url;
       console.log('[SeloraX Team] Data saved to Blob:', blob.url);
-      // Update cache with the blob URL so same server instance can re-read
-      (process.env as Record<string, string>).TEAM_DATA_BLOB_URL = blob.url;
     } catch (err) {
       console.error('[SeloraX Team] Blob write failed:', err);
       throw new Error('Failed to save team data. Check BLOB_READ_WRITE_TOKEN.');
