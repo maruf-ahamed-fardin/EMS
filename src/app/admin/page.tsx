@@ -965,7 +965,7 @@ export default function AdminPage() {
                     onChange={(e) => handleNameChange(e.target.value)}
                     required
                     placeholder="e.g. Ashek Rabbani"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                   />
                 </div>
 
@@ -982,7 +982,7 @@ export default function AdminPage() {
                     placeholder="e.g. ashek-rabbani"
                     pattern="^[a-z0-9][a-z0-9-]{0,31}$"
                     title="Lowercase letters, numbers, and hyphens only. No spaces."
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none disabled:opacity-50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none disabled:opacity-50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                   />
                   {formData.username && !/^[a-z0-9][a-z0-9-]{0,31}$/.test(formData.username) && (
                     <p className="mt-0.5 text-[10px] text-rose-500">Only a-z, 0-9, hyphen. Must start with a letter or number.</p>
@@ -998,7 +998,7 @@ export default function AdminPage() {
                     value={formData.employeeId}
                     onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                     placeholder="e.g. SX-001"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                   />
                 </div>
               </div>
@@ -1014,7 +1014,7 @@ export default function AdminPage() {
                     value={formData.designation}
                     onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                     placeholder="e.g. Lead Full Stack Engineer"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                   />
                 </div>
 
@@ -1025,12 +1025,12 @@ export default function AdminPage() {
                   <select
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-[#1A1E29] dark:text-white"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-[#181C26] dark:text-white dark:focus:bg-[#181C26] dark:focus:border-orange-500 cursor-pointer"
                   >
-                    <option value="Engineering">Engineering</option>
-                    <option value="Design">Design</option>
-                    <option value="Operations">Operations</option>
-                    <option value="Executive">Executive</option>
+                    <option value="Engineering" className="bg-white text-zinc-900 dark:bg-[#181C26] dark:text-white">Engineering</option>
+                    <option value="Design" className="bg-white text-zinc-900 dark:bg-[#181C26] dark:text-white">Design</option>
+                    <option value="Operations" className="bg-white text-zinc-900 dark:bg-[#181C26] dark:text-white">Operations</option>
+                    <option value="Executive" className="bg-white text-zinc-900 dark:bg-[#181C26] dark:text-white">Executive</option>
                   </select>
                 </div>
               </div>
@@ -1052,7 +1052,7 @@ export default function AdminPage() {
                       }
                     }}
                     placeholder="e.g. Next.js, React, Docker…"
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                   />
                   <button
                     type="button"
@@ -1097,7 +1097,7 @@ export default function AdminPage() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="e.g. ashekrabbani@selorax.io"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                     />
                   </div>
 
@@ -1108,7 +1108,7 @@ export default function AdminPage() {
                       value={formData.personalPhone}
                       onChange={(e) => setFormData({ ...formData, personalPhone: e.target.value })}
                       placeholder="+8801700000000"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                     />
                   </div>
 
@@ -1119,7 +1119,7 @@ export default function AdminPage() {
                       value={formData.whatsapp}
                       onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                       placeholder="+8801600000000"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                     />
                   </div>
 
@@ -1130,7 +1130,7 @@ export default function AdminPage() {
                       value={formData.calendlyUrl}
                       onChange={(e) => setFormData({ ...formData, calendlyUrl: e.target.value })}
                       placeholder="https://cal.com/username"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                     />
                   </div>
                 </div>
@@ -1149,7 +1149,7 @@ export default function AdminPage() {
                       value={formData.github}
                       onChange={(e) => setFormData({ ...formData, github: e.target.value })}
                       placeholder="https://github.com/username"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                     />
                   </div>
 
@@ -1160,7 +1160,7 @@ export default function AdminPage() {
                       value={formData.linkedin}
                       onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
                       placeholder="https://linkedin.com/in/username"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500 dark:focus:bg-[#12151D] dark:focus:border-orange-500"
                     />
                   </div>
                 </div>

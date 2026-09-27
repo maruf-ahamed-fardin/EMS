@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, X, ArrowRight, CornerDownLeft } from 'lucide-react';
 import type { PublicMemberSummary, Department } from '@/lib/team';
+import { recordRecentView, getRecentViews } from '@/lib/recent-views';
 
 interface MemberDirectoryProps {
   initialMembers: PublicMemberSummary[];
@@ -22,8 +23,14 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
   const [query, setQuery] = useState('');
   const [activeDept, setActiveDept] = useState<Department | 'All'>('All');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [recentUsernames, setRecentUsernames] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Load recent views on mount
+  useEffect(() => {
+    setRecentUsernames(getRecentViews());
+  }, []);
 
   // Global keyboard shortcut: Press "/" to focus search input
   useEffect(() => {
@@ -87,10 +94,31 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
       e.preventDefault();
       const target = filteredMembers[selectedIndex] || filteredMembers[0];
       if (target) {
+        recordRecentView(target.username);
         router.push(`/${encodeURIComponent(target.username)}`);
       }
     }
   };
+
+  // Derive up to 5 recently viewed members
+  const { recentList, isRecent } = useMemo(() => {
+    if (recentUsernames.length > 0) {
+      const matched: PublicMemberSummary[] = [];
+      for (const u of recentUsernames) {
+        const found = initialMembers.find(
+          (m) => m.username?.toLowerCase() === u.toLowerCase()
+        );
+        if (found && !matched.some((m) => m.username === found.username)) {
+          matched.push(found);
+        }
+        if (matched.length >= 5) break;
+      }
+      if (matched.length > 0) {
+        return { recentList: matched, isRecent: true };
+      }
+    }
+    return { recentList: initialMembers.slice(0, 5), isRecent: false };
+  }, [recentUsernames, initialMembers]);
 
   return (
     <div className="w-full max-w-xl my-auto animate-in fade-in zoom-in-95 duration-200">
@@ -122,7 +150,7 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
-            className="w-full rounded-xl border border-zinc-200/90 bg-zinc-50/80 py-2.5 pl-10 pr-20 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 outline-none transition focus:border-zinc-900 focus:bg-white focus:ring-4 focus:ring-zinc-900/5 dark:border-zinc-800/90 dark:bg-zinc-900/80 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-100 dark:focus:ring-white/5"
+            className="w-full rounded-xl border border-zinc-200/90 bg-zinc-50/80 py-2.5 pl-10 pr-20 text-xs sm:text-sm text-zinc-900 placeholder-zinc-400 outline-none transition focus:border-zinc-900 focus:bg-white focus:ring-4 focus:ring-zinc-900/5 dark:border-zinc-800/90 dark:bg-zinc-900/80 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-100 dark:focus:bg-zinc-900 dark:focus:ring-white/5"
           />
 
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -157,8 +185,8 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
                 onClick={() => setActiveDept(dept)}
                 className={`cursor-pointer rounded-lg px-2.5 py-0.5 text-[11px] font-medium transition active:scale-95 ${
                   isActive
-                    ? 'border border-zinc-900 bg-zinc-900 text-white shadow-2xs dark:border-white dark:bg-white dark:text-zinc-900 font-semibold'
-                    : 'border border-zinc-200 bg-zinc-100/80 text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                    ? 'border border-zinc-900 bg-zinc-900 text-white shadow-2xs dark:border-orange-500 dark:bg-orange-500 dark:text-white font-semibold'
+                    : 'border border-zinc-200 bg-zinc-100/80 text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
                 }`}
               >
                 {dept}
@@ -187,6 +215,7 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
                 <Link
                   key={member.username}
                   href={`/${encodeURIComponent(member.username)}`}
+                  onClick={() => recordRecentView(member.username)}
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`group flex items-center justify-between gap-3 rounded-xl border p-2 sm:p-2.5 transition-all ${
                     isSelected
@@ -236,7 +265,7 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
                     </div>
                   </div>
 
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white dark:bg-zinc-800 dark:text-zinc-400 dark:group-hover:bg-white dark:group-hover:text-zinc-900 transition text-[10px] shadow-2xs">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white dark:bg-zinc-800/80 dark:text-zinc-400 dark:group-hover:bg-orange-500 dark:group-hover:text-white transition text-[10px] shadow-2xs">
                     <ArrowRight className="h-3 w-3" />
                   </span>
                 </Link>
@@ -254,18 +283,19 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
           )}
         </div>
 
-        {/* Quick Explore Chips */}
-        {initialMembers.length > 0 && (
+        {/* Recently Viewed (Up to 5) / Quick Explore */}
+        {recentList.length > 0 && (
           <div className="mt-3 border-t border-zinc-100/80 pt-2 text-center dark:border-zinc-800/70">
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mr-1.5">
-              Quick explore:
+              {isRecent ? 'Recently viewed:' : 'Quick explore:'}
             </span>
             <div className="inline-flex flex-wrap justify-center gap-1">
-              {initialMembers.map((m) => (
+              {recentList.map((m) => (
                 <Link
                   key={m.username}
                   href={`/${encodeURIComponent(m.username)}`}
-                  className="inline-flex items-center gap-1 rounded-full border border-zinc-200/80 bg-zinc-100/70 px-2 py-0.5 text-[10px] text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-200/70 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  onClick={() => recordRecentView(m.username)}
+                  className="inline-flex items-center gap-1 rounded-full border border-zinc-200/80 bg-zinc-100/70 px-2 py-0.5 text-[10px] text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-200/70 hover:text-zinc-900 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-zinc-300 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:hover:text-white"
                 >
                   <span className="font-medium">{m.name}</span>
                   {m.employeeId && (
