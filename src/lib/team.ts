@@ -1,5 +1,8 @@
 import 'server-only';
+import path from 'path';
+import fs from 'fs/promises';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
+import { put, list } from '@vercel/blob';
 
 export type Department = 'Engineering' | 'Operations' | 'Design' | 'Executive' | 'All';
 
@@ -198,8 +201,40 @@ const FALLBACK_TEAM_DATA: TeamData = {
   },
 };
 
+// ── Storage paths & helpers ─────────────────────────────────────────
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DATA_FILE = path.join(DATA_DIR, 'team-data.json');
+const BLOB_PATHNAME = 'selorax-team-data.json';
+let cachedBlobUrl: string | null = null;
+
+async function readLocalDataFile(): Promise<TeamData | null> {
+  try {
+    const raw = await fs.readFile(DATA_FILE, 'utf-8');
+    const parsed = JSON.parse(raw) as TeamData;
+    if (parsed && Array.isArray(parsed.sharedUsers)) {
+      return {
+        sharedUsers: parsed.sharedUsers,
+        profilePics: (parsed.profilePics && typeof parsed.profilePics === 'object') ? parsed.profilePics : {},
+        sharedProfiles: (parsed.sharedProfiles && typeof parsed.sharedProfiles === 'object') ? parsed.sharedProfiles : {},
+      };
+    }
+  } catch {
+    // File not found or unparseable
+  }
+  return null;
+}
+
+async function writeLocalDataFile(data: TeamData): Promise<void> {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[SeloraX Team] Local data file write warning:', err);
+  }
+}
+
 // ── In-memory cache (survives warm function invocations) ────────
-const CACHE_TTL = 30 * 1000; // 30 seconds
+const CACHE_TTL = 5 * 1000; // 5 seconds
 let cache: { promise: Promise<TeamData> | null; ts: number } = { promise: null, ts: 0 };
 
 let pool: Pool | null = null;
@@ -220,33 +255,78 @@ function getPool(): Pool {
   return pool;
 }
 
-// Single query for all 3 keys instead of 3 separate queries
+/**
+ * Loads team data with multi-tier fallback:
+ * 1. Vercel Blob (if configured)
+ * 2. MySQL (if configured)
+ * 3. Local backend JSON file (data/team-data.json)
+ * 4. Default demo data
+ */
 async function loadTeamData(): Promise<TeamData> {
-  if (!process.env.MYSQL_HOST) {
-    return FALLBACK_TEAM_DATA;
+  // 1. Try Vercel Blob if configured
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      let blobUrl = cachedBlobUrl;
+      if (!blobUrl) {
+        const { blobs } = await list({ prefix: BLOB_PATHNAME });
+        if (blobs.length > 0) {
+          // Sort newest first
+          blobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+          blobUrl = blobs[0].url;
+          cachedBlobUrl = blobUrl;
+        }
+      }
+      if (blobUrl) {
+        const res = await fetch(`${blobUrl}?t=${Date.now()}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const json = await res.json() as TeamData;
+          if (json && Array.isArray(json.sharedUsers)) {
+            return json;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[SeloraX Team] Blob read warning:', err);
+    }
   }
 
-  try {
-    const [rows] = await getPool().execute<KvRow[]>(
-      'SELECT k, v FROM kv_store WHERE k IN (?, ?, ?)',
-      ['sharedUsers', 'profilePics', 'sharedProfiles']
-    );
+  // 2. Try MySQL if configured
+  if (process.env.MYSQL_HOST) {
+    try {
+      const [rows] = await getPool().execute<KvRow[]>(
+        'SELECT k, v FROM kv_store WHERE k IN (?, ?, ?)',
+        ['sharedUsers', 'profilePics', 'sharedProfiles']
+      );
 
-    const parsed: Record<string, unknown> = {};
-    for (const row of rows) {
-      try { parsed[row.k] = JSON.parse(row.v); }
-      catch { parsed[row.k] = row.v; }
+      const parsed: Record<string, unknown> = {};
+      for (const row of rows) {
+        try { parsed[row.k] = JSON.parse(row.v); }
+        catch { parsed[row.k] = row.v; }
+      }
+
+      if (parsed.sharedUsers && Array.isArray(parsed.sharedUsers)) {
+        return parsed as TeamData;
+      }
+    } catch (error) {
+      console.warn('[SeloraX Team] Database query failed or unavailable:', error);
     }
-
-    if (!parsed.sharedUsers) {
-      return FALLBACK_TEAM_DATA;
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn('[SeloraX Team] Database query failed or unavailable. Serving fallback team data.', error);
-    return FALLBACK_TEAM_DATA;
   }
+
+  // 3. Try Local backend JSON file
+  const localData = await readLocalDataFile();
+  if (localData) {
+    return localData;
+  }
+
+  // 4. Default fallback: seed local JSON file with initial demo data
+  await writeLocalDataFile(FALLBACK_TEAM_DATA);
+  return FALLBACK_TEAM_DATA;
 }
 
 function getTeamData(): Promise<TeamData> {
@@ -420,39 +500,67 @@ export async function getFullAdminMembers(): Promise<FullAdminMember[]> {
 }
 
 /**
- * Saves team data to MySQL if configured, and keeps the in-memory cache updated.
+ * Saves team data across backend local file, MySQL (if configured), and Vercel Blob (if configured).
  */
 export async function saveTeamData(newData: TeamData): Promise<void> {
+  // Update in-memory cache immediately
   cache = { promise: Promise.resolve(newData), ts: Date.now() };
 
   FALLBACK_TEAM_DATA.sharedUsers = newData.sharedUsers;
   FALLBACK_TEAM_DATA.profilePics = newData.profilePics;
   FALLBACK_TEAM_DATA.sharedProfiles = newData.sharedProfiles;
 
-  if (!process.env.MYSQL_HOST) {
-    return;
+  // 1. Always save to local backend file (persists on filesystem)
+  await writeLocalDataFile(newData);
+
+  // 2. Save to MySQL database if configured
+  if (process.env.MYSQL_HOST) {
+    try {
+      const p = getPool();
+      await p.execute(
+        `CREATE TABLE IF NOT EXISTS kv_store (
+          k VARCHAR(64) PRIMARY KEY,
+          v LONGTEXT NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+      );
+
+      const keys: (keyof TeamData)[] = ['sharedUsers', 'profilePics', 'sharedProfiles'];
+      for (const key of keys) {
+        const val = JSON.stringify(newData[key] ?? (key === 'sharedUsers' ? [] : {}));
+        await p.execute(
+          'INSERT INTO kv_store (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)',
+          [key, val]
+        );
+      }
+    } catch (error) {
+      console.error('[SeloraX Team] Failed to write to MySQL database:', error);
+    }
   }
 
-  try {
-    const p = getPool();
-    await p.execute(
-      `CREATE TABLE IF NOT EXISTS kv_store (
-        k VARCHAR(64) PRIMARY KEY,
-        v LONGTEXT NOT NULL
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-    );
-
-    const keys: (keyof TeamData)[] = ['sharedUsers', 'profilePics', 'sharedProfiles'];
-    for (const key of keys) {
-      const val = JSON.stringify(newData[key] ?? (key === 'sharedUsers' ? [] : {}));
-      await p.execute(
-        'INSERT INTO kv_store (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)',
-        [key, val]
-      );
+  // 3. Save to Vercel Blob if configured (resilient fallback without fatal crash)
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const json = JSON.stringify(newData, null, 0);
+      const blob = await put(BLOB_PATHNAME, json, {
+        access: 'public',
+        addRandomSuffix: false,
+        contentType: 'application/json',
+        allowOverwrite: true,
+      });
+      cachedBlobUrl = blob.url;
+      console.log('[SeloraX Team] Data saved to Blob:', blob.url);
+    } catch (err) {
+      console.error('[SeloraX Team] Vercel Blob write error:', err);
+      // In Vercel serverless production (where local disk is read-only), notify admin if cloud save failed
+      if (process.env.VERCEL && !process.env.MYSQL_HOST) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        throw new Error(`Production storage error: ${errorMsg}. Please check Vercel Blob connection.`);
+      }
     }
-  } catch (error) {
-    console.error('[SeloraX Team] Failed to write to MySQL database:', error);
-    throw new Error('Database write operation failed. Please verify MySQL configuration.');
+  } else if (process.env.VERCEL && !process.env.MYSQL_HOST) {
+    throw new Error(
+      'Production storage not connected. Please create/connect a Blob store in Vercel Dashboard (Storage -> Create Blob) or add MySQL configuration.'
+    );
   }
 }
 

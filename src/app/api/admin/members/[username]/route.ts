@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { isAuthenticatedAdmin } from '@/lib/admin-auth';
 import { updateTeamMember, deleteTeamMember } from '@/lib/team';
 
@@ -23,6 +24,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       profileData,
     });
 
+    revalidatePath('/', 'layout');
     return NextResponse.json({ success: true, message: 'Member updated successfully' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to update member';
@@ -39,6 +41,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {
     const { username } = await params;
     await deleteTeamMember(decodeURIComponent(username));
+    revalidatePath('/', 'layout');
     return NextResponse.json({ success: true, message: 'Member deleted successfully' });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to delete member';

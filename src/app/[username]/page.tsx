@@ -27,11 +27,7 @@ import {
   TwitterIcon,
 } from '@/components/icons';
 
-export const revalidate = 30;
-
-export function generateStaticParams() {
-  return [];
-}
+export const dynamic = 'force-dynamic';
 
 interface PageParams {
   params: Promise<{ username: string }>;
