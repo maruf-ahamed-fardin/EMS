@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { Calendar, Download, QrCode, Share2, Copy, Check, X } from 'lucide-react';
+import { Calendar, Download, QrCode, Share2, Copy, Check, X, BadgeCheck } from 'lucide-react';
 import type { PublicUser, ProfileData } from '@/lib/team';
 import { useToast } from './Toast';
 
@@ -26,8 +26,9 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
       QRCode.toString(currentUrl, {
         type: 'svg',
         margin: 1,
+        errorCorrectionLevel: 'H', // High error correction (30%) so center emblem scans perfectly
         color: {
-          dark: '#090B0E',
+          dark: '#090E1A',
           light: '#FFFFFF',
         },
       })
@@ -126,7 +127,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           type="button"
           onClick={() => setShowQR(true)}
           className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-2xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
-          title="Show QR Code & Share"
+          title="Show Branded QR Code & Share"
         >
           <QrCode className="h-3.5 w-3.5 text-orange-500" />
           QR & Share
@@ -146,34 +147,66 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         </a>
       )}
 
-      {/* Accessible QR Modal */}
+      {/* Branded SeloraX QR Modal */}
       {showQR && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           onClick={() => setShowQR(false)}
         >
           <div
-            className="tactile-card w-full max-w-xs rounded-2xl p-5 text-center shadow-2xl animate-in zoom-in-95 duration-150"
+            className="tactile-card w-full max-w-xs rounded-3xl p-5 text-center shadow-2xl animate-in zoom-in-95 duration-150 border border-zinc-200/90 dark:border-zinc-800"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 id="qr-modal-title" className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                Scan to View Profile
-              </h3>
+            {/* Modal Header */}
+            <div className="mb-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                <h3 id="qr-modal-title" className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
+                  SeloraX Digital ID
+                </h3>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowQR(false)}
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
                 aria-label="Close dialog"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-xl border border-zinc-200/80 bg-white p-2.5 shadow-inner dark:border-zinc-800">
+            {/* Member Mini Identification Chip */}
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-zinc-200/80 bg-zinc-50/90 px-3 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-900 to-amber-600 font-bold text-[10px] text-white">
+                  {(user.name || '?').charAt(0).toUpperCase()}
+                </div>
+                <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                  {user.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {user.employeeId && (
+                  <span className="font-mono text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-200/60 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                    {user.employeeId}
+                  </span>
+                )}
+                <BadgeCheck className="h-3.5 w-3.5 text-blue-500" />
+              </div>
+            </div>
+
+            {/* Branded QR Card Container with Center Logo & Amber Accents */}
+            <div className="relative mx-auto flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-orange-500/40 bg-white p-2.5 shadow-[0_0_30px_-5px_rgba(255,122,0,0.35)] dark:border-orange-500/50">
+              {/* Corner Tech Brackets */}
+              <div className="pointer-events-none absolute -top-1 -left-1 h-3.5 w-3.5 border-t-2 border-l-2 border-orange-500 rounded-tl" />
+              <div className="pointer-events-none absolute -top-1 -right-1 h-3.5 w-3.5 border-t-2 border-r-2 border-orange-500 rounded-tr" />
+              <div className="pointer-events-none absolute -bottom-1 -left-1 h-3.5 w-3.5 border-b-2 border-l-2 border-orange-500 rounded-bl" />
+              <div className="pointer-events-none absolute -bottom-1 -right-1 h-3.5 w-3.5 border-b-2 border-r-2 border-orange-500 rounded-br" />
+
+              {/* QR Vector SVG */}
               {qrSvg ? (
                 <div
                   className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
@@ -184,26 +217,39 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                   Generating QR…
                 </div>
               )}
+
+              {/* Center SeloraX Emblem with Protective Halo */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200/90 bg-white p-1.5 shadow-lg shadow-black/20 ring-2 ring-orange-500/40">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/icon.png"
+                    alt="SeloraX"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+              </div>
             </div>
 
-            <p className="mt-2.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Scan with phone camera to open profile.
+            <p className="mt-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+              Scan with smartphone camera to connect.
             </p>
 
+            {/* Action Buttons */}
             <div className="mt-4 flex gap-2">
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 active:scale-95"
               >
                 {copiedLink ? (
                   <>
-                    <Check className="h-3 w-3 text-emerald-500" />
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3 w-3" />
+                    <Copy className="h-3.5 w-3.5" />
                     Copy Link
                   </>
                 )}
@@ -212,9 +258,9 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl bg-orange-600 py-2 text-xs font-semibold text-white transition hover:bg-orange-500 shadow-2xs"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 py-2.5 text-xs font-semibold text-white shadow-md shadow-orange-500/25 transition hover:from-orange-400 hover:to-amber-500 active:scale-95"
               >
-                <Share2 className="h-3 w-3" />
+                <Share2 className="h-3.5 w-3.5" />
                 Share
               </button>
             </div>
