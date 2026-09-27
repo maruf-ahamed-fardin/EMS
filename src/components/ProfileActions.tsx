@@ -113,7 +113,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
 
-          const logoSize = shieldRadius * 0.565;
+          const logoSize = (shieldRadius * 2) * 0.8;
           const logoPos = center - logoSize / 2;
           ctx.drawImage(logo, logoPos, logoPos, logoSize, logoSize);
 

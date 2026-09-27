@@ -61,10 +61,11 @@ export function generateBrandedQrSvg(url: string): string {
   const eyeBL = renderEye(0, size - 7);
 
   const mid = size / 2 + margin;
-  // Center Circular Quiet Zone: Smooth white disc covering center modules with ample round blank space around logo
-  const circleRadius = 4.6;
-  // Center logo: 2.6 modules (leaves ~3.3 modules of clean round blank space on all 4 sides)
-  const logoSize = 2.6;
+  // Center Circular Quiet Zone: Smooth white disc covering center modules
+  const circleRadius = 4.5;
+  const circleDiameter = circleRadius * 2;
+  // Center logo: Exactly 80% of the circle diameter
+  const logoSize = Number((circleDiameter * 0.8).toFixed(2));
   const logoPos = mid - logoSize / 2;
 
   return `
