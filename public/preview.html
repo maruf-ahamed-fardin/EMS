@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SeloraX - Design System & UI/UX Preview</title>
+  <link rel="icon" type="image/png" href="/icon.png" />
+  
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              orange: '#FF7A00',
+              amber: '#F97316',
+              navy: '#282A7A',
+            },
+            obsidian: {
+              DEFAULT: '#090B0E',
+              surface: '#12151D',
+              elevated: '#181C26',
+              border: 'rgba(255, 255, 255, 0.08)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Engineering Dotted Grid */
+    .bg-grid-dots {
+      background-image: radial-gradient(rgba(100, 116, 139, 0.22) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .dark .bg-grid-dots {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.10) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Razor Tactile Card with Top-edge Inner Highlight */
+    .tactile-card {
+      background-color: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        0 20px 35px -10px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .dark .tactile-card {
+      background-color: rgba(18, 21, 29, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 
+        0 1px 3px rgba(0, 0, 0, 0.3),
+        0 25px 40px -15px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    /* Subtle pulse animation for status indicator */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+    .animate-pulse-dot {
+      animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased min-h-screen bg-slate-50 text-slate-900 dark:bg-[#090B0E] dark:text-zinc-100 transition-colors duration-200 selection:bg-orange-500/20 selection:text-orange-500">
+
+  <!-- Engineering Dot Grid with Radial Fade Mask -->
+  <div class="pointer-events-none fixed inset-0 bg-grid-dots opacity-75 [mask-image:radial-gradient(ellipse_75%_65%_at_50%_0%,#000_50%,transparent_100%)] z-0"></div>
+
+  <!-- Top Floating Control Bar -->
+  <div class="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/70 backdrop-blur-md dark:border-zinc-800/80 dark:bg-[#090B0E]/80">
+    <div class="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-6">
+      <!-- Logo Container with High-contrast Backplate -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center rounded-xl border border-zinc-200/90 bg-white/90 px-3 py-1.5 shadow-2xs backdrop-blur-md dark:border-zinc-800/90 dark:bg-zinc-900/80">
+          <img src="/logo.png" alt="SeloraX" class="h-6 w-auto object-contain" />
+        </div>
+        <span class="hidden rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400 sm:inline-block">
+          Precision Redesign
+        </span>
+      </div>
+
+      <!-- Navigation & View Switcher Tabs -->
+      <div class="flex items-center gap-2">
+        <div class="flex rounded-xl border border-zinc-200/80 bg-zinc-100/80 p-0.5 dark:border-zinc-800/80 dark:bg-zinc-900/80">
+          <button id="tab-profile-btn" onclick="switchView('profile')" class="flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-zinc-100 transition-all">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile Card
+          </button>
+          <button id="tab-directory-btn" onclick="switchView('directory')" class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Directory Search
+          </button>
+        </div>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button onclick="toggleTheme()" class="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200/80 bg-white/80 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:text-zinc-300 dark:hover:bg-zinc-800 shadow-2xs transition-all" title="Toggle Theme">
+          <svg id="theme-icon-sun" class="hidden h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg id="theme-icon-moon" class="h-4 w-4 text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:py-12 flex flex-col items-center">
+
+    <!-- ================= VIEW 1: PROFILE VIEW ================= -->
+    <div id="view-profile" class="w-full max-w-md transition-all duration-300">
+      
+      <!-- Interactive Team Member Switcher for Demo -->
+      <div class="mb-4 flex items-center justify-between rounded-xl border border-zinc-200/70 bg-white/60 p-2 backdrop-blur-md dark:border-zinc-800/70 dark:bg-zinc-900/60">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 px-2">Demo Profiles:</span>
+        <div class="flex gap-1">
+          <button onclick="loadMember('ashek')" class="rounded-lg bg-zinc-200/80 px-2.5 py-1 text-xs font-semibold text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-700 transition">Ashek</button>
+          <button onclick="loadMember('fardin')" class="rounded-lg px-2.5 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">Fardin</button>
+          <button onclick="loadMember('selorax')" class="rounded-lg px-2.5 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">HQ Desk</button>
+        </div>
+      </div>
+
+      <!-- Main Profile Tactile Card -->
+      <div class="tactile-card overflow-hidden rounded-3xl p-6 sm:p-8">
+        
+        <!-- Header: Avatar with Double Ring + Verified Badge -->
+        <div class="flex flex-col items-center text-center">
+          <div class="relative mb-4">
+            <div class="flex h-28 w-28 items-center justify-center rounded-full p-1 border border-zinc-200/90 bg-white shadow-md dark:border-zinc-800/90 dark:bg-zinc-900">
+              <div class="h-full w-full overflow-hidden rounded-full border border-zinc-100 dark:border-zinc-800">
+                <img id="profile-avatar-img" src="https://avatars.githubusercontent.com/u/101377810?v=4" alt="Ashek Rabbani" class="h-full w-full object-cover" />
+              </div>
+            </div>
+            <!-- Blue Verified Checkmark Badge -->
+            <div class="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-sm dark:border-zinc-900 dark:bg-blue-500" title="Verified SeloraX Member">
+              <svg class="h-3.5 w-3.5 stroke-[3]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+          </div>
+
+          <!-- Name & Role -->
+          <h1 id="profile-name" class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Ashek Rabbani</h1>
+          <p id="profile-role" class="mt-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">Lead Full Stack Engineer</p>
+
+          <!-- Badges Row: Monospace Employee ID + Department Chip -->
+          <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <!-- Monospace Employee ID with Click-to-copy -->
+            <button onclick="copyToClipboard('SX-001', 'Employee ID SX-001 copied')" class="group flex items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-zinc-100/90 px-2.5 py-1 font-mono text-xs font-semibold text-zinc-700 transition hover:border-amber-500/60 hover:bg-amber-500/10 hover:text-amber-600 dark:border-zinc-800/90 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:border-amber-400/60 dark:hover:bg-amber-400/10 dark:hover:text-amber-400 shadow-2xs cursor-pointer" title="Click to copy Employee ID">
+              <span id="profile-empid">SX-001</span>
+              <svg class="h-3 w-3 text-zinc-400 group-hover:text-amber-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            </button>
+
+            <!-- Department Pill -->
+            <span id="profile-dept" class="rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-600 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-400">
+              Engineering
+            </span>
+          </div>
+
+          <!-- Live Local Time & Pulsing Status Indicator -->
+          <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <div class="flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-zinc-100/80 px-3 py-1 font-mono text-xs text-zinc-600 dark:border-zinc-800/90 dark:bg-zinc-800/60 dark:text-zinc-400">
+              <svg class="h-3 w-3 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span id="live-clock">14:39:15</span>
+              <span class="text-[10px] text-zinc-400">Dhaka (UTC+6)</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-400">
+              <span class="relative flex h-2 w-2">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              <span id="profile-status">Available</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Rows with Monospace Formats & Copy Actions -->
+        <div class="mt-6 divide-y divide-zinc-100 rounded-2xl border border-zinc-200/70 bg-zinc-50/70 p-1 dark:divide-zinc-800/60 dark:border-zinc-800/70 dark:bg-zinc-900/60">
+          
+          <!-- Email Row -->
+          <div class="flex items-center justify-between p-3 transition-colors hover:bg-white dark:hover:bg-zinc-800/50 rounded-xl">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:bg-orange-400/10 dark:text-orange-400">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </div>
+              <div class="min-w-0 cursor-pointer" onclick="copyToClipboard('ashekrabbani@selorax.io', 'Email copied to clipboard')">
+                <div id="contact-email" class="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">ashekrabbani@selorax.io</div>
+                <div class="text-[11px] font-medium text-zinc-400">Email Address (Click to copy)</div>
+              </div>
+            </div>
+            <a id="link-email" href="mailto:ashekrabbani@selorax.io" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-500 hover:text-orange-500 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-orange-400 shadow-2xs transition" title="Send Email">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+          </div>
+
+          <!-- Direct Phone Row -->
+          <div class="flex items-center justify-between p-3 transition-colors hover:bg-white dark:hover:bg-zinc-800/50 rounded-xl">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              </div>
+              <div class="min-w-0 cursor-pointer" onclick="copyToClipboard('+8801700000001', 'Phone number copied to clipboard')">
+                <div id="contact-phone" class="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100">+880 1700-000001</div>
+                <div class="text-[11px] font-medium text-zinc-400">Direct Mobile (Click to copy)</div>
+              </div>
+            </div>
+            <a id="link-phone" href="tel:+8801700000001" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-500 hover:text-blue-500 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-blue-400 shadow-2xs transition" title="Call">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+          </div>
+
+          <!-- WhatsApp Row -->
+          <div class="flex items-center justify-between p-3 transition-colors hover:bg-white dark:hover:bg-zinc-800/50 rounded-xl">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24"/></svg>
+              </div>
+              <div class="min-w-0 cursor-pointer" onclick="copyToClipboard('+8801606606204', 'WhatsApp number copied to clipboard')">
+                <div class="font-mono text-xs font-semibold text-zinc-900 dark:text-zinc-100">+880 1606-606204</div>
+                <div class="text-[11px] font-medium text-zinc-400">WhatsApp Chat</div>
+              </div>
+            </div>
+            <a href="https://wa.me/8801606606204" target="_blank" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-white text-zinc-500 hover:text-emerald-500 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-emerald-400 shadow-2xs transition" title="Open WhatsApp">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Primary Action Buttons: Save Contact (.vcf) & QR Modal -->
+        <div class="mt-5 grid grid-cols-2 gap-2.5">
+          <button onclick="downloadVCard()" class="flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Contact
+          </button>
+
+          <button onclick="openQrModal()" class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-xs font-semibold text-zinc-800 shadow-2xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+            <svg class="h-4 w-4 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+            QR & Share
+          </button>
+        </div>
+
+        <!-- Book Meeting (Cal.com / Calendly style button) -->
+        <a href="https://cal.com/ashekrabbani" target="_blank" class="mt-2.5 flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+          Book a 1:1 Meeting (Cal.com)
+        </a>
+
+        <!-- Tech Stack / Skills Micro-chips -->
+        <div class="mt-6 border-t border-zinc-100 pt-5 dark:border-zinc-800/80">
+          <div class="mb-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Core Engineering Stack</div>
+          <div id="profile-skills" class="flex flex-wrap justify-center gap-1.5">
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">Next.js 16</span>
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">React 19</span>
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">TypeScript</span>
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">Node.js</span>
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">PostgreSQL</span>
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">Docker</span>
+            <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">GraphQL</span>
+          </div>
+        </div>
+
+        <!-- Social Links with Tooltips -->
+        <div class="mt-5 flex items-center justify-center gap-3">
+          <a href="https://github.com/ashekrabbani" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/80 bg-white text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:border-zinc-700 shadow-2xs transition" title="GitHub">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          </a>
+          <a href="https://linkedin.com" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/80 bg-white text-zinc-600 hover:text-blue-600 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-blue-400 dark:hover:border-zinc-700 shadow-2xs transition" title="LinkedIn">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+          </a>
+          <a href="https://selorax.io" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/80 bg-white text-zinc-600 hover:text-orange-500 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-orange-400 dark:hover:border-zinc-700 shadow-2xs transition" title="SeloraX Website">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </a>
+          <a href="https://facebook.com/selorax.io" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/80 bg-white text-zinc-600 hover:text-blue-500 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:text-blue-400 dark:hover:border-zinc-700 shadow-2xs transition" title="Facebook">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </a>
+        </div>
+
+        <!-- Company HQ Map Pin Link -->
+        <div class="mt-6 border-t border-zinc-100 pt-4 text-center dark:border-zinc-800/80">
+          <a href="https://maps.google.com/?q=1286/3,+Begum+Rokeya+Sarani,+Mirpur,+Dhaka" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-orange-500 dark:text-zinc-400 dark:hover:text-orange-400 transition">
+            <svg class="h-3.5 w-3.5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span class="font-medium">HQ:</span> 1286/3, Begum Rokeya Sarani, Mirpur, Dhaka ↗
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ================= VIEW 2: DIRECTORY / SEARCH VIEW ================= -->
+    <div id="view-directory" class="hidden w-full max-w-2xl transition-all duration-300">
+      
+      <!-- Command Palette Style Search Box -->
+      <div class="tactile-card rounded-3xl p-6 sm:p-8">
+        
+        <div class="mb-6 text-center">
+          <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">SeloraX Team Directory</h1>
+          <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Search engineers, designers, and operations by name, ID, or skills</p>
+        </div>
+
+        <!-- Command Input with Keyboard Shortcut Hint -->
+        <div class="relative">
+          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-400">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <input
+            id="directory-search-input"
+            type="text"
+            oninput="handleSearch(this.value)"
+            placeholder="Search by name, ID (SX-001), or tech stack (Next.js)..."
+            class="w-full rounded-2xl border border-zinc-200/90 bg-zinc-50/80 py-3.5 pl-11 pr-24 text-sm text-zinc-900 placeholder-zinc-400 outline-none transition focus:border-zinc-900 focus:bg-white focus:ring-4 focus:ring-zinc-900/5 dark:border-zinc-800/90 dark:bg-zinc-900/80 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-100 dark:focus:ring-white/5"
+          />
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+            <kbd class="rounded-md border border-zinc-200 bg-white px-2 py-0.5 font-mono text-[10px] font-semibold text-zinc-500 shadow-2xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">Press /</kbd>
+          </div>
+        </div>
+
+        <!-- Department Filter Pills -->
+        <div class="mt-4 flex flex-wrap items-center gap-1.5">
+          <span class="mr-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Filter:</span>
+          <button onclick="filterDept('All')" id="dept-all" class="dept-btn rounded-xl border border-zinc-900 bg-zinc-900 px-3 py-1 text-xs font-semibold text-white shadow-2xs dark:border-white dark:bg-white dark:text-zinc-900 transition">All</button>
+          <button onclick="filterDept('Engineering')" id="dept-eng" class="dept-btn rounded-xl border border-zinc-200 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition">Engineering</button>
+          <button onclick="filterDept('Design')" id="dept-des" class="dept-btn rounded-xl border border-zinc-200 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition">Design</button>
+          <button onclick="filterDept('Operations')" id="dept-ops" class="dept-btn rounded-xl border border-zinc-200 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition">Operations</button>
+          <button onclick="filterDept('Executive')" id="dept-exec" class="dept-btn rounded-xl border border-zinc-200 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition">Executive</button>
+        </div>
+
+        <!-- Live Results List -->
+        <div class="mt-6 space-y-2.5" id="member-list-container">
+          <!-- Member items injected by JS -->
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Interactive QR Code Modal -->
+  <div id="qr-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-opacity" onclick="closeQrModal()">
+    <div class="tactile-card w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl" onclick="event.stopPropagation()">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-zinc-900 dark:text-zinc-100">Scan & Connect</h3>
+        <button onclick="closeQrModal()" class="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800">✕</button>
+      </div>
+
+      <!-- Vector SVG QR Mockup with SeloraX Emblem -->
+      <div class="mx-auto flex h-48 w-48 items-center justify-center rounded-2xl border border-zinc-200/80 bg-white p-3 shadow-inner dark:border-zinc-800">
+        <svg viewBox="0 0 100 100" class="h-full w-full">
+          <!-- Corner Position Markers -->
+          <rect x="5" y="5" width="26" height="26" rx="4" fill="#090B0E" />
+          <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
+          <rect x="13" y="13" width="10" height="10" rx="1" fill="#FF7A00" />
+
+          <rect x="69" y="5" width="26" height="26" rx="4" fill="#090B0E" />
+          <rect x="73" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
+          <rect x="77" y="13" width="10" height="10" rx="1" fill="#FF7A00" />
+
+          <rect x="5" y="69" width="26" height="26" rx="4" fill="#090B0E" />
+          <rect x="9" y="73" width="18" height="18" rx="2" fill="#FFFFFF" />
+          <rect x="13" y="77" width="10" height="10" rx="1" fill="#FF7A00" />
+
+          <!-- QR Data Matrix Dots -->
+          <circle cx="40" cy="15" r="3" fill="#090B0E" /><circle cx="50" cy="15" r="3" fill="#090B0E" /><circle cx="60" cy="15" r="3" fill="#090B0E" />
+          <circle cx="45" cy="25" r="3" fill="#090B0E" /><circle cx="55" cy="25" r="3" fill="#090B0E" />
+          <circle cx="15" cy="40" r="3" fill="#090B0E" /><circle cx="25" cy="45" r="3" fill="#090B0E" /><circle cx="15" cy="55" r="3" fill="#090B0E" />
+          <circle cx="40" cy="40" r="3" fill="#FF7A00" /><circle cx="50" cy="50" r="5" fill="#282A7A" /><circle cx="60" cy="40" r="3" fill="#FF7A00" />
+          <circle cx="40" cy="60" r="3" fill="#090B0E" /><circle cx="60" cy="60" r="3" fill="#090B0E" />
+          <circle cx="75" cy="40" r="3" fill="#090B0E" /><circle cx="85" cy="50" r="3" fill="#090B0E" /><circle cx="75" cy="60" r="3" fill="#090B0E" />
+          <circle cx="40" cy="85" r="3" fill="#090B0E" /><circle cx="50" cy="75" r="3" fill="#090B0E" /><circle cx="60" cy="85" r="3" fill="#090B0E" /><circle cx="80" cy="80" r="3" fill="#090B0E" />
+        </svg>
+      </div>
+
+      <p class="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Scan with any smartphone camera to open live SeloraX profile.</p>
+
+      <div class="mt-5 flex gap-2">
+        <button onclick="copyToClipboard(window.location.href, 'Profile URL copied'); closeQrModal()" class="flex-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 transition">Copy Link</button>
+        <button onclick="triggerShare(); closeQrModal()" class="flex-1 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white hover:bg-orange-500 transition shadow-sm">Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toast Notification -->
+  <div id="toast" class="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-xl border border-zinc-200/90 bg-white/95 px-4 py-2.5 text-xs font-medium text-zinc-900 shadow-xl backdrop-blur-md opacity-0 transition-all duration-300 dark:border-zinc-800/90 dark:bg-zinc-900/95 dark:text-zinc-100">
+    <span class="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-400">
+      <svg class="h-3 w-3 stroke-[2.5]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>
+    </span>
+    <span id="toast-text" class="font-semibold">Notification</span>
+  </div>
+
+  <script>
+    // Demo Database
+    const MEMBERS = [
+      {
+        id: 'ashek',
+        name: 'Ashek Rabbani',
+        role: 'Lead Full Stack Engineer',
+        employeeId: 'SX-001',
+        department: 'Engineering',
+        avatar: 'https://avatars.githubusercontent.com/u/101377810?v=4',
+        email: 'ashekrabbani@selorax.io',
+        phone: '+880 1700-000001',
+        status: 'Available',
+        skills: ['Next.js 16', 'React 19', 'TypeScript', 'Node.js', 'PostgreSQL', 'Docker', 'GraphQL']
+      },
+      {
+        id: 'fardin',
+        name: 'Maruf Ahamed Fardin',
+        role: 'UI/UX & Frontend Specialist',
+        employeeId: 'SX-002',
+        department: 'Design',
+        avatar: 'https://avatars.githubusercontent.com/u/89617260?v=4',
+        email: 'fardin@selorax.io',
+        phone: '+880 1700-000002',
+        status: 'In Flow',
+        skills: ['UI/UX Design', 'Figma', 'Next.js', 'Tailwind CSS', 'Framer Motion', 'Design Systems']
+      },
+      {
+        id: 'selorax',
+        name: 'SeloraX Headquarters',
+        role: 'Global Operations Desk',
+        employeeId: 'SX-000',
+        department: 'Operations',
+        avatar: '/logo.png',
+        email: 'contact@selorax.io',
+        phone: '+880 1606-606204',
+        status: '24/7 Monitoring',
+        skills: ['DevOps', 'Infrastructure', 'Security', 'Incident Response', 'Cloud Systems']
+      },
+      {
+        id: 'tanvir',
+        name: 'Tanvir Hossain',
+        role: 'Founder & CEO',
+        employeeId: 'SX-100',
+        department: 'Executive',
+        avatar: '',
+        email: 'tanvir@selorax.io',
+        phone: '+880 1606-606204',
+        status: 'In Meetings',
+        skills: ['Leadership', 'Product Strategy', 'Venture Capital', 'Architecture', 'Enterprise']
+      }
+    ];
+
+    let currentDept = 'All';
+    let currentQuery = '';
+
+    // Switch between Profile view and Directory view
+    function switchView(view) {
+      const pView = document.getElementById('view-profile');
+      const dView = document.getElementById('view-directory');
+      const pBtn = document.getElementById('tab-profile-btn');
+      const dBtn = document.getElementById('tab-directory-btn');
+
+      if (view === 'profile') {
+        pView.classList.remove('hidden');
+        dView.classList.add('hidden');
+        pBtn.className = "flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-zinc-100 transition-all";
+        dBtn.className = "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all";
+      } else {
+        dView.classList.remove('hidden');
+        pView.classList.add('hidden');
+        dBtn.className = "flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-zinc-900 shadow-2xs dark:bg-zinc-800 dark:text-zinc-100 transition-all";
+        pBtn.className = "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-all";
+        renderDirectory();
+      }
+    }
+
+    // Load member into Profile view
+    function loadMember(id) {
+      const m = MEMBERS.find(x => x.id === id) || MEMBERS[0];
+      document.getElementById('profile-name').textContent = m.name;
+      document.getElementById('profile-role').textContent = m.role;
+      document.getElementById('profile-empid').textContent = m.employeeId;
+      document.getElementById('profile-dept').textContent = m.department;
+      document.getElementById('contact-email').textContent = m.email;
+      document.getElementById('contact-phone').textContent = m.phone;
+      document.getElementById('profile-status').textContent = m.status;
+
+      const img = document.getElementById('profile-avatar-img');
+      img.src = m.avatar || 'https://avatars.githubusercontent.com/u/101377810?v=4';
+
+      const skillsContainer = document.getElementById('profile-skills');
+      skillsContainer.innerHTML = m.skills.map(s => `
+        <span class="rounded-lg border border-zinc-200/80 bg-zinc-100/80 px-2.5 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/70 dark:text-zinc-300">${s}</span>
+      `).join('');
+
+      showToast(`Loaded ${m.name}`);
+    }
+
+    // Render Directory Search Results
+    function renderDirectory() {
+      const container = document.getElementById('member-list-container');
+      const filtered = MEMBERS.filter(m => {
+        const matchesDept = currentDept === 'All' || m.department === currentDept;
+        const q = currentQuery.toLowerCase().trim();
+        const matchesQuery = !q || 
+          m.name.toLowerCase().includes(q) ||
+          m.employeeId.toLowerCase().includes(q) ||
+          m.role.toLowerCase().includes(q) ||
+          m.skills.some(s => s.toLowerCase().includes(q));
+        return matchesDept && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-10 text-center text-sm text-zinc-400 dark:text-zinc-500">
+            No team members found matching "${currentQuery}".
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(m => `
+        <div onclick="loadMember('${m.id}'); switchView('profile');" class="group flex items-center justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-white/80 p-3.5 shadow-2xs hover:border-orange-500/50 hover:bg-orange-500/[0.02] dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:hover:border-orange-400/50 cursor-pointer transition">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-700 overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+              ${m.avatar ? `<img src="${m.avatar}" class="h-full w-full object-cover"/>` : `<span class="font-bold text-sm text-zinc-600 dark:text-zinc-300">${m.name[0]}</span>`}
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-500 transition-colors">${m.name}</span>
+                <span class="font-mono text-[10px] rounded-md bg-zinc-100 px-1.5 py-0.5 font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">${m.employeeId}</span>
+                <span class="text-[10px] rounded-md bg-indigo-500/10 px-1.5 py-0.5 font-semibold text-indigo-600 dark:text-indigo-400">${m.department}</span>
+              </div>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">${m.role}</p>
+            </div>
+          </div>
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white dark:bg-zinc-800 dark:text-zinc-400 dark:group-hover:bg-white dark:group-hover:text-zinc-900 transition text-xs">➔</span>
+        </div>
+      `).join('');
+    }
+
+    function handleSearch(val) {
+      currentQuery = val;
+      renderDirectory();
+    }
+
+    function filterDept(dept) {
+      currentDept = dept;
+      document.querySelectorAll('.dept-btn').forEach(b => {
+        b.className = "dept-btn rounded-xl border border-zinc-200 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition";
+      });
+      const activeBtn = event.target;
+      activeBtn.className = "dept-btn rounded-xl border border-zinc-900 bg-zinc-900 px-3 py-1 text-xs font-semibold text-white shadow-2xs dark:border-white dark:bg-white dark:text-zinc-900 transition";
+      renderDirectory();
+    }
+
+    // Real-time ticking clock
+    function updateClock() {
+      const now = new Date();
+      const str = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const el = document.getElementById('live-clock');
+      if (el) el.textContent = str;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Dark/Light Theme Handler
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.toggle('dark');
+      document.getElementById('theme-icon-sun').classList.toggle('hidden', isDark);
+      document.getElementById('theme-icon-moon').classList.toggle('hidden', !isDark);
+      showToast(isDark ? 'Obsidian Dark Mode enabled' : 'Crisp Light Mode enabled');
+    }
+
+    // Toast notification
+    let toastTimeout;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-text').textContent = msg;
+      el.classList.remove('opacity-0', 'translate-y-2');
+      el.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-y-2');
+        el.classList.remove('opacity-100', 'translate-y-0');
+      }, 2400);
+    }
+
+    function copyToClipboard(text, msg) {
+      navigator.clipboard?.writeText(text);
+      showToast(msg);
+    }
+
+    function openQrModal() {
+      const m = document.getElementById('qr-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeQrModal() {
+      const m = document.getElementById('qr-modal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function triggerShare() {
+      if (navigator.share) {
+        navigator.share({ title: 'SeloraX Member Profile', url: window.location.href });
+      } else {
+        copyToClipboard(window.location.href, 'Profile URL copied to clipboard');
+      }
+    }
+
+    function downloadVCard() {
+      const vcf = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Ashek Rabbani\r\nORG:SeloraX\r\nTITLE:Lead Full Stack Engineer\r\nEMAIL:ashekrabbani@selorax.io\r\nTEL;TYPE=CELL:+8801700000001\r\nURL:https://selorax.io\r\nEND:VCARD";
+      const blob = new Blob([vcf], { type: 'text/vcard' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = "ashekrabbani-selorax.vcf";
+      a.click();
+      showToast("Downloaded vCard (.vcf)");
+    }
+
+    // Global keyboard listener for "/" to search
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        switchView('directory');
+        setTimeout(() => document.getElementById('directory-search-input')?.focus(), 50);
+      }
+      if (e.key === 'Escape') {
+        closeQrModal();
+      }
+    });
+
+    // Initial render
+    renderDirectory();
+  </script>
+</body>
+</html>

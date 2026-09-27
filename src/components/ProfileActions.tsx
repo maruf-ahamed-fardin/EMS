@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
+import { Calendar, Download, QrCode, Share2, Copy, Check, X } from 'lucide-react';
 import type { PublicUser, ProfileData } from '@/lib/team';
+import { useToast } from './Toast';
 
 interface ProfileActionsProps {
   user: PublicUser;
@@ -10,7 +13,40 @@ interface ProfileActionsProps {
 
 export default function ProfileActions({ user, profileData }: ProfileActionsProps) {
   const [showQR, setShowQR] = useState(false);
+  const [qrSvg, setQrSvg] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
+  const { toast } = useToast();
+
+  const currentUrl = typeof window !== 'undefined'
+    ? window.location.href
+    : `https://selorax.io/${encodeURIComponent(user.username || '')}`;
+
+  // Generate offline SVG QR code whenever modal opens
+  useEffect(() => {
+    if (showQR && currentUrl) {
+      QRCode.toString(currentUrl, {
+        type: 'svg',
+        margin: 1,
+        color: {
+          dark: '#090B0E',
+          light: '#FFFFFF',
+        },
+      })
+        .then((svg) => setQrSvg(svg))
+        .catch(() => {});
+    }
+  }, [showQR, currentUrl]);
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowQR(false);
+    };
+    if (showQR) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showQR]);
 
   const handleDownloadVCard = () => {
     const fullName = user.name || 'Team Member';
@@ -20,14 +56,14 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     const title = user.designation || user.role || '';
     const org = 'SeloraX';
 
-    // Construct standard vCard 3.0
+    // Construct standard vCard 3.0 format
     const vCardLines = [
       'BEGIN:VCARD',
       'VERSION:3.0',
       `FN:${fullName}`,
       `ORG:${org}`,
       `TITLE:${title}`,
-      email ? `EMAIL;TYPE=INTERNET:${email}` : '',
+      email ? `EMAIL;TYPE=INTERNET,WORK:${email}` : '',
       phone ? `TEL;TYPE=CELL:${phone}` : '',
       businessPhone ? `TEL;TYPE=WORK:${businessPhone}` : '',
       'URL:https://selorax.io',
@@ -43,13 +79,17 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
+    toast('Contact card saved', 'Downloaded .vcf file for your address book', 'success');
   };
 
   const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard?.writeText(window.location.href);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(currentUrl).then(() => {
+        setCopiedLink(true);
+        toast('Profile link copied', currentUrl, 'copy');
+        setTimeout(() => setCopiedLink(false), 2000);
+      });
     }
   };
 
@@ -59,76 +99,98 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         await navigator.share({
           title: `${user.name} - SeloraX Team Profile`,
           text: `Connect with ${user.name} at SeloraX`,
-          url: window.location.href,
+          url: currentUrl,
         });
+        toast('Shared profile', 'Shared successfully via Web Share API', 'success');
         return;
       } catch {
-        // Fallback to QR modal if user cancels or share fails
+        // Fallback to QR modal if user cancels or share is not supported
       }
     }
-    setShowQR(true);
+    handleCopyLink();
   };
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://selorax.io/${user.username || ''}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(currentUrl)}&margin=10`;
+  const calendlyUrl = profileData?.calendlyUrl || user.calendlyUrl;
 
   return (
-    <>
-      <div className="mx-4 mb-4 flex items-center gap-2 sm:mx-5">
+    <div className="mx-4 mb-4 sm:mx-6 space-y-2">
+      {/* Primary Action Row: Save Contact + QR & Share */}
+      <div className="grid grid-cols-2 gap-2.5">
         <button
           type="button"
           onClick={handleDownloadVCard}
-          className="flex flex-1 cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-slate-800 active:scale-[0.98]"
+          className="flex cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-            <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
-          </svg>
+          <Download className="h-4 w-4" />
           Save Contact
         </button>
 
         <button
           type="button"
           onClick={() => setShowQR(true)}
-          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 active:scale-[0.98]"
+          className="flex cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-4 py-3 text-xs font-semibold text-zinc-800 shadow-2xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
           title="Show QR Code & Share"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
-            <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13-2h-2v3h-3v2h3v3h2v-3h3v-2h-3v-3zm-3 7h2v2h-2v-2z" />
-          </svg>
+          <QrCode className="h-4 w-4 text-orange-500" />
           QR & Share
         </button>
       </div>
 
+      {/* Optional "Book Meeting" button (Cal.com / Calendly style) */}
+      {calendlyUrl && (
+        <a
+          href={calendlyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20"
+        >
+          <Calendar className="h-3.5 w-3.5" />
+          Book a 1:1 Meeting (Cal.com)
+        </a>
+      )}
+
+      {/* Accessible QR Modal */}
       {showQR && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs transition-opacity"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="qr-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
           onClick={() => setShowQR(false)}
         >
           <div
-            className="w-full max-w-xs rounded-3xl bg-white p-6 text-center shadow-2xl"
+            className="tactile-card w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-800">Scan to View Profile</h3>
+              <h3 id="qr-modal-title" className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                Scan to View Profile
+              </h3>
               <button
                 type="button"
                 onClick={() => setShowQR(false)}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                aria-label="Close dialog"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-2xl border border-slate-100 bg-white p-2 shadow-inner">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qrCodeUrl}
-                alt={`QR code for ${user.name}`}
-                className="h-full w-full rounded-lg object-contain"
-              />
+            {/* Offline SVG QR container */}
+            <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-2xl border border-zinc-200/80 bg-white p-3 shadow-inner dark:border-zinc-800">
+              {qrSvg ? (
+                <div
+                  className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
+                  dangerouslySetInnerHTML={{ __html: qrSvg }}
+                />
+              ) : (
+                <div className="flex items-center justify-center text-xs text-zinc-400">
+                  Generating QR…
+                </div>
+              )}
             </div>
 
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
               Scan with any phone camera to instantly open {user.name}&apos;s profile card.
             </p>
 
@@ -136,21 +198,33 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex-1 cursor-pointer rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
-                {copiedLink ? 'Link Copied!' : 'Copy Link'}
+                {copiedLink ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    Copy Link
+                  </>
+                )}
               </button>
+
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex-1 cursor-pointer rounded-xl bg-gradient-to-r from-indigo-600 to-orange-500 py-2.5 text-xs font-semibold text-white transition hover:from-indigo-500 hover:to-orange-400"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white transition hover:bg-orange-500 shadow-sm"
               >
+                <Share2 className="h-3.5 w-3.5" />
                 Share
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
