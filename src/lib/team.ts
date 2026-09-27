@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import mysql, { type Pool, type RowDataPacket } from 'mysql2/promise';
 import { put, list } from '@vercel/blob';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export type Department = 'Engineering' | 'Operations' | 'Design' | 'Executive' | 'All';
 
@@ -255,15 +256,58 @@ function getPool(): Pool {
   return pool;
 }
 
+// ── Supabase client helper ──────────────────────────────────────────
+let supabaseClient: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient | null {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+
+  if (!supabaseClient) {
+    supabaseClient = createClient(url, key, {
+      auth: { persistSession: false },
+    });
+  }
+  return supabaseClient;
+}
+
 /**
  * Loads team data with multi-tier fallback:
- * 1. Vercel Blob (if configured)
- * 2. MySQL (if configured)
- * 3. Local backend JSON file (data/team-data.json)
- * 4. Default demo data
+ * 1. Supabase (Primary Cloud Database)
+ * 2. Vercel Blob (if configured)
+ * 3. MySQL (if configured)
+ * 4. Local backend JSON file (data/team-data.json)
+ * 5. Default demo data
  */
 async function loadTeamData(): Promise<TeamData> {
-  // 1. Try Vercel Blob if configured
+  // 1. Try Supabase (Cloud Database)
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('kv_store')
+        .select('k, v')
+        .in('k', ['sharedUsers', 'profilePics', 'sharedProfiles']);
+
+      if (!error && data && data.length > 0) {
+        const parsed: Record<string, unknown> = {};
+        for (const row of data) {
+          parsed[row.k] = typeof row.v === 'string' ? JSON.parse(row.v) : row.v;
+        }
+        if (parsed.sharedUsers && Array.isArray(parsed.sharedUsers)) {
+          return parsed as TeamData;
+        }
+      }
+    } catch (err) {
+      console.warn('[SeloraX Team] Supabase read warning:', err);
+    }
+  }
+
+  // 2. Try Vercel Blob if configured
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     try {
       let blobUrl = cachedBlobUrl;
@@ -500,7 +544,7 @@ export async function getFullAdminMembers(): Promise<FullAdminMember[]> {
 }
 
 /**
- * Saves team data across backend local file, MySQL (if configured), and Vercel Blob (if configured).
+ * Saves team data across Supabase, backend local file, MySQL, and Vercel Blob.
  */
 export async function saveTeamData(newData: TeamData): Promise<void> {
   // Update in-memory cache immediately
@@ -513,7 +557,39 @@ export async function saveTeamData(newData: TeamData): Promise<void> {
   // 1. Always save to local backend file (persists on filesystem)
   await writeLocalDataFile(newData);
 
-  // 2. Save to MySQL database if configured
+  let anyCloudSaved = false;
+
+  // 2. Save to Supabase (Primary Cloud Database) if configured
+  const supabase = getSupabase();
+  if (supabase) {
+    try {
+      const rows = [
+        { k: 'sharedUsers', v: newData.sharedUsers ?? [] },
+        { k: 'profilePics', v: newData.profilePics ?? {} },
+        { k: 'sharedProfiles', v: newData.sharedProfiles ?? {} },
+      ];
+      const { error } = await supabase
+        .from('kv_store')
+        .upsert(rows, { onConflict: 'k' });
+
+      if (error) {
+        console.error('[SeloraX Team] Supabase write error:', error);
+        if (process.env.VERCEL && !process.env.MYSQL_HOST && !process.env.BLOB_READ_WRITE_TOKEN) {
+          throw new Error(`Supabase write error: ${error.message}`);
+        }
+      } else {
+        anyCloudSaved = true;
+        console.log('[SeloraX Team] Data successfully saved to Supabase!');
+      }
+    } catch (err) {
+      console.error('[SeloraX Team] Supabase save error:', err);
+      if (process.env.VERCEL && !process.env.MYSQL_HOST && !process.env.BLOB_READ_WRITE_TOKEN) {
+        throw err;
+      }
+    }
+  }
+
+  // 3. Save to MySQL database if configured
   if (process.env.MYSQL_HOST) {
     try {
       const p = getPool();
@@ -532,12 +608,13 @@ export async function saveTeamData(newData: TeamData): Promise<void> {
           [key, val]
         );
       }
+      anyCloudSaved = true;
     } catch (error) {
       console.error('[SeloraX Team] Failed to write to MySQL database:', error);
     }
   }
 
-  // 3. Save to Vercel Blob if configured (resilient fallback without fatal crash)
+  // 4. Save to Vercel Blob if configured
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     try {
       const json = JSON.stringify(newData, null, 0);
@@ -548,18 +625,17 @@ export async function saveTeamData(newData: TeamData): Promise<void> {
         allowOverwrite: true,
       });
       cachedBlobUrl = blob.url;
+      anyCloudSaved = true;
       console.log('[SeloraX Team] Data saved to Blob:', blob.url);
     } catch (err) {
       console.error('[SeloraX Team] Vercel Blob write error:', err);
-      // In Vercel serverless production (where local disk is read-only), notify admin if cloud save failed
-      if (process.env.VERCEL && !process.env.MYSQL_HOST) {
-        const errorMsg = err instanceof Error ? err.message : String(err);
-        throw new Error(`Production storage error: ${errorMsg}. Please check Vercel Blob connection.`);
-      }
     }
-  } else if (process.env.VERCEL && !process.env.MYSQL_HOST) {
+  }
+
+  // If in Vercel serverless production and no persistent cloud store was configured
+  if (process.env.VERCEL && !anyCloudSaved) {
     throw new Error(
-      'Production storage not connected. Please create/connect a Blob store in Vercel Dashboard (Storage -> Create Blob) or add MySQL configuration.'
+      'Production storage not connected. Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to your Vercel Environment Variables.'
     );
   }
 }
