@@ -67,14 +67,17 @@ html.dark .bg-grid-dots {
   background-size: 20px 20px;
 }
 
-/* Tactile 1px Razor Card with Top-edge Inner Highlight */
+/* Tactile 1px Razor Card:
+   - Light mode: Soft deeper tone with SeloraX Navy character (#F4F6FB to #E9EDF7) and rich navy shadow
+   - Dark mode: Soft lighter luminous tone (elevated slate-indigo #22283E to #181C2E) with ambient brand glow */
 .tactile-card {
   position: relative;
-  background-color: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(180deg, #F8FAFD 0%, #EDF1F9 100%);
+  border: 1px solid rgba(26, 33, 107, 0.18);
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.04),
-    0 20px 35px -10px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(26, 33, 107, 0.06),
+    0 20px 40px -12px rgba(26, 33, 107, 0.14),
+    0 0 30px -5px rgba(255, 122, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -82,12 +85,14 @@ html.dark .bg-grid-dots {
 
 .dark .tactile-card,
 html.dark .tactile-card {
-  background-color: rgba(18, 21, 29, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(34, 40, 62, 0.90) 0%, rgba(24, 28, 46, 0.94) 100%);
+  border: 1px solid rgba(147, 165, 219, 0.22);
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.3),
-    0 25px 40px -15px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 25px 50px -15px rgba(0, 0, 0, 0.8),
+    0 0 40px -10px rgba(255, 122, 0, 0.14),
+    0 0 50px -10px rgba(37, 49, 116, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
