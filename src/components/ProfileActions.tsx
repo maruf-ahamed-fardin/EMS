@@ -91,26 +91,37 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
       const img = new Image();
 
       img.onload = () => {
-        ctx.fillStyle = '#FFFFFF';
+        // Dark background matching t-shirt
+        ctx.fillStyle = '#0A0A0C';
         ctx.fillRect(0, 0, size, size);
         ctx.drawImage(img, 0, 0, size, size);
 
-        // Overlay authentic SeloraX center emblem
+        // Center circular white shield with SeloraX emblem matching t-shirt
         const logo = new Image();
         logo.onload = () => {
-          const logoSize = size * 0.17;
-          const logoPos = (size - logoSize) / 2;
+          const center = size / 2;
+          const shieldRadius = size * 0.11;
+          ctx.beginPath();
+          ctx.arc(center, center, shieldRadius, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+          ctx.lineWidth = size * 0.008;
+          ctx.strokeStyle = '#FF7A00';
+          ctx.stroke();
+
+          const logoSize = shieldRadius * 1.4;
+          const logoPos = center - logoSize / 2;
           ctx.drawImage(logo, logoPos, logoPos, logoSize, logoSize);
 
           const pngUrl = canvas.toDataURL('image/png');
           const downloadLink = document.createElement('a');
           downloadLink.href = pngUrl;
-          downloadLink.download = `${(user.username || 'selorax').toLowerCase()}-qr.png`;
+          downloadLink.download = `${(user.username || 'selorax').toLowerCase()}-tshirt-qr.png`;
           document.body.appendChild(downloadLink);
           downloadLink.click();
           document.body.removeChild(downloadLink);
           URL.revokeObjectURL(blobURL);
-          toast('QR Code downloaded', 'High-resolution branded QR saved', 'success');
+          toast('QR Code downloaded', 'Official SeloraX QR saved in high-resolution', 'success');
         };
         logo.onerror = () => {
           const pngUrl = canvas.toDataURL('image/png');
@@ -198,50 +209,50 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         </a>
       )}
 
-      {/* Branded SeloraX QR Modal */}
+      {/* Branded SeloraX QR Modal (Official T-Shirt Edition) */}
       {showQR && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           onClick={() => setShowQR(false)}
         >
           <div
-            className="tactile-card w-full max-w-xs rounded-3xl p-5 text-center shadow-2xl animate-in zoom-in-95 duration-150 border border-zinc-200/90 dark:border-zinc-800"
+            className="w-full max-w-xs rounded-3xl bg-[#0F1015] p-5 text-center shadow-2xl animate-in zoom-in-95 duration-150 border border-zinc-800/90 text-white"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="mb-3.5 flex items-center justify-between">
+            {/* Modal Top Bar */}
+            <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                <h3 id="qr-modal-title" className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider">
-                  SeloraX Digital ID
+                <h3 id="qr-modal-title" className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                  SeloraX Official ID
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowQR(false)}
-                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
                 aria-label="Close dialog"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            {/* Member Mini Identification Chip */}
-            <div className="mb-3 flex items-center justify-between rounded-xl border border-zinc-200/80 bg-zinc-50/90 px-3 py-1.5 dark:border-zinc-800/80 dark:bg-zinc-900/90">
+            {/* Member Identification Chip */}
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/90 px-3 py-1.5">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-900 to-amber-600 font-bold text-[10px] text-white">
                   {(user.name || '?').charAt(0).toUpperCase()}
                 </div>
-                <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                <span className="text-xs font-semibold text-zinc-200 truncate">
                   {user.name}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 {user.employeeId && (
-                  <span className="font-mono text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 bg-zinc-200/60 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
+                  <span className="font-mono text-[9px] font-semibold text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">
                     {user.employeeId}
                   </span>
                 )}
@@ -249,15 +260,22 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               </div>
             </div>
 
-            {/* Custom Branded SeloraX QR Container (Navy + Orange Palette) */}
-            <div className="relative mx-auto flex h-48 w-48 sm:h-52 sm:w-52 items-center justify-center rounded-2xl border-2 border-orange-500/40 bg-white p-2.5 shadow-[0_0_35px_-5px_rgba(255,122,0,0.35),0_0_40px_-10px_rgba(26,33,107,0.4)] dark:border-orange-500/50">
-              {/* Dual-Brand Corner Tech Brackets (Navy on Left, Orange on Right) */}
-              <div className="pointer-events-none absolute -top-1 -left-1 h-3.5 w-3.5 border-t-2 border-l-2 border-[#1E2574] rounded-tl" />
-              <div className="pointer-events-none absolute -top-1 -right-1 h-3.5 w-3.5 border-t-2 border-r-2 border-[#FF7A00] rounded-tr" />
-              <div className="pointer-events-none absolute -bottom-1 -left-1 h-3.5 w-3.5 border-b-2 border-l-2 border-[#1E2574] rounded-bl" />
-              <div className="pointer-events-none absolute -bottom-1 -right-1 h-3.5 w-3.5 border-b-2 border-r-2 border-[#FF7A00] rounded-br" />
+            {/* T-Shirt Header Slogan */}
+            <div className="mb-2.5">
+              <span className="text-sm font-bold tracking-tight text-white">
+                Sell বাড়ায় Selora<span className="text-orange-500">X</span>
+              </span>
+            </div>
 
-              {/* QR Vector SVG with SeloraX Navy-to-Orange Gradient & Squircle Dots */}
+            {/* Custom Branded SeloraX QR Container (Official T-Shirt Edition) */}
+            <div className="relative mx-auto flex h-48 w-48 sm:h-52 sm:w-52 items-center justify-center rounded-2xl border-2 border-orange-500/40 bg-[#0A0A0C] p-2.5 shadow-[0_0_35px_-5px_rgba(255,122,0,0.35)]">
+              {/* Tech Corner Brackets in SeloraX Orange */}
+              <div className="pointer-events-none absolute -top-1 -left-1 h-3.5 w-3.5 border-t-2 border-l-2 border-orange-500 rounded-tl" />
+              <div className="pointer-events-none absolute -top-1 -right-1 h-3.5 w-3.5 border-t-2 border-r-2 border-orange-500 rounded-tr" />
+              <div className="pointer-events-none absolute -bottom-1 -left-1 h-3.5 w-3.5 border-b-2 border-l-2 border-orange-500 rounded-bl" />
+              <div className="pointer-events-none absolute -bottom-1 -right-1 h-3.5 w-3.5 border-b-2 border-r-2 border-orange-500 rounded-br" />
+
+              {/* QR Vector SVG with White Modules & Orange Eyes */}
               {qrSvg ? (
                 <div
                   className="h-full w-full [&_svg]:h-full [&_svg]:w-full overflow-hidden rounded-xl"
@@ -269,29 +287,32 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                 </div>
               )}
 
-              {/* Center SeloraX Logo Emblem positioned over the shield */}
+              {/* Center SeloraX Circular Logo Shield (Matching T-Shirt) */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center p-1">
+                <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white p-1 shadow-lg ring-2 ring-orange-500/70">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icon.png"
                     alt="SeloraX"
-                    className="h-full w-full object-contain drop-shadow-sm"
+                    className="h-full w-full object-contain"
                   />
                 </div>
               </div>
             </div>
 
-            <p className="mt-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-              Scan with camera to connect or download below.
-            </p>
+            {/* T-Shirt Footer Slogan */}
+            <div className="mt-2.5">
+              <span className="text-xs font-bold tracking-tight text-zinc-200">
+                Talk With Selora<span className="text-orange-500">X</span> <span className="text-orange-500 font-extrabold">AI</span>
+              </span>
+            </div>
 
             {/* Action Buttons: Download QR + Copy Link + Share */}
             <div className="mt-3.5 grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={handleDownloadQr}
-                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2 text-[11px] font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 active:scale-95"
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900 py-2 text-[11px] font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white active:scale-95"
                 title="Download High-Res QR Code"
               >
                 <Download className="h-3 w-3 text-orange-500" />
@@ -301,7 +322,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2 text-[11px] font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 active:scale-95"
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900 py-2 text-[11px] font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-white active:scale-95"
               >
                 {copiedLink ? (
                   <>
