@@ -21,7 +21,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     ? window.location.href
     : `https://selorax.io/${encodeURIComponent(user.username || '')}`;
 
-  // Generate offline SVG QR code whenever modal opens
   useEffect(() => {
     if (showQR && currentUrl) {
       QRCode.toString(currentUrl, {
@@ -37,7 +36,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     }
   }, [showQR, currentUrl]);
 
-  // Close modal on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setShowQR(false);
@@ -56,7 +54,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     const title = user.designation || user.role || '';
     const org = 'SeloraX';
 
-    // Construct standard vCard 3.0 format
     const vCardLines = [
       'BEGIN:VCARD',
       'VERSION:3.0',
@@ -104,7 +101,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
         toast('Shared profile', 'Shared successfully via Web Share API', 'success');
         return;
       } catch {
-        // Fallback to QR modal if user cancels or share is not supported
+        // Fallback to copy link
       }
     }
     handleCopyLink();
@@ -113,38 +110,38 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
   const calendlyUrl = profileData?.calendlyUrl || user.calendlyUrl;
 
   return (
-    <div className="mx-4 mb-4 sm:mx-6 space-y-2">
+    <div className="space-y-1.5">
       {/* Primary Action Row: Save Contact + QR & Share */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={handleDownloadVCard}
-          className="flex cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-zinc-800 active:scale-[0.98] dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-3.5 w-3.5" />
           Save Contact
         </button>
 
         <button
           type="button"
           onClick={() => setShowQR(true)}
-          className="flex cursor-pointer touch-manipulation items-center justify-center gap-2 rounded-xl border border-zinc-200/90 bg-white px-4 py-3 text-xs font-semibold text-zinc-800 shadow-2xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
+          className="flex cursor-pointer touch-manipulation items-center justify-center gap-1.5 rounded-xl border border-zinc-200/90 bg-white px-3 py-2 text-xs font-semibold text-zinc-800 shadow-2xs transition hover:bg-zinc-50 active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800/80"
           title="Show QR Code & Share"
         >
-          <QrCode className="h-4 w-4 text-orange-500" />
+          <QrCode className="h-3.5 w-3.5 text-orange-500" />
           QR & Share
         </button>
       </div>
 
-      {/* Optional "Book Meeting" button (Cal.com / Calendly style) */}
+      {/* Optional "Book Meeting" button */}
       {calendlyUrl && (
         <a
           href={calendlyUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20"
+          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20"
         >
-          <Calendar className="h-3.5 w-3.5" />
+          <Calendar className="h-3 w-3" />
           Book a 1:1 Meeting (Cal.com)
         </a>
       )}
@@ -159,25 +156,24 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           onClick={() => setShowQR(false)}
         >
           <div
-            className="tactile-card w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl animate-in zoom-in-95 duration-150"
+            className="tactile-card w-full max-w-xs rounded-2xl p-5 text-center shadow-2xl animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 id="qr-modal-title" className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 id="qr-modal-title" className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
                 Scan to View Profile
               </h3>
               <button
                 type="button"
                 onClick={() => setShowQR(false)}
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
                 aria-label="Close dialog"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
 
-            {/* Offline SVG QR container */}
-            <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-2xl border border-zinc-200/80 bg-white p-3 shadow-inner dark:border-zinc-800">
+            <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-xl border border-zinc-200/80 bg-white p-2.5 shadow-inner dark:border-zinc-800">
               {qrSvg ? (
                 <div
                   className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
@@ -190,24 +186,24 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               )}
             </div>
 
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              Scan with any phone camera to instantly open {user.name}&apos;s profile card.
+            <p className="mt-2.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Scan with phone camera to open profile.
             </p>
 
-            <div className="mt-5 flex gap-2">
+            <div className="mt-4 flex gap-2">
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
                 {copiedLink ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    <Check className="h-3 w-3 text-emerald-500" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5" />
+                    <Copy className="h-3 w-3" />
                     Copy Link
                   </>
                 )}
@@ -216,9 +212,9 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-orange-600 py-2.5 text-xs font-semibold text-white transition hover:bg-orange-500 shadow-sm"
+                className="flex flex-1 cursor-pointer items-center justify-center gap-1 rounded-xl bg-orange-600 py-2 text-xs font-semibold text-white transition hover:bg-orange-500 shadow-2xs"
               >
-                <Share2 className="h-3.5 w-3.5" />
+                <Share2 className="h-3 w-3" />
                 Share
               </button>
             </div>

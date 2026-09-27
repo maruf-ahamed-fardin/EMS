@@ -21,7 +21,7 @@ export default function ProfileAvatar({ src, name, verified = true }: ProfileAva
   return (
     <div className="relative inline-block">
       {/* Outer tactile double border */}
-      <div className="relative flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-full p-1 border border-zinc-200/90 dark:border-zinc-800/90 bg-white dark:bg-zinc-900 shadow-md shadow-black/5 dark:shadow-black/20">
+      <div className="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full p-0.5 sm:p-1 border border-zinc-200/90 dark:border-zinc-800/90 bg-white dark:bg-zinc-900 shadow-md shadow-black/5 dark:shadow-black/20">
         <div className="h-full w-full overflow-hidden rounded-full border border-zinc-100 dark:border-zinc-800/60 bg-zinc-100 dark:bg-zinc-800">
           {src && !failed ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -33,7 +33,7 @@ export default function ProfileAvatar({ src, name, verified = true }: ProfileAva
               onError={() => setFailed(true)}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-900 via-zinc-900 to-amber-700 text-3xl sm:text-4xl font-bold text-white select-none">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-900 via-zinc-900 to-amber-700 text-xl sm:text-2xl font-bold text-white select-none">
               {initial}
             </div>
           )}
@@ -44,9 +44,9 @@ export default function ProfileAvatar({ src, name, verified = true }: ProfileAva
       {verified && (
         <div
           title="Verified SeloraX Member"
-          className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-sm dark:border-zinc-900 dark:bg-blue-500"
+          className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 sm:h-5.5 sm:w-5.5 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-white shadow-xs dark:border-zinc-900 dark:bg-blue-500"
         >
-          <BadgeCheck className="h-4 w-4 stroke-[2.5]" />
+          <BadgeCheck className="h-3 w-3 stroke-[2.5]" />
         </div>
       )}
     </div>
