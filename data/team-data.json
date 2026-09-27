@@ -7,9 +7,20 @@
       "designation": "Lead Full Stack Engineer",
       "employeeId": "SX-001",
       "department": "Engineering",
-      "skills": ["Next.js", "React", "TypeScript", "Node.js", "PostgreSQL", "Docker", "GraphQL"],
+      "skills": [
+        "Next.js",
+        "React",
+        "TypeScript",
+        "Node.js",
+        "PostgreSQL",
+        "Docker",
+        "GraphQL"
+      ],
       "timezone": "Asia/Dhaka",
-      "status": { "available": true, "text": "Available" },
+      "status": {
+        "available": true,
+        "text": "Available"
+      },
       "verified": true,
       "calendlyUrl": "https://cal.com/ashekrabbani"
     },
@@ -20,9 +31,19 @@
       "designation": "UI/UX & Frontend Specialist",
       "employeeId": "SX-002",
       "department": "Design",
-      "skills": ["UI/UX Design", "Figma", "Next.js", "Tailwind CSS", "Framer Motion", "Design Systems"],
+      "skills": [
+        "UI/UX Design",
+        "Figma",
+        "Next.js",
+        "Tailwind CSS",
+        "Framer Motion",
+        "Design Systems"
+      ],
       "timezone": "Asia/Dhaka",
-      "status": { "available": true, "text": "In Flow" },
+      "status": {
+        "available": true,
+        "text": "In Flow"
+      },
       "verified": true,
       "calendlyUrl": "https://cal.com/fardin"
     },
@@ -33,9 +54,18 @@
       "designation": "Global Operations Desk",
       "employeeId": "SX-000",
       "department": "Operations",
-      "skills": ["DevOps", "Infrastructure", "Security", "Incident Response", "Cloud Systems"],
+      "skills": [
+        "DevOps",
+        "Infrastructure",
+        "Security",
+        "Incident Response",
+        "Cloud Systems"
+      ],
       "timezone": "Asia/Dhaka",
-      "status": { "available": true, "text": "24/7 Monitoring" },
+      "status": {
+        "available": true,
+        "text": "24/7 Monitoring"
+      },
       "verified": true,
       "calendlyUrl": "https://cal.com/selorax"
     },
@@ -46,11 +76,35 @@
       "designation": "Founder & CEO",
       "employeeId": "SX-100",
       "department": "Executive",
-      "skills": ["Leadership", "Product Strategy", "Venture Capital", "Architecture", "Enterprise"],
+      "skills": [
+        "Leadership",
+        "Product Strategy",
+        "Venture Capital",
+        "Architecture",
+        "Enterprise"
+      ],
       "timezone": "Asia/Dhaka",
-      "status": { "available": true, "text": "Available for Meetings" },
+      "status": {
+        "available": true,
+        "text": "Available for Meetings"
+      },
       "verified": true,
       "calendlyUrl": "https://cal.com/tanvir-selorax"
+    },
+    {
+      "name": "kjdhsakDJKBNDAS",
+      "username": "k",
+      "employeeId": "SX-005",
+      "designation": "Engineer",
+      "role": "Engineer",
+      "department": "Engineering",
+      "skills": [],
+      "verified": true,
+      "status": {
+        "available": true,
+        "text": "Available"
+      },
+      "timezone": "Asia/Dhaka"
     }
   ],
   "profilePics": {
@@ -112,6 +166,10 @@
         "facebook": "https://www.facebook.com/selorax.io/",
         "portfolio": "https://selorax.io"
       }
+    },
+    "k": {
+      "location": "Dhaka, Bangladesh",
+      "socials": {}
     }
   }
 }
