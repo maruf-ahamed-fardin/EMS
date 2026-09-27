@@ -120,3 +120,26 @@ html.dark .tactile-card {
 html.dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* Dark mode: fix input text visibility & browser autofill background override */
+.dark input,
+html.dark input,
+.dark textarea,
+html.dark textarea,
+.dark select,
+html.dark select {
+  color-scheme: dark;
+}
+
+/* Prevent browser autofill from flashing white/yellow background in dark mode */
+.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(18, 21, 29, 0.98) inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc;
+}
+
