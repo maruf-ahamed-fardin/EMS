@@ -50,17 +50,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             __html: `
               try {
                 const storedTheme = localStorage.getItem('selorax-theme');
-                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark) || storedTheme === 'system' && systemPrefersDark) {
-                  document.documentElement.classList.add('dark');
-                } else if (storedTheme === 'light') {
+                if (storedTheme === 'light') {
                   document.documentElement.classList.remove('dark');
+                } else {
+                  document.documentElement.classList.add('dark');
                 }
               } catch (e) {}
             `,
           }}
         />
       </head>
+
       <body className="antialiased min-h-dvh transition-colors duration-200">
         <ThemeProvider>
           <ToastProvider>
