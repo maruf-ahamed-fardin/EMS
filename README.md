@@ -12,7 +12,7 @@ Built with Next.js (App Router), React, TypeScript and Tailwind CSS. Team data i
 | `/<username>` | Profile card. An employee ID (e.g. `/SX-001`) redirects to the username URL |
 | `/api/team-profile?id=<username or employeeId>` | Same data as JSON |
 
-Profiles are server-rendered and cached with ISR: the first visit renders the page, later visits get the cached copy, and it refreshes in the background at most every 30 seconds.
+Profiles are server-rendered on demand so newly saved admin data is available to public pages immediately.
 
 ## Getting started
 

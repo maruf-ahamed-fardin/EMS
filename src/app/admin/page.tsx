@@ -30,6 +30,20 @@ import {
 } from 'lucide-react';
 import type { Department, PublicUser, ProfileData, Socials } from '@/lib/team';
 
+// Client-side slug helper (mirrors server slugifyUsername)
+function toSlug(raw: string): string {
+  return raw
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32);
+}
+
 interface FullAdminMember {
   user: PublicUser;
   profilePic?: string | null;
@@ -194,14 +208,27 @@ export default function AdminPage() {
   function handleNameChange(name: string) {
     setFormData((prev) => {
       const updates: typeof prev = { ...prev, name };
-      if (modalMode === 'create' && !prev.username) {
-        updates.username = name
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '')
-          .slice(0, 20);
+      // Auto-fill username from name only when field is empty or was previously auto-generated
+      if (modalMode === 'create') {
+        const prevAutoSlug = toSlug(prev.name);
+        if (!prev.username || prev.username === prevAutoSlug) {
+          updates.username = toSlug(name);
+        }
       }
       return updates;
     });
+  }
+
+  // Enforce slug rules on manual username input
+  function handleUsernameChange(raw: string) {
+    // Allow typing freely but sanitize on blur — here we sanitize live but gently
+    const sanitized = raw
+      .toLowerCase()
+      .replace(/\s/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-{2,}/g, '-')
+      .slice(0, 32);
+    setFormData((prev) => ({ ...prev, username: sanitized }));
   }
 
   // Handle image upload and compression to base64 WebP
@@ -944,17 +971,22 @@ export default function AdminPage() {
 
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                    Username (Slug) *
+                    Username * <span className="font-normal text-zinc-400">(lowercase, no spaces)</span>
                   </label>
                   <input
                     type="text"
                     value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    onChange={(e) => handleUsernameChange(e.target.value)}
                     required
                     disabled={modalMode === 'edit'}
-                    placeholder="e.g. ashekrabbani"
+                    placeholder="e.g. ashek-rabbani"
+                    pattern="^[a-z0-9][a-z0-9-]{0,31}$"
+                    title="Lowercase letters, numbers, and hyphens only. No spaces."
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-orange-500 focus:bg-white focus:outline-none disabled:opacity-50 dark:border-white/10 dark:bg-black/40 dark:text-white dark:placeholder-zinc-500"
                   />
+                  {formData.username && !/^[a-z0-9][a-z0-9-]{0,31}$/.test(formData.username) && (
+                    <p className="mt-0.5 text-[10px] text-rose-500">Only a-z, 0-9, hyphen. Must start with a letter or number.</p>
+                  )}
                 </div>
 
                 <div>

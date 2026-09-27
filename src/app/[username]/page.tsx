@@ -29,6 +29,10 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+export function generateStaticParams() {
+  return [];
+}
+
 interface PageParams {
   params: Promise<{ username: string }>;
 }
