@@ -266,7 +266,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
 
             {/* Custom Branded SeloraX QR Container (Exact Reference Design) */}
             <div className="relative mx-auto flex h-52 w-52 sm:h-56 sm:w-56 items-center justify-center rounded-2xl bg-white p-2.5 shadow-[0_0_40px_-5px_rgba(255,160,0,0.35)] ring-1 ring-zinc-200">
-              {/* QR Vector SVG with Perfect Square Modules & SeloraX Orange Eyes */}
+              {/* QR Vector SVG with Perfect Square Modules, Orange Eyes & Smooth Center Quiet Zone */}
               {qrSvg ? (
                 <div
                   className="h-full w-full [&_svg]:h-full [&_svg]:w-full overflow-hidden rounded-xl"
@@ -277,18 +277,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                   Generating QR…
                 </div>
               )}
-
-              {/* Center SeloraX Circular Logo Shield with White Quiet Zone and Rounded Gap */}
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white p-1 shadow-sm border border-zinc-200/80">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/icon.png"
-                    alt="SeloraX"
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              </div>
             </div>
 
             {/* T-Shirt Footer Slogan */}
