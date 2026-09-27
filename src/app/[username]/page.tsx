@@ -73,9 +73,9 @@ interface ContactRowProps {
 
 function ContactRow({ href, action, icon, value, label, isMono, external }: ContactRowProps) {
   return (
-    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors hover:bg-white dark:hover:bg-zinc-800/50">
+    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors hover:bg-white dark:hover:bg-white/[0.08]">
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:bg-orange-400/10 dark:text-orange-400">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-500/12 text-orange-600 dark:bg-orange-400/15 dark:text-orange-400">
           {icon}
         </div>
         <CopyableValue value={value} label={label} isMono={isMono} />
@@ -86,7 +86,7 @@ function ContactRow({ href, action, icon, value, label, isMono, external }: Cont
         aria-label={action}
         title={action}
         {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-white text-zinc-500 hover:text-orange-500 dark:border-zinc-700/80 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-orange-400 shadow-2xs transition active:scale-95"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200/80 bg-white text-zinc-500 hover:text-orange-500 dark:border-white/10 dark:bg-white/10 dark:text-zinc-300 dark:hover:text-orange-400 shadow-2xs transition active:scale-95"
       >
         <ArrowUpRight className="h-3 w-3" />
       </a>
@@ -107,7 +107,7 @@ function ContactDetails({ profileData }: { profileData: ProfileData | null }) {
   const waDigits = digits(whatsapp);
 
   return (
-    <div className="divide-y divide-zinc-100/80 rounded-xl border border-zinc-200/80 bg-zinc-50/70 p-0.5 dark:divide-zinc-800/60 dark:border-zinc-800/80 dark:bg-zinc-900/60">
+    <div className="divide-y divide-slate-200/60 rounded-xl border border-slate-200/80 bg-white/70 p-0.5 shadow-2xs dark:divide-white/[0.06] dark:border-white/[0.08] dark:bg-black/25">
       {email && (
         <ContactRow
           href={`mailto:${email}`}

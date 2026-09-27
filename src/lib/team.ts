@@ -381,3 +381,190 @@ export async function getAllTeamMembers(): Promise<PublicMemberSummary[]> {
     };
   });
 }
+
+export interface FullAdminMember {
+  user: PublicUser;
+  profilePic?: string | null;
+  profileData?: ProfileData | null;
+}
+
+/**
+ * Returns full member details including contact and picture for the Admin dashboard.
+ */
+export async function getFullAdminMembers(): Promise<FullAdminMember[]> {
+  const data = await getTeamData();
+  const allUsers = (Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[];
+  const pics = asRecord(data.profilePics);
+  const profiles = asRecord(data.sharedProfiles);
+
+  return allUsers.map(user => {
+    const username = String(user.username || '');
+    return {
+      user: {
+        username,
+        name: user.name,
+        role: user.role,
+        designation: user.designation,
+        employeeId: user.employeeId,
+        department: user.department,
+        skills: user.skills || [],
+        status: user.status || { available: true, text: 'Available' },
+        timezone: user.timezone || 'Asia/Dhaka',
+        verified: user.verified ?? true,
+        calendlyUrl: user.calendlyUrl,
+      },
+      profilePic: (pics[username] as string | undefined) || null,
+      profileData: (profiles[username] as ProfileData | undefined) || null,
+    };
+  });
+}
+
+/**
+ * Saves team data to MySQL if configured, and keeps the in-memory cache updated.
+ */
+export async function saveTeamData(newData: TeamData): Promise<void> {
+  cache = { promise: Promise.resolve(newData), ts: Date.now() };
+
+  FALLBACK_TEAM_DATA.sharedUsers = newData.sharedUsers;
+  FALLBACK_TEAM_DATA.profilePics = newData.profilePics;
+  FALLBACK_TEAM_DATA.sharedProfiles = newData.sharedProfiles;
+
+  if (!process.env.MYSQL_HOST) {
+    return;
+  }
+
+  try {
+    const p = getPool();
+    await p.execute(
+      `CREATE TABLE IF NOT EXISTS kv_store (
+        k VARCHAR(64) PRIMARY KEY,
+        v LONGTEXT NOT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+    );
+
+    const keys: (keyof TeamData)[] = ['sharedUsers', 'profilePics', 'sharedProfiles'];
+    for (const key of keys) {
+      const val = JSON.stringify(newData[key] ?? (key === 'sharedUsers' ? [] : {}));
+      await p.execute(
+        'INSERT INTO kv_store (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)',
+        [key, val]
+      );
+    }
+  } catch (error) {
+    console.error('[SeloraX Team] Failed to write to MySQL database:', error);
+    throw new Error('Database write operation failed. Please verify MySQL configuration.');
+  }
+}
+
+/**
+ * Creates a new team member and saves it.
+ */
+export async function createTeamMember(member: {
+  user: PublicUser;
+  profilePic?: string | null;
+  profileData?: ProfileData | null;
+}): Promise<void> {
+  const data = await getTeamData();
+  const allUsers = [...((Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[])];
+  const pics = { ...asRecord(data.profilePics) };
+  const profiles = { ...asRecord(data.sharedProfiles) };
+
+  const username = String(member.user.username || '').toLowerCase().trim();
+  if (!username) throw new Error('Username is required');
+
+  if (allUsers.some(u => String(u.username).toLowerCase() === username)) {
+    throw new Error(`Username "${username}" already exists.`);
+  }
+
+  allUsers.push({
+    ...member.user,
+    username,
+    department: member.user.department || 'Engineering',
+    status: member.user.status || { available: true, text: 'Available' },
+    verified: member.user.verified ?? true,
+    timezone: member.user.timezone || 'Asia/Dhaka',
+  });
+
+  if (member.profilePic) {
+    pics[username] = member.profilePic;
+  }
+
+  if (member.profileData) {
+    profiles[username] = member.profileData;
+  }
+
+  await saveTeamData({
+    sharedUsers: allUsers,
+    profilePics: pics,
+    sharedProfiles: profiles,
+  });
+}
+
+/**
+ * Updates an existing team member.
+ */
+export async function updateTeamMember(
+  username: string,
+  updated: {
+    user: Partial<PublicUser>;
+    profilePic?: string | null;
+    profileData?: Partial<ProfileData> | null;
+  }
+): Promise<void> {
+  const data = await getTeamData();
+  const allUsers = [...((Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[])];
+  const pics = { ...asRecord(data.profilePics) };
+  const profiles = { ...asRecord(data.sharedProfiles) };
+
+  const key = username.toLowerCase().trim();
+  const index = allUsers.findIndex(u => String(u.username).toLowerCase() === key);
+  if (index === -1) throw new Error(`Member "${username}" not found.`);
+
+  allUsers[index] = {
+    ...allUsers[index],
+    ...updated.user,
+    username: allUsers[index].username,
+  };
+
+  if (updated.profilePic !== undefined) {
+    if (updated.profilePic === null || updated.profilePic === '') {
+      delete pics[key];
+    } else {
+      pics[key] = updated.profilePic;
+    }
+  }
+
+  if (updated.profileData !== undefined) {
+    profiles[key] = {
+      ...asRecord(profiles[key]),
+      ...updated.profileData,
+    };
+  }
+
+  await saveTeamData({
+    sharedUsers: allUsers,
+    profilePics: pics,
+    sharedProfiles: profiles,
+  });
+}
+
+/**
+ * Deletes a team member.
+ */
+export async function deleteTeamMember(username: string): Promise<void> {
+  const data = await getTeamData();
+  const allUsers = ((Array.isArray(data.sharedUsers) ? data.sharedUsers : []) as StoredUser[])
+    .filter(u => String(u.username).toLowerCase() !== username.toLowerCase().trim());
+  const pics = { ...asRecord(data.profilePics) };
+  const profiles = { ...asRecord(data.sharedProfiles) };
+
+  const key = username.toLowerCase().trim();
+  delete pics[key];
+  delete profiles[key];
+
+  await saveTeamData({
+    sharedUsers: allUsers,
+    profilePics: pics,
+    sharedProfiles: profiles,
+  });
+}
