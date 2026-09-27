@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
 import { Calendar, Download, QrCode, Share2, Copy, Check, X, BadgeCheck } from 'lucide-react';
 import type { PublicUser, ProfileData } from '@/lib/team';
+import { generateBrandedQrSvg } from '@/lib/branded-qr';
 import { useToast } from './Toast';
 
 interface ProfileActionsProps {
@@ -23,17 +23,12 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
 
   useEffect(() => {
     if (showQR && currentUrl) {
-      QRCode.toString(currentUrl, {
-        type: 'svg',
-        margin: 1,
-        errorCorrectionLevel: 'H', // High error correction (30%) so center emblem scans perfectly
-        color: {
-          dark: '#090E1A',
-          light: '#FFFFFF',
-        },
-      })
-        .then((svg) => setQrSvg(svg))
-        .catch(() => {});
+      try {
+        const svg = generateBrandedQrSvg(currentUrl);
+        setQrSvg(svg);
+      } catch (err) {
+        console.error('Failed to generate branded QR SVG:', err);
+      }
     }
   }, [showQR, currentUrl]);
 
@@ -79,6 +74,62 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     URL.revokeObjectURL(url);
 
     toast('Contact card saved', 'Downloaded .vcf file for your address book', 'success');
+  };
+
+  const handleDownloadQr = () => {
+    if (!qrSvg || typeof window === 'undefined') return;
+    try {
+      const canvas = document.createElement('canvas');
+      const size = 1024;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const svgBlob = new Blob([qrSvg], { type: 'image/svg+xml;charset=utf-8' });
+      const blobURL = URL.createObjectURL(svgBlob);
+      const img = new Image();
+
+      img.onload = () => {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+
+        // Overlay authentic SeloraX center emblem
+        const logo = new Image();
+        logo.onload = () => {
+          const logoSize = size * 0.17;
+          const logoPos = (size - logoSize) / 2;
+          ctx.drawImage(logo, logoPos, logoPos, logoSize, logoSize);
+
+          const pngUrl = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngUrl;
+          downloadLink.download = `${(user.username || 'selorax').toLowerCase()}-qr.png`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          URL.revokeObjectURL(blobURL);
+          toast('QR Code downloaded', 'High-resolution branded QR saved', 'success');
+        };
+        logo.onerror = () => {
+          const pngUrl = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = pngUrl;
+          downloadLink.download = `${(user.username || 'selorax').toLowerCase()}-qr.png`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          URL.revokeObjectURL(blobURL);
+          toast('QR Code downloaded', 'Branded QR saved', 'success');
+        };
+        logo.src = '/icon.png';
+      };
+      img.src = blobURL;
+    } catch (err) {
+      console.error('Failed to download QR:', err);
+      toast('Download failed', 'Please try again', 'info');
+    }
   };
 
   const handleCopyLink = () => {
@@ -153,7 +204,7 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           onClick={() => setShowQR(false)}
         >
           <div
@@ -198,18 +249,18 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               </div>
             </div>
 
-            {/* Branded QR Card Container with Center Logo & Amber Accents */}
-            <div className="relative mx-auto flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-orange-500/40 bg-white p-2.5 shadow-[0_0_30px_-5px_rgba(255,122,0,0.35)] dark:border-orange-500/50">
-              {/* Corner Tech Brackets */}
-              <div className="pointer-events-none absolute -top-1 -left-1 h-3.5 w-3.5 border-t-2 border-l-2 border-orange-500 rounded-tl" />
-              <div className="pointer-events-none absolute -top-1 -right-1 h-3.5 w-3.5 border-t-2 border-r-2 border-orange-500 rounded-tr" />
-              <div className="pointer-events-none absolute -bottom-1 -left-1 h-3.5 w-3.5 border-b-2 border-l-2 border-orange-500 rounded-bl" />
-              <div className="pointer-events-none absolute -bottom-1 -right-1 h-3.5 w-3.5 border-b-2 border-r-2 border-orange-500 rounded-br" />
+            {/* Custom Branded SeloraX QR Container (Navy + Orange Palette) */}
+            <div className="relative mx-auto flex h-48 w-48 sm:h-52 sm:w-52 items-center justify-center rounded-2xl border-2 border-orange-500/40 bg-white p-2.5 shadow-[0_0_35px_-5px_rgba(255,122,0,0.35),0_0_40px_-10px_rgba(26,33,107,0.4)] dark:border-orange-500/50">
+              {/* Dual-Brand Corner Tech Brackets (Navy on Left, Orange on Right) */}
+              <div className="pointer-events-none absolute -top-1 -left-1 h-3.5 w-3.5 border-t-2 border-l-2 border-[#1E2574] rounded-tl" />
+              <div className="pointer-events-none absolute -top-1 -right-1 h-3.5 w-3.5 border-t-2 border-r-2 border-[#FF7A00] rounded-tr" />
+              <div className="pointer-events-none absolute -bottom-1 -left-1 h-3.5 w-3.5 border-b-2 border-l-2 border-[#1E2574] rounded-bl" />
+              <div className="pointer-events-none absolute -bottom-1 -right-1 h-3.5 w-3.5 border-b-2 border-r-2 border-[#FF7A00] rounded-br" />
 
-              {/* QR Vector SVG */}
+              {/* QR Vector SVG with SeloraX Navy-to-Orange Gradient & Squircle Dots */}
               {qrSvg ? (
                 <div
-                  className="h-full w-full [&_svg]:h-full [&_svg]:w-full"
+                  className="h-full w-full [&_svg]:h-full [&_svg]:w-full overflow-hidden rounded-xl"
                   dangerouslySetInnerHTML={{ __html: qrSvg }}
                 />
               ) : (
@@ -218,39 +269,49 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                 </div>
               )}
 
-              {/* Center SeloraX Emblem with Protective Halo */}
+              {/* Center SeloraX Logo Emblem positioned over the shield */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200/90 bg-white p-1.5 shadow-lg shadow-black/20 ring-2 ring-orange-500/40">
+                <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center p-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icon.png"
                     alt="SeloraX"
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain drop-shadow-sm"
                   />
                 </div>
               </div>
             </div>
 
             <p className="mt-3 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-              Scan with smartphone camera to connect.
+              Scan with camera to connect or download below.
             </p>
 
-            {/* Action Buttons */}
-            <div className="mt-4 flex gap-2">
+            {/* Action Buttons: Download QR + Copy Link + Share */}
+            <div className="mt-3.5 grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={handleDownloadQr}
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2 text-[11px] font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 active:scale-95"
+                title="Download High-Res QR Code"
+              >
+                <Download className="h-3 w-3 text-orange-500" />
+                Download
+              </button>
+
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-100 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 active:scale-95"
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 py-2 text-[11px] font-semibold text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 active:scale-95"
               >
                 {copiedLink ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    Copied!
+                    <Check className="h-3 w-3 text-emerald-500" />
+                    Copied
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5" />
-                    Copy Link
+                    <Copy className="h-3 w-3" />
+                    Copy
                   </>
                 )}
               </button>
@@ -258,9 +319,9 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 py-2.5 text-xs font-semibold text-white shadow-md shadow-orange-500/25 transition hover:from-orange-400 hover:to-amber-500 active:scale-95"
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 py-2 text-[11px] font-semibold text-white shadow-md shadow-orange-500/25 transition hover:from-orange-400 hover:to-amber-500 active:scale-95"
               >
-                <Share2 className="h-3.5 w-3.5" />
+                <Share2 className="h-3 w-3" />
                 Share
               </button>
             </div>
