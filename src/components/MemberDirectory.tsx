@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, X, ArrowRight, CornerDownLeft, Sparkles } from 'lucide-react';
+import { Search, X, ArrowRight, CornerDownLeft } from 'lucide-react';
 import type { PublicMemberSummary, Department } from '@/lib/team';
 
 interface MemberDirectoryProps {
@@ -100,10 +100,6 @@ export default function MemberDirectory({ initialMembers }: MemberDirectoryProps
         
         {/* Compact Header */}
         <div className="mb-4 text-center">
-          <div className="inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-orange-600 dark:border-orange-400/25 dark:bg-orange-400/10 dark:text-orange-400 mb-1">
-            <Sparkles className="h-3 w-3" />
-            SeloraX Precision Directory
-          </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Find a Team Member
           </h1>
