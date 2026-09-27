@@ -9,9 +9,12 @@ export function generateBrandedQrSvg(url: string): string {
   const margin = 3.5;
   const totalSize = size + margin * 2;
 
-  // 3. Center logo clearance zone (proper white quiet zone for error correction)
+  // 3. Center logo clearance zone:
+  // Badge has radius 3.6 modules, clearance has radius 5.2 modules.
+  // This creates a generous ~1.6 module rounded gap (quiet zone buffer) on all 4 sides around the logo!
   const centerMid = size / 2;
-  const centerRadius = 3.8;
+  const badgeRadius = 3.6;
+  const clearRadius = 5.2;
 
   const isCornerEye = (r: number, c: number) => {
     if (r < 7 && c < 7) return true; // Top-left
@@ -23,7 +26,7 @@ export function generateBrandedQrSvg(url: string): string {
   const isCenterLogoZone = (r: number, c: number) => {
     const dr = r - centerMid + 0.5;
     const dc = c - centerMid + 0.5;
-    return Math.sqrt(dr * dr + dc * dc) <= centerRadius;
+    return Math.sqrt(dr * dr + dc * dc) <= clearRadius;
   };
 
   const modules: string[] = [];
@@ -71,7 +74,8 @@ export function generateBrandedQrSvg(url: string): string {
   const eyeBL = renderEye(0, size - 7);
 
   const midCoord = (size / 2 + margin).toFixed(2);
-  const imgCoord = (parseFloat(midCoord) - 2.7).toFixed(2);
+  const logoSize = (badgeRadius * 1.35).toFixed(2);
+  const logoPos = (parseFloat(midCoord) - parseFloat(logoSize) / 2).toFixed(2);
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalSize} ${totalSize}" shape-rendering="crispEdges" class="h-full w-full">
@@ -86,11 +90,11 @@ export function generateBrandedQrSvg(url: string): string {
       ${eyeTR}
       ${eyeBL}
 
-      <!-- Center Logo Proper White Quiet Zone -->
-      <circle cx="${midCoord}" cy="${midCoord}" r="4.2" fill="#FFFFFF" shape-rendering="geometricPrecision" />
+      <!-- Center Logo White Circular Badge with Rounded Gap Buffer -->
+      <circle cx="${midCoord}" cy="${midCoord}" r="${badgeRadius}" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.35" shape-rendering="geometricPrecision" />
 
       <!-- Center SeloraX 'X' Emblem -->
-      <image href="/icon.png" x="${imgCoord}" y="${imgCoord}" width="5.4" height="5.4" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" />
+      <image href="/icon.png" x="${logoPos}" y="${logoPos}" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" />
     </svg>
   `;
 }

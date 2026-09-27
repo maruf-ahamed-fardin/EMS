@@ -278,9 +278,9 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
                 </div>
               )}
 
-              {/* Center SeloraX Circular Logo Shield with White Quiet Zone */}
+              {/* Center SeloraX Circular Logo Shield with White Quiet Zone and Rounded Gap */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white p-1 shadow-sm">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white p-1 shadow-sm border border-zinc-200/80">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/icon.png"
