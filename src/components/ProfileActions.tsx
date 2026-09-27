@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Download, QrCode, Share2, Copy, Check, X, BadgeCheck } from 'lucide-react';
+import { Download, QrCode, Share2, Copy, Check, X, BadgeCheck } from 'lucide-react';
 import type { PublicUser, ProfileData } from '@/lib/team';
 import { generateBrandedQrSvg } from '@/lib/branded-qr';
 import { recordRecentView } from '@/lib/recent-views';
@@ -174,10 +174,8 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
     handleCopyLink();
   };
 
-  const calendlyUrl = profileData?.calendlyUrl || user.calendlyUrl;
-
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-col gap-2.5">
       {/* Primary Action Row: Save Contact + QR & Share */}
       <div className="grid grid-cols-2 gap-2">
         <button
@@ -199,19 +197,6 @@ export default function ProfileActions({ user, profileData }: ProfileActionsProp
           QR & Share
         </button>
       </div>
-
-      {/* Optional "Book Meeting" button */}
-      {calendlyUrl && (
-        <a
-          href={calendlyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20 active:scale-[0.98] dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/20 outline-none"
-        >
-          <Calendar className="h-3 w-3" />
-          Book a 1:1 Meeting (Cal.com)
-        </a>
-      )}
 
       {/* Branded SeloraX QR Modal (Exact Reference Edition) */}
       {showQR && (
