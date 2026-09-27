@@ -1,0 +1,175 @@
+{
+  "sharedUsers": [
+    {
+      "username": "ashekrabbani",
+      "name": "Ashek Rabbani",
+      "role": "Software Engineer",
+      "designation": "Lead Full Stack Engineer",
+      "employeeId": "SX-001",
+      "department": "Engineering",
+      "skills": [
+        "Next.js",
+        "React",
+        "TypeScript",
+        "Node.js",
+        "PostgreSQL",
+        "Docker",
+        "GraphQL"
+      ],
+      "timezone": "Asia/Dhaka",
+      "status": {
+        "available": true,
+        "text": "Available"
+      },
+      "verified": true,
+      "calendlyUrl": "https://cal.com/ashekrabbani"
+    },
+    {
+      "username": "fardin",
+      "name": "Maruf Ahamed Fardin",
+      "role": "Frontend Engineer",
+      "designation": "UI/UX & Frontend Specialist",
+      "employeeId": "SX-002",
+      "department": "Design",
+      "skills": [
+        "UI/UX Design",
+        "Figma",
+        "Next.js",
+        "Tailwind CSS",
+        "Framer Motion",
+        "Design Systems"
+      ],
+      "timezone": "Asia/Dhaka",
+      "status": {
+        "available": true,
+        "text": "In Flow"
+      },
+      "verified": true,
+      "calendlyUrl": "https://cal.com/fardin"
+    },
+    {
+      "username": "selorax-admin",
+      "name": "SeloraX Operations",
+      "role": "Admin",
+      "designation": "Global Operations Desk",
+      "employeeId": "SX-000",
+      "department": "Operations",
+      "skills": [
+        "DevOps",
+        "Infrastructure",
+        "Security",
+        "Incident Response",
+        "Cloud Systems"
+      ],
+      "timezone": "Asia/Dhaka",
+      "status": {
+        "available": true,
+        "text": "24/7 Monitoring"
+      },
+      "verified": true,
+      "calendlyUrl": "https://cal.com/selorax"
+    },
+    {
+      "username": "tanvir",
+      "name": "Tanvir Hossain",
+      "role": "Chief Executive Officer",
+      "designation": "Founder & CEO",
+      "employeeId": "SX-100",
+      "department": "Executive",
+      "skills": [
+        "Leadership",
+        "Product Strategy",
+        "Venture Capital",
+        "Architecture",
+        "Enterprise"
+      ],
+      "timezone": "Asia/Dhaka",
+      "status": {
+        "available": true,
+        "text": "Available for Meetings"
+      },
+      "verified": true,
+      "calendlyUrl": "https://cal.com/tanvir-selorax"
+    },
+    {
+      "name": "kjdhsakDJKBNDAS",
+      "username": "k",
+      "employeeId": "SX-005",
+      "designation": "Engineer",
+      "role": "Engineer",
+      "department": "Engineering",
+      "skills": [],
+      "verified": true,
+      "status": {
+        "available": true,
+        "text": "Available"
+      },
+      "timezone": "Asia/Dhaka"
+    }
+  ],
+  "profilePics": {
+    "ashekrabbani": "https://avatars.githubusercontent.com/u/101377810?v=4",
+    "fardin": "https://avatars.githubusercontent.com/u/89617260?v=4",
+    "selorax-admin": null,
+    "tanvir": null
+  },
+  "sharedProfiles": {
+    "ashekrabbani": {
+      "email": "ashekrabbani@selorax.io",
+      "personalPhone": "+8801700000001",
+      "businessPhone": "+8801606606204",
+      "whatsapp": "+8801606606204",
+      "location": "Dhaka, Bangladesh",
+      "calendlyUrl": "https://cal.com/ashekrabbani",
+      "socials": {
+        "github": "https://github.com/ashekrabbani",
+        "linkedin": "https://linkedin.com/in/ashekrabbani",
+        "facebook": "https://www.facebook.com/selorax.io/",
+        "portfolio": "https://selorax.io"
+      }
+    },
+    "fardin": {
+      "email": "fardin@selorax.io",
+      "personalPhone": "+8801700000002",
+      "businessPhone": "+8801606606204",
+      "whatsapp": "+8801606606204",
+      "location": "Dhaka, Bangladesh",
+      "calendlyUrl": "https://cal.com/fardin",
+      "socials": {
+        "github": "https://github.com/maruf-ahamed-fardin",
+        "linkedin": "https://linkedin.com/in/maruf-ahamed-fardin",
+        "facebook": "https://www.facebook.com/selorax.io/",
+        "portfolio": "https://selorax.io"
+      }
+    },
+    "selorax-admin": {
+      "email": "contact@selorax.io",
+      "businessPhone": "+8801606606204",
+      "whatsapp": "+8801606606204",
+      "location": "Dhaka HQ, Bangladesh",
+      "calendlyUrl": "https://cal.com/selorax",
+      "socials": {
+        "github": "https://github.com/SeloraX-io",
+        "facebook": "https://www.facebook.com/selorax.io/",
+        "portfolio": "https://selorax.io"
+      }
+    },
+    "tanvir": {
+      "email": "tanvir@selorax.io",
+      "businessPhone": "+8801606606204",
+      "whatsapp": "+8801606606204",
+      "location": "Dhaka HQ, Bangladesh",
+      "calendlyUrl": "https://cal.com/tanvir-selorax",
+      "socials": {
+        "linkedin": "https://linkedin.com/company/selorax",
+        "github": "https://github.com/SeloraX-io",
+        "facebook": "https://www.facebook.com/selorax.io/",
+        "portfolio": "https://selorax.io"
+      }
+    },
+    "k": {
+      "location": "Dhaka, Bangladesh",
+      "socials": {}
+    }
+  }
+}

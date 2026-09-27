@@ -153,7 +153,9 @@ export default function AdminPage() {
   async function loadMembers() {
     setLoadingMembers(true);
     try {
-      const res = await fetch('/api/admin/members');
+      const res = await fetch(`/api/admin/members?t=${Date.now()}`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         setMembers(data.members || []);
