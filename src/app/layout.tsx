@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Geist, Geist_Mono } from 'next/font/google';
 import seloraxLogo from '@/assets/SeloraX logo.png';
+import seloraxLogoDark from '@/assets/SeloraX-logo-dark.png';
 import { ThemeProvider, ThemeToggle } from '@/components/ThemeProvider';
 import { ToastProvider } from '@/components/Toast';
 import './globals.css';
@@ -74,18 +75,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   className="group flex items-center gap-2 rounded-xl px-1 py-0.5 transition-all hover:opacity-95"
                 >
                   <div className="relative flex items-center justify-center rounded-xl bg-white/90 dark:bg-zinc-900/80 px-2.5 py-1 border border-zinc-200/90 dark:border-zinc-800/90 shadow-2xs backdrop-blur-md transition-all group-hover:border-zinc-300 dark:group-hover:border-zinc-700">
+                    {/* Light Mode Logo: Navy Blue Selora + Orange X */}
                     <Image
                       src={seloraxLogo}
                       alt="SeloraX Logo"
                       height={22}
                       width={88}
                       priority
-                      className="h-5 sm:h-5.5 w-auto object-contain"
+                      className="h-5 sm:h-5.5 w-auto object-contain block dark:hidden"
+                    />
+                    {/* Night / Dark Mode Logo: Crisp White Selora + Fiery Orange X */}
+                    <Image
+                      src={seloraxLogoDark}
+                      alt="SeloraX Logo"
+                      height={22}
+                      width={88}
+                      priority
+                      className="h-5 sm:h-5.5 w-auto object-contain hidden dark:block"
                     />
                   </div>
-                  <span className="hidden sm:inline-block rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                    Team Directory
-                  </span>
                 </Link>
 
                 <div className="flex items-center gap-1.5 sm:gap-2">
@@ -116,8 +124,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
               {/* Ultra-compact global footer */}
               <footer className="relative z-10 w-full py-1.5 sm:py-2 shrink-0 text-center text-[10px] text-zinc-400 dark:text-zinc-600 font-mono-numbers">
-                SeloraX Precision Directory • SX-EMS v2.4
+                SeloraX Team Directory • SX-EMS v2.4
               </footer>
+
             </div>
           </ToastProvider>
         </ThemeProvider>
